@@ -383,3 +383,4 @@ body {
   .menu-grid .row-item { grid-template-columns: 1fr 48px; }
   .menu-grid .row-item .icon-col { width: 48px; height: 48px; }
 }
+/* Este es un cambio temporal para probar el Pull Request */
