@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Coordinador – Registrar expedientes{% endblock %}
+
+{% block content %}
+<div class="layout">
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side btn-ghost" href="{% url 'asignaciones:coordinador_menu' %}">
+        <i class="bi bi-arrow-left"></i> Volver
+      </a>
+    </div>
+    <div class="profile">
+      <a class="avatar" href="#"><i class="bi bi-person"></i></a>
+    </div>
+  </aside>
+
+  <section class="panel">
+    <h2 class="panel-title">Registrar expedientes</h2>
+    <hr class="separator" />
+    <div class="form-card">
+      <p>Maqueta de ejemplo. Aquí irá el formulario real de registro.</p>
+    </div>
+  </section>
+
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}

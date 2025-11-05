@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Programar visita{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin:0">Programar visita</h1>
+  <p>Expediente: <strong>{{ exp.siged }}</strong> · Estado: <strong>{{ exp.get_estado_display }}</strong></p>
+  <hr class="separator" />
+
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <label for="{{ form.fecha_visita.id_for_label }}">Fecha de visita</label>
+      {{ form.fecha_visita }}
+      {% if form.fecha_visita.errors %}<div style="color:#b91c1c; margin-top:6px">{{ form.fecha_visita.errors|join:", " }}</div>{% endif %}
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a class="btn btn-secondary" href="{% url 'asignaciones:supervisor_registrar_visita' %}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

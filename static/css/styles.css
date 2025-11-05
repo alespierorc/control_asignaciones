@@ -1,0 +1,385 @@
+/* ===== Paleta y tokens ===== */
+:root{
+  --bg: #e6e9ef;
+  --panel: #9098a8;
+  --panel-dark: #7f8899;
+  --pill: #596576;
+  --brand: #2a9d8f;
+  --ink: #0f172a;
+  --white: #fff;
+
+  --radius-xl: 20px;
+  --radius: 16px;
+  --radius-sm: 12px;
+
+  --gap: 18px;
+  --shadow-lg: 0 18px 28px rgba(0,0,0,.18);
+  --shadow: 0 10px 18px rgba(0,0,0,.12);
+}
+
+*{ box-sizing: border-box }
+html,body{ height:100% }
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font: 15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans";
+}
+.container{ max-width:1280px; margin:0 auto; padding:0 16px }
+a{ color: var(--brand); text-decoration:none }
+a:hover{ opacity:.9 }
+
+/* ===== Topbar ===== */
+.topbar-wrap{ padding:16px 0 }
+.topbar{ display:grid; grid-template-columns:220px 1fr; gap:18px; align-items:center; }
+.brand img{ height:58px; background:#fff; border-radius:12px; padding:6px 10px; box-shadow: var(--shadow); }
+.chips{
+  display:flex; flex-wrap:wrap; gap:12px;
+  background: rgba(89,101,118,.92);
+  padding:10px 12px; border-radius:14px; box-shadow: var(--shadow); color:#fff;
+}
+.chip{
+  display:inline-flex; align-items:center; gap:8px; color:#fff;
+  background: var(--pill); padding:8px 12px; border-radius:999px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.22);
+}
+.chip--ghost{ background: var(--panel-dark) }
+.chip--icon{ padding:8px 10px }
+
+/* ===== Mensajes ===== */
+.messages{ margin-top:6px }
+.msg{ background:#fff; border-left:6px solid #64748b; padding:10px 12px; border-radius:12px; box-shadow: var(--shadow); }
+.msg--success{ border-color:#16a34a } .msg--warning{ border-color:#f59e0b } .msg--error{ border-color:#b91c1c }
+
+/* ===== Página 3 columnas ===== */
+.page{ margin-top:8px }
+.layout{ display:grid; grid-template-columns:220px 380px 1fr; gap:var(--gap) }
+
+/* ===== Panel base ===== */
+.panel{
+  background: var(--panel); color:#fff; border-radius: var(--radius-xl);
+  padding:18px; box-shadow: var(--shadow-lg);
+}
+.panel-title{ margin:0; letter-spacing:.4px }
+.separator{ border:none; height:3px; background:#5e6676; border-radius:10px; margin:10px 0 16px }
+.content-placeholder{ min-height:420px }
+
+/* ===== Sidebar ===== */
+.sidebar{ display:grid; grid-template-rows:auto 1fr auto; }
+.sidebar-group{ display:grid; gap:12px }
+.btn-side{
+  width:100%; border:0; cursor:pointer; text-align:left; font-weight:700;
+  background: var(--panel-dark); color:#fff; padding:12px 14px; border-radius:999px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); transition:.15s;
+}
+.btn-side:hover{ transform: translateY(-1px); filter:brightness(1.05) }
+.btn-ghost{ display:block; text-decoration:none; }
+.profile{ display:grid; place-items:end }
+.avatar{
+  display:grid; place-items:center; width:44px; height:44px; border-radius:50%;
+  background:#6e7a8d; color:#fff; text-decoration:none; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18);
+}
+
+/* ===== Acciones ===== */
+.acciones-grid{ display:grid; gap:14px; max-width:420px }
+.btn-accion{
+  display:grid; grid-template-columns:1fr auto; align-items:center;
+  background:#375a7f; color:#fff; text-decoration:none;
+  padding:12px 14px; border-radius:12px; box-shadow: var(--shadow);
+  font-weight:800; text-transform:uppercase; letter-spacing:.25px;
+}
+.btn-accion i{ font-size:1.25rem; }
+
+/* ===== Tabla y badges (si las usas) ===== */
+.table{ width:100%; border-collapse:separate; border-spacing:0 8px }
+.table thead th{
+  text-align:left; color:#fff; background: var(--panel-dark);
+  padding:10px 12px; border-top-left-radius:10px; border-top-right-radius:10px;
+}
+.table tbody td{ background:#fff; color:var(--ink); padding:12px; box-shadow: var(--shadow) }
+.table tbody tr td:first-child{ border-top-left-radius:10px; border-bottom-left-radius:10px }
+.table tbody tr td:last-child{ border-top-right-radius:10px; border-bottom-right-radius:10px }
+.badge{ display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700 }
+.badge--proc{ background:#6e7a8d; color:#fff } .badge--pend{ background:#2a9d8f; color:#fff } .badge--done{ background:#4d6b88; color:#fff }
+
+/* ===== Formularios ===== */
+.form-card{ background:#fff; color:var(--ink); padding:18px; border-radius:16px; box-shadow: var(--shadow) }
+label{ display:block; margin:10px 0 6px; font-weight:600; color:#fff }
+
+/* ===== Login DEMO ===== */
+.auth-wrap{ min-height: calc(100vh - 140px); display: grid; place-items: center; }
+.auth-card{ width: 100%; max-width: 520px; }
+.input-with-icon{
+  display:flex; align-items:center; gap:8px;
+  background:#fff; border:1px solid #cbd5e1; border-radius:12px;
+  padding:8px 10px;
+}
+.input-with-icon i{ color:#6e7a8d; font-size:1.1rem; }
+
+/* ========== Animaciones para botones (hover/active/entrada) ========== */
+
+/* Transiciones base */
+.btn, .chip, .btn-accion, .btn-side, .btn-primary, .btn-secondary {
+  transition:
+    transform .18s cubic-bezier(.2,.8,.2,1),
+    box-shadow .18s cubic-bezier(.2,.8,.2,1),
+    filter .18s linear,
+    background-position .6s ease;
+  will-change: transform, box-shadow;
+}
+
+/* Hover: levanta, ilumina */
+.btn-accion:hover,
+.chip:hover,
+.btn-side:hover,
+.btn-primary:hover,
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(0,0,0,.18);
+  filter: brightness(1.05);
+}
+
+/* Active: “clic” con compresión sutil */
+.btn-accion:active,
+.chip:active,
+.btn-side:active,
+.btn-primary:active,
+.btn-secondary:active {
+  transform: translateY(0) scale(.98);
+  box-shadow: 0 6px 12px rgba(0,0,0,.18);
+}
+
+/* Sheen (destello) al pasar el mouse */
+.btn-accion, .chip, .btn-primary, .btn-secondary {
+  position: relative; overflow: hidden;
+}
+.btn-accion::after, .chip::after, .btn-primary::after, .btn-secondary::after {
+  content: "";
+  position: absolute; inset: 0 -150% 0 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.btn-accion:hover::after,
+.chip:hover::after,
+.btn-primary:hover::after,
+.btn-secondary:hover::after {
+  transform: translateX(100%);
+  transition: transform .9s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Accesibilidad: estado focus claro */
+.btn-accion:focus-visible,
+.chip:focus-visible,
+.btn-side:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 3px solid rgba(42,157,143,.8);
+  outline-offset: 2px;
+}
+
+/* Pulse opcional para destacar un CTA */
+.btn-accion.is-cta {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: translateY(-2px) scale(1);   box-shadow: 0 12px 22px rgba(0,0,0,.18); }
+  50%      { transform: translateY(-1px) scale(1.03); box-shadow: 0 18px 28px rgba(0,0,0,.24); }
+}
+
+/* Aparición suave (stagger) de los chips del topbar */
+.chips .chip { animation: popIn .35s cubic-bezier(.2,.8,.2,1) both; }
+.chips .chip:nth-child(1){ animation-delay:.02s }
+.chips .chip:nth-child(2){ animation-delay:.06s }
+.chips .chip:nth-child(3){ animation-delay:.10s }
+.chips .chip:nth-child(4){ animation-delay:.14s }
+.chips .chip:nth-child(5){ animation-delay:.18s }
+@keyframes popIn {
+  from { transform: translateY(-6px) scale(.96); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* Respeto a “reduce motion” del SO */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .btn-accion, .btn-side, .chips .chip {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Fuente Inter en todo el sitio */
+body {
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+}
+
+/* Ocultar topbar cuando el body tenga la clase is-login */
+.is-login .topbar-wrap { display: none; }
+
+/* Un look más “glass” para la topbar */
+.topbar-wrap.glass {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.topbar {
+  background: linear-gradient(135deg, rgba(89,101,118,.92), rgba(70,78,91,.92));
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+}
+
+/* Chips un poco más modernos */
+.chip {
+  letter-spacing: .2px;
+  font-weight: 600;
+}
+
+.is-login .topbar-wrap { display: none; }
+/* Layout de 3 columnas (sidebar / tarjeta / canvas) */
+.layout-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 1fr;
+  gap: 24px;
+}
+
+/* Panel derecho “lienzo” */
+.panel--ghost {
+  min-height: 520px;
+  background: rgba(255,255,255,.06);
+  border: 1px dashed rgba(255,255,255,.1);
+}
+
+/* Tarjeta central */
+.panel--card .menu-grid { margin-top: 12px; display: grid; gap: 14px; }
+.row-item { display: grid; grid-template-columns: 1fr 56px; align-items: center; gap: 12px; }
+.icon-col {
+  display:flex; align-items:center; justify-content:center;
+  height: 56px; width: 56px; border-radius: 14px;
+  background: rgba(255,255,255,.06);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  color: #092d44; /* azul más oscuro (icono) */
+  font-size: 22px;
+}
+
+/* Botón de acción más “mockup” */
+.btn-accion {
+  display:flex; align-items:center; gap:10px;
+  padding: 14px 18px; border-radius: 14px;
+  font-weight: 700; letter-spacing:.2px;
+  background:#1e4a6a; color:#fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.18);
+}
+.btn-accion i { font-size: 18px; }
+.btn-accion.is-cta { background:#1f5a86; }
+
+/* Avatar inferior */
+.avatar-pill {
+  height:42px; width:42px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:#1e4a6a; color:#fff; box-shadow:0 6px 14px rgba(0,0,0,.2);
+}
+
+/* Falsa ilustración inferior (iconos grandes) */
+.hero-illus{
+  margin-top: 18px; display:flex; gap:14px; color:#092d44; opacity:.9;
+}
+.hero-illus i{ font-size: 44px; }
+
+/* =========================================================
+   PATCH UI v2 — Coordinador + proporciones + responsive
+   (añadir al final del CSS existente)
+   =======================================================*/
+
+/* Un pelín más de ancho útil */
+.container { max-width: 1360px; }
+
+/* Grilla estilo mockup: sidebar 260, tarjeta 540, lienzo flexible */
+.layout-grid {
+  grid-template-columns: 260px 540px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+/* Panel central “tarjeta” (título marcado) */
+.panel--card .panel-title {
+  font-weight: 800;
+  letter-spacing: .3px;
+  margin-bottom: 2px;
+}
+
+/* Panel derecho “lienzo” más claro, con sensación de área de trabajo */
+.panel--ghost {
+  min-height: 520px;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border: 1px dashed rgba(255,255,255,.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), var(--shadow-lg);
+}
+
+/* ===== Píldoras locales (no confundir con .chips del topbar) ===== */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(89,101,118,.92);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+.tab--ghost { background: var(--panel-dark); }
+.tab i { font-size: 1rem; }
+
+/* Fila de acciones tipo mockup:
+   - el botón se “estira” y el icono va en la columna derecha */
+.menu-grid .row-item { grid-template-columns: 1fr 56px; }
+.menu-grid .row-item .btn-accion { width: 100%; }
+.menu-grid .row-item .icon-col {
+  height: 56px; width: 56px; border-radius: 14px;
+  background: rgba(255,255,255,.06);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center;
+  color: #092d44; font-size: 22px;
+}
+
+/* Botón de acción con jerarquía CTA para el 1º (registrar) */
+.menu-grid .row-item:first-child .btn-accion { background:#1f5a86; }
+
+/* Avatar inferior con más presencia */
+.avatar-pill {
+  height: 44px; width: 44px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius: 50%;
+  background:#1e4a6a; color:#fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+}
+
+/* Aparición suave de paneles (igual que los chips) */
+.panel { animation: panelIn .32s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes panelIn {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+/* ===== Responsivo ===== */
+@media (max-width: 1200px) {
+  .layout-grid { grid-template-columns: 240px 1fr 1fr; }
+}
+
+@media (max-width: 980px) {
+  .layout-grid { grid-template-columns: 1fr; }
+  .panel--ghost { min-height: 380px; }
+  .tabs { margin-bottom: 6px; }
+}
+
+@media (max-width: 640px) {
+  .chips { gap: 8px; padding: 8px 10px; }
+  .chip { padding: 7px 10px; }
+  .brand img { height: 52px; }
+  .btn-accion { padding: 12px 14px; }
+  .menu-grid .row-item { grid-template-columns: 1fr 48px; }
+  .menu-grid .row-item .icon-col { width: 48px; height: 48px; }
+}

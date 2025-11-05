@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block body_class %}is-login{% endblock %}
+{% block title %}Ingresar{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="panel auth-card">
+    <h1 class="panel-title" style="margin:0;">Bienvenido</h1>
+    <p style="margin:4px 0 10px; opacity:.9;">Ingresa tus credenciales para continuar (demo)</p>
+    <hr class="separator"/>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if request.GET.next %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% endif %}
+
+      <div class="field">
+        <label for="id_email">Correo</label>
+        <div class="input-with-icon">
+          <i class="bi bi-envelope"></i>
+          <input id="id_email" name="email" type="email" placeholder="nombre@empresa.com" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="id_password">Contraseña</label>
+        <div class="input-with-icon">
+          <i class="bi bi-lock"></i>
+          <input id="id_password" name="password" type="password" placeholder="********" required />
+          <button type="button" id="togglePwd" class="btn btn-link" style="margin-left:auto;">Mostrar</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+        <label style="display:flex; gap:8px; align-items:center; color:#fff; cursor:pointer;">
+          <input type="checkbox" name="remember" />
+          <span>Recordarme</span>
+        </label>
+        <a class="btn btn-link" href="#" title="Demo">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="btn btn-primary" type="submit">Ingresar</button>
+        <a class="btn btn-secondary" href="{% url 'asignaciones:home_selector' %}">Omitir (demo)</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function(){
+    const btn = document.getElementById('togglePwd');
+    const input = document.getElementById('id_password');
+    if (btn && input) {
+      btn.addEventListener('click', () => {
+        const isPwd = input.type === 'password';
+        input.type = isPwd ? 'text' : 'password';
+        btn.textContent = isPwd ? 'Ocultar' : 'Mostrar';
+      });
+    }
+  })();
+</script>
+{% endblock %}

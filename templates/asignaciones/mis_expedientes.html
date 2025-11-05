@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ title|default:"Mis expedientes" }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <h1 style="margin:0">{{ title|default:"Mis expedientes" }}</h1>
+    <div><a class="btn btn-secondary" href="{% url 'asignaciones:supervisor_menu' %}">← Volver</a></div>
+  </div>
+  <hr class="separator" />
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>SIGED</th>
+        <th>Tipo</th>
+        <th>Documento</th>
+        <th>Estado</th>
+        <th>Actualizado</th>
+        <th style="width:260px">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in expedientes %}
+        <tr>
+          <td>{{ e.siged }}</td>
+          <td>{{ e.get_tipo_supervision_display }}</td>
+          <td>{{ e.get_tipo_documento_display }}</td>
+          <td>
+            {% if e.estado == "EN_PROCESO" %}<span class="badge badge--proc">En proceso</span>
+            {% elif e.estado == "PENDIENTE" %}<span class="badge badge--pend">Pendiente</span>
+            {% elif e.estado == "CONCLUIDO" %}<span class="badge badge--done">Concluido</span>
+            {% else %}{{ e.get_estado_display }}{% endif %}
+          </td>
+          <td>{{ e.updated_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            <a class="btn btn-primary" href="{% url 'asignaciones:programar_visita' e.id %}">Programar visita</a>
+            <a class="btn btn-secondary" href="{% url 'asignaciones:concluir_expediente' e.id %}">Concluir</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6"><div class="form-card">Sin expedientes.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

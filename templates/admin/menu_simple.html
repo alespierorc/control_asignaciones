@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Administración (simple){% endblock %}
+
+{% block content %}
+<div class="layout-grid">
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side btn-ghost"><i class="bi bi-list-task"></i> Asignaciones</a>
+      <a class="btn-side btn-ghost"><i class="bi bi-geo-alt"></i> Gastos de viaje</a>
+    </div>
+    <div class="profile"><a class="avatar" href="#"><i class="bi bi-briefcase"></i></a></div>
+  </aside>
+
+  <section class="panel">
+    <h2 class="panel-title">ASIGNACIONES</h2>
+    <hr class="separator" />
+    <div class="acciones-grid">
+      <a class="btn-accion" href="{% url 'asignaciones:admin_simple_revisar' %}">
+        <i class="bi bi-search"></i> <span>Revisar expediente</span>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:admin_simple_descargar' %}">
+        <i class="bi bi-download"></i> <span>Descargar</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}

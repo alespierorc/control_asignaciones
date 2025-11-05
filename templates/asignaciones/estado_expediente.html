@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Estado{% endblock %}
+{% block content %}
+  <h1>Estado de mis expedientes</h1>
+  <ul>
+    {% for r in stats %}
+      <li>{{ r.estado }}: {{ r.total }}</li>
+    {% empty %}
+      <li>Sin datos.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

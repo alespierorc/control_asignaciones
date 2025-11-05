@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Asignaciones – Supervisor{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin:0">Panel de Asignaciones (Supervisor)</h1>
+  <hr class="separator"/>
+  <p>Desde aquí el supervisor puede acceder a Registrar, Revisar y Estado.</p>
+  <div class="acciones-grid" style="margin-top:10px;">
+    <a class="btn-accion" href="{% url 'asignaciones:supervisor_registrar' %}">
+      <span>Registrar datos de visita</span> <i class="bi bi-clipboard2-check"></i>
+    </a>
+    <a class="btn-accion" href="{% url 'asignaciones:supervisor_revisar' %}">
+      <span>Revisar</span> <i class="bi bi-search"></i>
+    </a>
+    <a class="btn-accion" href="{% url 'asignaciones:supervisor_estado' %}">
+      <span>Estado de expediente</span> <i class="bi bi-folder2"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}

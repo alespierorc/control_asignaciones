@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Inicio – Administración{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <h1 style="margin:0">Elige tu panel</h1>
+  <p style="opacity:.9">Selecciona el tablero de administración que deseas abrir</p>
+  <hr class="separator"/>
+  <div class="acciones-grid" style="grid-template-columns: repeat(2, minmax(260px, 1fr));">
+    <a class="btn-accion is-cta" href="{% url 'asignaciones:admin_general_menu' %}">
+      <i class="bi bi-shield-lock"></i> <span>Administrador general</span>
+    </a>
+    <a class="btn-accion" href="{% url 'asignaciones:admin_simple_menu' %}">
+      <i class="bi bi-building"></i> <span>Administración (simple)</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

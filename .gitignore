@@ -1,0 +1,29 @@
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Entornos / dependencias
+.venv/
+env/
+venv/
+pip-wheel-metadata/
+
+# Django
+db.sqlite3
+/media/
+staticfiles/
+
+# Variables/secretos
+.env
+.env.*
+*.secret
+*.key
+
+# Sistema/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Coordinador · Asignaciones{% endblock %}
+
+{% block content %}
+
+<!-- Píldoras locales tipo mockup -->
+<div class="tabs">
+  <span class="tab"><i class="bi bi-diagram-3"></i> Asignaciones</span>
+  <span class="tab tab--ghost"><i class="bi bi-geo-alt"></i> Gastos de viaje</span>
+</div>
+
+<div class="layout-grid">
+  <!-- Lateral -->
+  <aside class="sidebar panel">
+    <div class="logo-slot" style="margin-bottom:10px;">
+      <img src="{% static 'img/logo_serminco.png' %}" alt="Logo" onerror="this.style.display='none'">
+    </div>
+
+    <nav class="sidebar-group">
+      <a class="btn-side active" href="#"><i class="bi bi-list-check"></i> <span>Asignaciones</span></a>
+      <a class="btn-side" href="#"><i class="bi bi-geo-alt"></i> <span>Gastos de viaje</span></a>
+    </nav>
+
+    <div class="side-footer" style="display:flex; justify-content:flex-end; margin-top:14px;">
+      <span class="avatar-pill"><i class="bi bi-person"></i></span>
+    </div>
+  </aside>
+
+  <!-- Tarjeta central -->
+  <section class="panel panel--card">
+    <h2 class="panel-title">ASIGNACIONES</h2>
+    <hr class="separator" />
+
+    <div class="menu-grid">
+      <!-- Registrar expedientes -->
+      <div class="row-item">
+        <a href="{% url 'asignaciones:coordinador_registrar' %}" class="btn-accion is-cta">
+          <i class="bi bi-clipboard2-plus"></i>
+          <span>Registrar expedientes</span>
+        </a>
+        <span class="icon-col"><i class="bi bi-file-earmark-text"></i></span>
+      </div>
+
+      <!-- Revisar expediente -->
+      <div class="row-item">
+        <a href="{% url 'asignaciones:coordinador_revisar' %}" class="btn-accion">
+          <i class="bi bi-search"></i>
+          <span>Revisar expediente</span>
+        </a>
+        <span class="icon-col"><i class="bi bi-file-earmark-search"></i></span>
+      </div>
+
+      <!-- Ilustración inferior (opcional) -->
+      <div class="hero-illus">
+        <i class="bi bi-journal-text"></i>
+        <i class="bi bi-journal-plus"></i>
+        <i class="bi bi-patch-check"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lienzo derecho -->
+  <section class="panel panel--ghost"></section>
+</div>
+{% endblock %}

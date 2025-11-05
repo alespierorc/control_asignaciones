@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Coordinador · Asignaciones{% endblock %}
+
+{% block content %}
+<div class="layout">
+  <!-- Sidebar izquierda -->
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side btn-ghost" href="#"><i class="bi bi-list-task"></i> Asignaciones</a>
+      <a class="btn-side btn-ghost" href="#"><i class="bi bi-geo-alt"></i> Gastos de viaje</a>
+    </div>
+    <div class="profile">
+      <a class="avatar" href="#"><i class="bi bi-person"></i></a>
+    </div>
+  </aside>
+
+  <!-- Tarjeta central -->
+  <section class="panel">
+    <h2 class="panel-title">ASIGNACIONES</h2>
+    <hr class="separator" />
+
+    <div class="acciones-grid">
+      <a class="btn-accion is-cta" href="{% url 'asignaciones:coordinador_registrar' %}">
+        <i class="bi bi-clipboard2-plus"></i>
+        <span>Registrar expedientes</span>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:coordinador_revisar' %}">
+        <i class="bi bi-search"></i>
+        <span>Revisar expediente</span>
+      </a>
+    </div>
+
+    <!-- Opcional: iconitos decorativos, como en supervisor -->
+    <div class="hero-illus">
+      <i class="bi bi-journal-text"></i>
+      <i class="bi bi-journal-plus"></i>
+      <i class="bi bi-patch-check"></i>
+    </div>
+  </section>
+
+  <!-- Lienzo derecho -->
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}

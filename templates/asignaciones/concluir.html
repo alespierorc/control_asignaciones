@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Concluir expediente{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin:0">Concluir expediente</h1>
+  <p>Expediente: <strong>{{ exp.siged }}</strong> · Visita: <strong>{{ exp.fecha_visita|date:"Y-m-d" }}</strong> · Estado: <strong>{{ exp.get_estado_display }}</strong></p>
+  <hr class="separator" />
+
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <label for="{{ form.fecha_derivacion.id_for_label }}">Fecha de derivación</label>
+      {{ form.fecha_derivacion }}
+      {% if form.fecha_derivacion.errors %}<div style="color:#b91c1c; margin-top:6px">{{ form.fecha_derivacion.errors|join:", " }}</div>{% endif %}
+
+      <label for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+      {{ form.observaciones }}
+      {% if form.observaciones.errors %}<div style="color:#b91c1c; margin-top:6px">{{ form.observaciones.errors|join:", " }}</div>{% endif %}
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn btn-primary" type="submit">Concluir</button>
+        <a class="btn btn-secondary" href="{% url 'asignaciones:supervisor_revisar' %}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

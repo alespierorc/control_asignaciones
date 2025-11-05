@@ -1,0 +1,63 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Control de Asignaciones{% endblock %}</title>
+
+  <!-- Fuente moderna -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Iconos y estilos -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+  {# === TOPBAR (oculta automáticamente en la vista 'login') === #}
+  {% if request.resolver_match and request.resolver_match.url_name != 'login' %}
+  <header class="topbar-wrap glass" aria-label="Barra superior de navegación">
+    <div class="topbar container">
+      <div class="brand">
+        <img src="{% static 'img/logo_serminco.png' %}" alt="Logo Serminco" onerror="this.style.display='none'">
+      </div>
+
+      <nav class="chips" aria-label="Accesos rápidos">
+        <a class="chip" href="{% url 'asignaciones:home_selector' %}">
+          <i class="bi bi-house-door"></i> Menú principal
+        </a>
+        <a class="chip chip--ghost" href="{% url 'asignaciones:reportes' %}">
+          <i class="bi bi-bar-chart"></i> Reportes
+        </a>
+        <a class="chip chip--ghost" href="{% url 'asignaciones:anuncios' %}">
+          <i class="bi bi-megaphone"></i> Anuncios
+        </a>
+        <a class="chip chip--ghost" href="{% url 'asignaciones:bandeja' %}">
+          <i class="bi bi-envelope"></i> Bandeja de entrada
+        </a>
+        <a class="chip chip--icon" href="{% url 'asignaciones:login' %}" title="Ingresar">
+          <i class="bi bi-box-arrow-in-right"></i>
+        </a>
+      </nav>
+    </div>
+  </header>
+  {% endif %}
+
+  {% if messages %}
+    <div class="container messages" role="status" aria-live="polite">
+      {% for m in messages %}
+        <div class="msg msg--{{ m.tags }}">{{ m }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main class="container page">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Menú – Supervisor{% endblock %}
+
+{% block content %}
+<div class="layout">
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side" href="{% url 'asignaciones:supervisor_registrar_visita' %}">
+        <i class="bi bi-clipboard2-check"></i> Registrar datos de visita
+      </a>
+      <a class="btn-side" href="{% url 'asignaciones:supervisor_revisar' %}">
+        <i class="bi bi-search"></i> Revisar
+      </a>
+      <a class="btn-side" href="{% url 'asignaciones:supervisor_estado_exp
+ediente' %}">
+        <i class="bi bi-folder2"></i> Estado de expediente
+      </a>
+    </div>
+    <div class="profile"><a class="avatar" href="#"><i class="bi bi-person"></i></a></div>
+  </aside>
+
+  <section class="panel acciones">
+    <h2 class="panel-title">ASIGNACIONES</h2>
+    <hr class="separator" />
+    <div class="acciones-grid">
+      <a class="btn-accion" href="{% url 'asignaciones:supervisor_registrar_visita' %}">
+        <span>Registrar datos de visita</span><i class="bi bi-clipboard2-check"></i>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:supervisor_revisar' %}">
+        <span>Revisar</span><i class="bi bi-search"></i>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:supervisor_estado_expediente' %}">
+        <span>Estado de expediente</span><i class="bi bi-folder2"></i>
+      </a>
+    </div>
+  </section>
+
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}

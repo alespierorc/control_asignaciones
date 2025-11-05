@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Admin general · Asignaciones{% endblock %}
+
+{% block content %}
+<div class="layout-grid">
+  <!-- Lateral -->
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side btn-ghost"><i class="bi bi-list-task"></i> Asignaciones</a>
+      <a class="btn-side btn-ghost"><i class="bi bi-geo-alt"></i> Gastos de viaje</a>
+    </div>
+    <div class="profile"><a class="avatar" href="#"><i class="bi bi-person-badge"></i></a></div>
+  </aside>
+
+  <!-- Tarjeta central -->
+  <section class="panel">
+    <h2 class="panel-title">ASIGNACIONES</h2>
+    <hr class="separator" />
+    <div class="acciones-grid">
+      <!-- Accesos propios (general) -->
+      <a class="btn-accion" href="{% url 'asignaciones:admin_general_revisar' %}">
+        <i class="bi bi-search"></i> <span>Revisar expediente</span>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:admin_general_descargar' %}">
+        <i class="bi bi-download"></i> <span>Descargar</span>
+      </a>
+
+      <!-- Accesos a menús de otros roles (también disponibles aquí) -->
+      <a class="btn-accion" href="{% url 'asignaciones:coordinador_menu' %}">
+        <i class="bi bi-diagram-3"></i> <span>Panel Coordinador</span>
+      </a>
+      <a class="btn-accion" href="{% url 'asignaciones:supervisor_panel' %}">
+        <i class="bi bi-person-check"></i> <span>Panel Supervisor</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Lienzo derecho -->
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}

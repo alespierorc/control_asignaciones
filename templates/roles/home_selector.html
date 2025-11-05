@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Menú principal{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1 style="margin:0">Elige un inicio</h1>
+  <p style="opacity:.9">Selecciona el home que quieres visualizar</p>
+  <hr class="separator"/>
+
+  <div class="acciones-grid" style="grid-template-columns: repeat(3, minmax(220px, 1fr));">
+    <a class="btn-accion" href="{% url 'asignaciones:home_supervisor' %}">
+      <span>Home Supervisor</span> <i class="bi bi-person-check"></i>
+    </a>
+    <a class="btn-accion" href="{% url 'asignaciones:home_coordinador' %}">
+      <span>Home Coordinador</span> <i class="bi bi-diagram-3"></i>
+    </a>
+    <a class="btn-accion" href="{% url 'asignaciones:home_admin' %}">
+      <span>Home Administración</span> <i class="bi bi-gear"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Inicio – Coordinador{% endblock %}
+{% block content %}
+<div class="layout">
+  <aside class="sidebar panel">
+    <div class="sidebar-group">
+      <a class="btn-side btn-ghost" href="#"><i class="bi bi-people"></i> Asignar expedientes</a>
+      <a class="btn-side btn-ghost" href="#"><i class="bi bi-clipboard-data"></i> Reportes de supervisión</a>
+    </div>
+    <div class="profile"><a class="avatar" href="#"><i class="bi bi-person"></i></a></div>
+  </aside>
+
+  <section class="panel">
+    <h2 class="panel-title">Resumen general</h2>
+    <hr class="separator" />
+    <p style="margin:0">Aquí irán KPIs, gráficos y estado de asignaciones por supervisor.</p>
+  </section>
+
+  <section class="panel content-placeholder"></section>
+</div>
+{% endblock %}
