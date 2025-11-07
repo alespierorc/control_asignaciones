@@ -1,46 +1,84 @@
 {% extends "base.html" %}
-{% block title %}{{ title|default:"Mis expedientes" }}{% endblock %}
-{% block content %}
-<div class="panel">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-    <h1 style="margin:0">{{ title|default:"Mis expedientes" }}</h1>
-    <div><a class="btn btn-secondary" href="{% url 'asignaciones:supervisor_menu' %}">← Volver</a></div>
-  </div>
-  <hr class="separator" />
+{% block title %}Registrar datos de visita{% endblock %}
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>SIGED</th>
-        <th>Tipo</th>
-        <th>Documento</th>
-        <th>Estado</th>
-        <th>Actualizado</th>
-        <th style="width:260px">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for e in expedientes %}
-        <tr>
-          <td>{{ e.siged }}</td>
-          <td>{{ e.get_tipo_supervision_display }}</td>
-          <td>{{ e.get_tipo_documento_display }}</td>
-          <td>
-            {% if e.estado == "EN_PROCESO" %}<span class="badge badge--proc">En proceso</span>
-            {% elif e.estado == "PENDIENTE" %}<span class="badge badge--pend">Pendiente</span>
-            {% elif e.estado == "CONCLUIDO" %}<span class="badge badge--done">Concluido</span>
-            {% else %}{{ e.get_estado_display }}{% endif %}
-          </td>
-          <td>{{ e.updated_at|date:"Y-m-d H:i" }}</td>
-          <td>
-            <a class="btn btn-primary" href="{% url 'asignaciones:programar_visita' e.id %}">Programar visita</a>
-            <a class="btn btn-secondary" href="{% url 'asignaciones:concluir_expediente' e.id %}">Concluir</a>
-          </td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6"><div class="form-card">Sin expedientes.</div></td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% block content %}
+<div class="layout-grid">
+  <!-- Sidebar compacta -->
+  <aside class="sidebar panel" style="padding:14px; display:grid; grid-template-rows:auto 1fr auto; gap:14px; min-width:220px;">
+    <a href="{% url 'asignaciones:supervisor_menu' %}" class="btn-side" style="display:inline-flex; align-items:center; gap:8px; width:auto; padding:8px 12px;">
+      <i class="bi bi-house-door"></i> Menú
+    </a>
+    <div></div>
+    <a class="avatar" href="#"><i class="bi bi-person"></i></a>
+  </aside>
+
+  <!-- Tarjeta central con guía -->
+  <section class="panel" style="max-width:520px;">
+    <h2 class="panel-title" style="margin-bottom:6px;">Registrar datos de visita</h2>
+    <hr class="separator"/>
+    <div class="form-card" style="background:rgba(255,255,255,.08); color:#fff;">
+      <div style="display:grid; grid-template-columns: 44px 1fr; gap:12px; align-items:start;">
+        <i class="bi bi-clipboard2-check" style="font-size:28px;"></i>
+        <div>
+          <h4 style="margin:0 0 6px 0;">Supervisor</h4>
+          <p style="margin:0; opacity:.95">
+            Selecciona el expediente que **no tiene fecha de visita** y regístrala en la pantalla de detalle.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card" style="margin-top:12px; background:rgba(255,255,255,.06); color:#fff;">
+      <div style="display:grid; grid-template-columns: 44px 1fr; gap:12px; align-items:start;">
+        <i class="bi bi-info-circle" style="font-size:24px;"></i>
+        <div>
+          <h4 style="margin:0 0 6px 0;">Recomendación</h4>
+          <p style="margin:0; opacity:.95">
+            Verifica estado, oficina y contrato antes de asignar la fecha. Si corresponde, coordina con el responsable del servicio.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabla de expedientes -->
+  <section class="panel">
+    <h3 class="panel-title" style="margin-bottom:6px;">Mis expedientes sin fecha</h3>
+    <hr class="separator"/>
+    {% if expedientes %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>SIGED</th>
+            <th>Oficina</th>
+            <th>Contrato</th>
+            <th>Tipo supervisión</th>
+            <th>Estado</th>
+            <th style="width:1%"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expedientes %}
+          <tr>
+            <td>{{ e.siged }}</td>
+            <td>{{ e.oficina }}</td>
+            <td>{{ e.contrato }}</td>
+            <td>{{ e.tipo_supervision }}</td>
+            <td><span class="badge badge--pend">{{ e.estado }}</span></td>
+            <td>
+              <a class="btn-accion" href="{% url 'asignaciones:programar_visita' e.pk %}" style="padding:8px 12px; border-radius:10px;">
+                <i class="bi bi-calendar-plus"></i> <span>Registrar visita</span>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="form-card" style="background:rgba(255,255,255,.06); color:#fff;">
+        No tienes expedientes pendientes de visita.
+      </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

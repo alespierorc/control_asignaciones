@@ -1,23 +1,208 @@
 {% extends "base.html" %}
-{% block title %}Programar visita{% endblock %}
-{% block content %}
-<div class="panel">
-  <h1 style="margin:0">Programar visita</h1>
-  <p>Expediente: <strong>{{ exp.siged }}</strong> · Estado: <strong>{{ exp.get_estado_display }}</strong></p>
-  <hr class="separator" />
+{% load static %}
 
-  <div class="form-card">
-    <form method="post" novalidate>
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <label for="{{ form.fecha_visita.id_for_label }}">Fecha de visita</label>
-      {{ form.fecha_visita }}
-      {% if form.fecha_visita.errors %}<div style="color:#b91c1c; margin-top:6px">{{ form.fecha_visita.errors|join:", " }}</div>{% endif %}
-      <div style="display:flex; gap:10px; margin-top:14px;">
-        <button class="btn btn-primary" type="submit">Guardar</button>
-        <a class="btn btn-secondary" href="{% url 'asignaciones:supervisor_registrar_visita' %}">Cancelar</a>
-      </div>
-    </form>
-  </div>
+{% block title %}Registrar datos de visita · Supervisor{% endblock %}
+
+{% block content %}
+<style>
+  /* Sidebar mini (botón Menú) */
+  .mini-rail{display:grid;grid-template-rows:1fr auto;gap:12px;background:var(--panel);
+             border-radius:18px;padding:14px;min-width:180px;box-shadow:var(--shadow-lg)}
+  .mini-rail .menu-chip{display:flex;align-items:center;gap:8px;background:#2c3e55;color:#fff;
+             border:0;border-radius:999px;padding:10px 12px;font-weight:700;text-decoration:none;
+             box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+  .mini-rail .avatar-pill{height:40px;width:40px;border-radius:50%;display:flex;align-items:center;
+             justify-content:center;background:#1e4a6a;color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.2)}
+
+  /* Layout */
+  .grid-page{display:grid;grid-template-columns:200px 1fr;gap:18px}
+  .two-col{display:grid;grid-template-columns:360px 1fr;gap:18px}
+
+  /* Tarjetas guía compactas */
+  .info-card{background:var(--panel);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+  .info-card h4{margin:0 0 8px 0;font-size:.95rem;letter-spacing:.4px}
+  .info-card p{margin:0;opacity:.95}
+  .info-icon{font-size:22px;margin-right:8px;vertical-align:-3px;opacity:.9}
+
+  /* Formulario principal */
+  .form-card{background:var(--panel);border-radius:16px;padding:16px;box-shadow:var(--shadow-lg)}
+  .form-card h3{margin:0 0 10px 0}
+  .field-row{display:grid;grid-template-columns:220px 1fr;gap:10px;align-items:center;margin:10px 0}
+  .ro{background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.18);color:#eef;
+      padding:10px;border-radius:10px}
+  .sel-in, .date-in{background:#1e3b56;color:#fff;border:1px solid rgba(255,255,255,.12);
+      padding:10px;border-radius:10px;width:100%}
+  .sel-in option{color:#0f172a}
+  .btn-primary{display:inline-flex;align-items:center;gap:8px;background:#113c5c;color:#fff;border:0;
+      border-radius:12px;padding:12px 18px;font-weight:800;letter-spacing:.3px;
+      box-shadow:0 10px 20px rgba(0,0,0,.2);cursor:pointer}
+
+  /* Toggle Visita (sí / no) */
+  .visit-toggle{display:flex;gap:10px}
+  .visit-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:8px 12px;
+      cursor:pointer;user-select:none;border:1px solid rgba(255,255,255,.15);background:#2a3e55;color:#fff}
+  .visit-pill input{appearance:none;width:14px;height:14px;border-radius:3px;
+      border:1px solid rgba(255,255,255,.6);display:inline-block;position:relative}
+  .visit-pill input:checked{background:#15a34a;border-color:#15a34a}
+  .visit-pill.disabled{opacity:.55;pointer-events:none}
+</style>
+
+<div class="panel">
+  <h1 style="margin:0">Registrar datos de visita</h1>
+  <hr class="separator">
 </div>
+
+<div class="grid-page">
+
+  <!-- Sidebar mini -->
+  <aside class="mini-rail">
+    <a class="menu-chip" href="{% url 'asignaciones:home_supervisor' %}">
+      <i class="bi bi-arrow-left-short"></i> Menú
+    </a>
+    <div style="display:flex;justify-content:center">
+      <span class="avatar-pill"><i class="bi bi-person"></i></span>
+    </div>
+  </aside>
+
+  <!-- Contenido -->
+  <section class="two-col">
+    <!-- Guías -->
+    <div class="info-col">
+      <div class="info-card">
+        <h4><i class="bi bi-clipboard2-check info-icon"></i>Supervisor</h4>
+        <p>Selecciona el <strong>N.º SIGED</strong> del expediente, confirma el tipo de supervisión,
+           marca si corresponde <em>Visita</em> y define la <strong>fecha de visita</strong>.</p>
+      </div>
+      <div class="info-card">
+        <h4><i class="bi bi-lightbulb info-icon"></i>Indicaciones</h4>
+        <p>Los datos se completan automáticamente a partir del expediente registrado por el Coordinador.
+           Si cambias de SIGED, la página recargará el expediente seleccionado.</p>
+      </div>
+      <div class="info-card">
+        <h4><i class="bi bi-journal-check info-icon"></i>Recomendación</h4>
+        <p>Coordina con el establecimiento antes de fijar la fecha y añade la evidencia en tu informe.</p>
+      </div>
+    </div>
+
+    <!-- Formulario real -->
+    <div class="form-card">
+      <h3>Datos del expediente</h3>
+
+      <!-- Selector de SIGED (mueve a la URL del expediente elegido) -->
+      <div class="field-row">
+        <label>N.º SIGED</label>
+        <select id="sigedSelect" class="sel-in"
+                data-url-base="{% url 'asignaciones:programar_visita' 999999 %}">
+          {% for e in expedientes_all %}
+            <option value="{{ e.id }}"
+                    data-tipo="{{ e.get_tipo_supervision_display }}">
+              {{ e.siged }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label>Tipo de supervisión</label>
+        <div id="tipoSup" class="ro">{{ exp.get_tipo_supervision_display }}</div>
+      </div>
+
+      <!-- Toggle Visita (Sí/No) -->
+      <div class="field-row">
+        <label>Visita</label>
+        <div class="visit-toggle" id="visitToggle">
+          <label class="visit-pill" id="pill-si">
+            <input type="checkbox" id="chkSi"> Sí
+          </label>
+          <label class="visit-pill" id="pill-no">
+            <input type="checkbox" id="chkNo"> No
+          </label>
+        </div>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="field-row">
+          <label>Fecha de visita</label>
+          {{ form.fecha_visita|add_class:"date-in" }}
+          {% if form.fecha_visita.errors %}
+            <div class="msg msg--error" style="grid-column: 2 / -1; margin-top:6px">
+              {{ form.fecha_visita.errors.as_text }}
+            </div>
+          {% endif %}
+        </div>
+
+        <button class="btn-primary" type="submit">
+          <i class="bi bi-save2"></i> Guardar
+        </button>
+      </form>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // 1) Marcar el SIGED actual y preparar navegación por cambio
+  (function(){
+    const sel = document.getElementById('sigedSelect');
+    if(!sel) return;
+
+    // Seleccionar el actual
+    sel.value = "{{ exp.id }}";
+
+    // Mostrar tipo de supervisión del option
+    const setTipo = () => {
+      const opt = sel.options[sel.selectedIndex];
+      const tipo = opt ? opt.getAttribute('data-tipo') : '';
+      document.getElementById('tipoSup').textContent = tipo || '—';
+    };
+    setTipo();
+
+    // Al cambiar SIGED, ir a la URL del elegido
+    sel.addEventListener('change', () => {
+      const base = sel.getAttribute('data-url-base'); // .../supervisor/programar/999999/
+      const id = sel.value;
+      const url = base.replace('999999', id);
+      window.location.href = url;
+    });
+  })();
+
+  // 2) Toggle Visita: sí/no (mutuamente excluyentes con desbloqueo al desmarcar)
+  (function(){
+    const si  = document.getElementById('chkSi');
+    const no  = document.getElementById('chkNo');
+    const pillSi = document.getElementById('pill-si');
+    const pillNo = document.getElementById('pill-no');
+
+    const refresh = () => {
+      pillSi.classList.toggle('disabled', no.checked);
+      pillNo.classList.toggle('disabled', si.checked);
+      si.disabled = no.checked;
+      no.disabled = si.checked;
+    };
+
+    si.addEventListener('click', (e) => {
+      if (si.checked) {
+        no.checked = false;
+      } else {
+        // Se liberan ambos
+        no.disabled = false;
+        si.disabled = false;
+      }
+      refresh();
+    });
+
+    no.addEventListener('click', (e) => {
+      if (no.checked) {
+        si.checked = false;
+      } else {
+        si.disabled = false;
+        no.disabled = false;
+      }
+      refresh();
+    });
+
+    refresh();
+  })();
+</script>
 {% endblock %}

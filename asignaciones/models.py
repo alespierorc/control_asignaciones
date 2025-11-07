@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 
 def home(request):
-    # Si quieres que la raíz vaya directo al menú del supervisor:
-    # return redirect("asignaciones:supervisor_menu")
     return render(request, "home.html")
 
 class OficinaRegional(models.Model):
@@ -36,6 +34,7 @@ class Expediente(models.Model):
         ("OFICIO", "Oficio"),
         ("OTRO", "Otro"),
     ]
+    VISITA_CHOICES = [("SI", "Sí"), ("NO", "No")]
 
     siged = models.CharField("N.º SIGED", max_length=50, unique=True)
     oficina = models.ForeignKey(OficinaRegional, on_delete=models.PROTECT)
@@ -45,6 +44,9 @@ class Expediente(models.Model):
     tipo_supervision = models.CharField(max_length=20, choices=TIPO_SUPERVISION)
     tipo_documento   = models.CharField(max_length=20, choices=TIPO_DOCUMENTO)
     carta_linea      = models.CharField(max_length=100, blank=True)
+
+    # NUEVO: indicador de “¿se realizará visita?” (Sí/No)
+    visita = models.CharField(max_length=2, choices=VISITA_CHOICES, blank=True)
 
     estado = models.CharField(max_length=20, choices=ESTADOS, default="EN_PROCESO")
     fecha_asignacion = models.DateField(auto_now_add=True)

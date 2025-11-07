@@ -383,3 +383,13 @@ body {
   .menu-grid .row-item { grid-template-columns: 1fr 48px; }
   .menu-grid .row-item .icon-col { width: 48px; height: 48px; }
 }
+/* Inputs “form-control” sobre tu tema */
+.form-control, input[type="date"], select, textarea {
+  width: 100%;
+  background: #1e2b3b;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+input[disabled], .form-control[disabled] { opacity:.85; }

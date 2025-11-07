@@ -1,9 +1,128 @@
 {% extends "base.html" %}
-{% block title %}Registrar datos de visita – Supervisor{% endblock %}
+{% load static %}
+{% block title %}Supervisor · Registrar datos de visita{% endblock %}
+
 {% block content %}
-<div class="panel">
-  <h1 style="margin:0">Registrar datos de visita</h1>
-  <hr class="separator"/>
-  <p>Demo de la pantalla donde se registrarían los datos de visita.</p>
+<style>
+  .side-mini { background: var(--panel); border-radius: 22px; padding: 16px; box-shadow: var(--shadow-lg); }
+  .side-mini .pill { height: 220px; border-radius: 999px; background: rgba(0,0,0,.18); display:grid; place-items:center; margin: 6px 0 16px; }
+  .side-mini .mini-btn { display:inline-flex; align-items:center; gap:8px; background:#1e3b56; color:#fff; border:0; border-radius:12px; padding:8px 12px; font-weight:700; cursor:pointer; }
+  .side-mini .avatar { width:42px; height:42px; border-radius:50%; background:#1e4a6a; display:grid; place-items:center; color:#fff; margin-top: 14px; box-shadow: var(--shadow); }
+  .grid3 { display:grid; grid-template-columns: 240px 400px 1fr; gap: 20px; align-items:start; }
+  .card { background: var(--panel); border-radius: 18px; padding: 16px; color:#fff; box-shadow: var(--shadow-lg); }
+  .card h3 { margin: 0 0 10px 0; }
+  .card small { opacity:.9; }
+  .form-wrap { background: var(--panel); border-radius: 18px; padding: 16px; box-shadow: var(--shadow-lg); color:#fff; }
+  .form-grid { display:grid; grid-template-columns: 220px 1fr; gap: 14px 16px; align-items:center; }
+  .readonly-box, .select-in, .date-in {
+    background:#133147; color:#fff; border:1px solid rgba(255,255,255,.12);
+    border-radius:12px; padding: 10px 12px;
+  }
+  .select-in { width:100%; }
+  .date-in { width: 240px; }
+  .label { font-weight:800; letter-spacing:.2px }
+  .muted { opacity:.85 }
+  .pill-cta { background:#113c5c; border:0; color:#fff; border-radius:14px; padding:12px 16px; font-weight:800; cursor:pointer; }
+  .pill-cta i { margin-right:6px }
+  .switch-wrap { display:flex; align-items:center; gap:12px; }
+  .switch-wrap .chk { appearance:none; width:22px; height:22px; border-radius:5px; background:#1f3f5c; border:1px solid rgba(255,255,255,.18); position:relative; cursor:pointer; }
+  .switch-wrap .chk:checked::after { content:""; position:absolute; inset:4px; background:#30d158; border-radius:3px; }
+  .hint { font-size:12px; opacity:.85 }
+  @media (max-width: 1100px){ .grid3{ grid-template-columns: 1fr; } }
+</style>
+
+<h1 style="margin:0">Registrar datos de visita</h1>
+<hr class="separator" />
+
+<div class="grid3">
+  <aside class="side-mini">
+    <div class="pill"></div>
+    <a href="{% url 'asignaciones:supervisor_panel' %}" class="mini-btn"><i class="bi bi-list"></i> Menú</a>
+    <div class="avatar"><i class="bi bi-person"></i></div>
+  </aside>
+
+  <section class="card">
+    <h3><i class="bi bi-clipboard-check"></i> Supervisor</h3>
+    <small>Registra la <strong>fecha de visita</strong> para el expediente seleccionado.</small>
+    <div style="height:12px"></div>
+    <h3><i class="bi bi-lightbulb"></i> Indicaciones</h3>
+    <small>Verifica el <strong>N.º SIGED</strong> y el <strong>Tipo de supervisión</strong> antes de guardar.</small>
+    <div style="height:12px"></div>
+    <h3><i class="bi bi-ui-checks-grid"></i> Recomendación</h3>
+    <small>Adjunta evidencia en el informe final y mantén actualizado el estado del expediente.</small>
+  </section>
+
+  <section class="form-wrap">
+    {% if expedientes_all %}
+      <form method="post" id="visitaForm">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="label">N.º SIGED</div>
+          <div>
+            <select id="sigedSel" class="select-in">
+              {% for e in expedientes_all %}
+                <option value="{{ e.id }}" {% if exp and e.id == exp.id %}selected{% endif %}>{{ e.siged }}</option>
+              {% endfor %}
+            </select>
+            <div class="hint" style="margin-top:4px">Cambia el SIGED para cargar otro expediente.</div>
+          </div>
+
+          <div class="label">Tipo de supervisión</div>
+          <div class="readonly-box">{% if exp %}{{ exp.get_tipo_supervision_display }}{% else %}-{% endif %}</div>
+
+          <div class="label">Visita</div>
+          <div class="switch-wrap">
+            <label><input type="checkbox" class="chk" id="visitaSi"><span class="muted"> Sí</span></label>
+            <label><input type="checkbox" class="chk" id="visitaNo"><span class="muted"> No</span></label>
+            <input type="hidden" name="visita" id="visitaHidden" value="{{ exp.visita|default:'' }}">
+          </div>
+
+          <div class="label">Fecha de visita</div>
+          <div>
+            <input type="date" name="fecha_visita" class="date-in" value="{{ form.fecha_visita.value|default_if_none:'' }}">
+            <div class="hint" style="margin-top:4px">Selecciona la fecha programada de la visita.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <button type="submit" class="pill-cta"><i class="bi bi-save"></i> Guardar</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="msg msg--warning">No tienes expedientes asignados.</div>
+    {% endif %}
+  </section>
 </div>
+
+<script>
+  (function(){
+    const sel = document.getElementById('sigedSel');
+    if (sel) sel.addEventListener('change', () => {
+      const id = sel.value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('exp', id);
+      window.location = url.toString();
+    });
+  })();
+
+  (function(){
+    const si = document.getElementById('visitaSi');
+    const no = document.getElementById('visitaNo');
+    const hid = document.getElementById('visitaHidden');
+    if(!si || !no || !hid) return;
+
+    // Estado inicial segun valor guardado
+    const init = (hid.value || "").toUpperCase();
+    if (init === "SI") { si.checked = true; no.checked = false; }
+    else if (init === "NO") { no.checked = true; si.checked = false; }
+
+    function sync(val){
+      if(val === 'SI'){ si.checked = true; no.checked = false; hid.value = 'SI'; }
+      else if(val === 'NO'){ no.checked = true; si.checked = false; hid.value = 'NO'; }
+      else { si.checked = false; no.checked = false; hid.value = ''; }
+    }
+    si.addEventListener('click', () => sync(si.checked ? 'SI' : 'NONE'));
+    no.addEventListener('click', () => sync(no.checked ? 'NO' : 'NONE'));
+  })();
+</script>
 {% endblock %}
