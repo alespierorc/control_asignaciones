@@ -14,11 +14,7 @@ class ContratoAdmin(admin.ModelAdmin):
 
 @admin.register(Expediente)
 class ExpedienteAdmin(admin.ModelAdmin):
-    # Ojo: aquí NO hay 'codigo'. Usamos campos reales del modelo.
-    list_display = (
-        "siged", "oficina", "contrato", "supervisor",
-        "tipo_supervision", "visita", "estado", "fecha_visita",
-    )
-    list_filter = ("estado", "tipo_supervision", "oficina", "visita")
-    search_fields = ("siged", "contrato__numero", "supervisor__username")
-    autocomplete_fields = ("oficina", "contrato", "supervisor")
+    list_display = ("siged", "codigo", "supervisor", "tipo_supervision", "estado", "visita_decision", "fecha_visita", "updated_at")
+    search_fields = ("siged", "codigo")
+    list_filter = ("estado", "tipo_supervision", "visita_decision", "oficina")
+    ordering = ("-updated_at",)

@@ -5,15 +5,19 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from .models import Expediente
-from .forms import ProgramarVisitaForm, ConcluirForm, CoordinadorRegistroForm
+from .forms import (
+    ProgramarVisitaForm,
+    ConcluirForm,
+    SupervisorVisitaForm,
+    CoordinadorRegistroForm,
+)
 
-# ================== HELPERS (roles/grupos) ==================
+# ===== Helpers roles =====
 def has_group(user, name: str) -> bool:
     return user.is_authenticated and user.groups.filter(name=name).exists()
 
 def user_role(user):
-    if user.is_superuser or has_group(user, "AdminGeneral") \
-       or has_group(user, "Administracion") or has_group(user, "Administración"):
+    if user.is_superuser or has_group(user, "AdminGeneral") or has_group(user, "Administracion") or has_group(user, "Administración"):
         return "ADMIN"
     if has_group(user, "Coordinador"):
         return "COORD"
@@ -26,7 +30,7 @@ def is_in(group_name):
         return u.is_superuser or has_group(u, group_name)
     return check
 
-# ================== DEMO básicos ==================
+# ===== Demo / Homes =====
 def login_demo(request):
     if request.method == "POST":
         next_url = request.POST.get("next") or request.GET.get("next")
@@ -54,51 +58,58 @@ def anuncios(request):
 def bandeja(request):
     return render(request, "misc/bandeja.html")
 
-# ================== SUPERVISOR ==================
+# ===== Supervisor =====
 def supervisor_panel(request):
     return render(request, "supervisor/panel.html")
 
 @login_required
 @user_passes_test(is_in("Supervisor"), login_url="login")
 def supervisor_registrar(request):
-    """
-    Pantalla unificada: Registrar datos de visita.
-    - lista de expedientes del supervisor (N.º SIGED)
-    - selecciona ?exp=<id> (o el primero)
-    - guarda fecha_visita y visita (SI/NO), y deja estado PENDIENTE
-    """
-    expedientes_all = (
-        Expediente.objects
-        .filter(supervisor=request.user)  # quítalo si estás en DEMO
+    # Expedientes del supervisor (para el select de SIGED)
+    expedientes = (
+        Expediente.objects.filter(supervisor=request.user)
         .order_by("-updated_at")
-        .only("id", "siged", "tipo_supervision")
+        .only("id", "siged", "codigo", "tipo_supervision", "estado")
     )
 
-    selected_id = request.GET.get("exp")
-    if not selected_id and expedientes_all:
-        selected_id = str(expedientes_all[0].id)
+    form = SupervisorVisitaForm(request.POST or None)
+    form.set_siged_choices(expedientes)
 
-    exp = get_object_or_404(Expediente, pk=selected_id) if selected_id else None
-    form = ProgramarVisitaForm(request.POST or None, instance=exp) if exp else None
+    if request.method == "POST":
+        siged_value = (form.data.get("siged") or "").strip()
+        visita_val = (form.data.get("visita_decision") or "").strip().upper()
+        fecha_val = (form.data.get("fecha_visita") or "").strip()
 
-    if request.method == "POST" and exp and form and form.is_valid():
-        obj = form.save(commit=False)
-        # 'visita' llega desde el hidden del template (SI/NO)
-        visita_val = request.POST.get("visita", "").upper().strip()
-        if visita_val in ("SI", "NO"):
-            obj.visita = visita_val
-        obj.estado = "PENDIENTE"
-        obj.save()
-        messages.success(request, "Visita programada correctamente.")
-        return redirect(f"{reverse('asignaciones:supervisor_registrar')}?exp={exp.id}")
+        if not siged_value:
+            messages.error(request, "Selecciona un N.° SIGED.")
+        elif visita_val not in ("SI", "NO"):
+            messages.error(request, "Elige si habrá visita: marca Sí o No.")
+        elif not fecha_val:
+            messages.error(request, "Selecciona la fecha de visita.")
+        else:
+            exp = get_object_or_404(Expediente, siged=siged_value, supervisor=request.user)
+            exp.visita_decision = visita_val
+            exp.fecha_visita = fecha_val
+            exp.estado = "PENDIENTE"
+            exp.save()
+            messages.success(request, f"Visita registrada para el expediente {exp.siged}.")
+            return redirect("asignaciones:supervisor_registrar")
 
-    context = {"form": form, "exp": exp, "expedientes_all": expedientes_all}
-    return render(request, "supervisor/registrar.html", context)
+    data_siged = [
+        {"siged": e.siged, "codigo": e.codigo or "", "tipo": e.tipo_supervision, "estado": e.estado}
+        for e in expedientes
+    ]
 
-@login_required
+    return render(
+        request,
+        "supervisor/registrar.html",
+        {"form": form, "expedientes": expedientes, "data_siged": data_siged},
+    )
+
+@login_required(login_url="login")
 @user_passes_test(is_in("Supervisor"), login_url="login")
 def programar_visita_redirect(request, pk):
-    # Compatibilidad con antigua ruta: redirige al flujo nuevo
+    # Ruta antigua compatible: reenvía al formulario nuevo con ?exp=pk (si lo necesitas)
     return redirect(f"{reverse('asignaciones:supervisor_registrar')}?exp={pk}")
 
 def supervisor_revisar_demo(request):
@@ -115,11 +126,7 @@ def supervisor_revisar(request):
         .filter(supervisor=request.user, estado="PENDIENTE")
         .order_by("-updated_at")
     )
-    return render(
-        request,
-        "asignaciones/mis_expedientes.html",
-        {"expedientes": qs, "title": "Revisar"},
-    )
+    return render(request, "asignaciones/mis_expedientes.html", {"expedientes": qs, "title": "Revisar"})
 
 @login_required
 @user_passes_test(is_in("Supervisor"), login_url="login")
@@ -140,7 +147,7 @@ def concluir_expediente(request, pk):
         return redirect("asignaciones:supervisor_revisar")
     if not exp.fecha_visita:
         messages.warning(request, "Debes programar/realizar la visita antes de concluir.")
-        return redirect("asignaciones:programar_visita_redirect", pk=exp.pk)
+        return redirect("asignaciones:programar_visita", pk=exp.pk)
 
     if request.method == "POST":
         form = ConcluirForm(request.POST, instance=exp)
@@ -155,7 +162,7 @@ def concluir_expediente(request, pk):
         form = ConcluirForm(instance=exp)
     return render(request, "asignaciones/concluir.html", {"form": form, "exp": exp})
 
-# ================== COORDINADOR ==================
+# ===== Coordinador =====
 def coordinador_menu(request):
     return render(request, "coordinador/menu.html")
 
@@ -177,7 +184,7 @@ def coordinador_registrar(request):
 def coordinador_revisar(request):
     return render(request, "coordinador/revisar.html")
 
-# ================== ADMIN ==================
+# ===== Admin =====
 def admin_general_menu(request):
     return render(request, "admin/menu_general.html")
 
