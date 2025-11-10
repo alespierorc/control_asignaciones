@@ -1,11 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.shortcuts import render, redirect
-
-def home(request):
-    # Si quieres que la raíz vaya directo al menú del supervisor:
-    # return redirect("asignaciones:supervisor_menu")
-    return render(request, "home.html")
 
 class OficinaRegional(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
@@ -37,16 +31,22 @@ class Expediente(models.Model):
         ("OTRO", "Otro"),
     ]
 
+    # Datos que registra el COORDINADOR
     siged = models.CharField("N.º SIGED", max_length=50, unique=True)
+    codigo = models.CharField("Código", max_length=50, blank=True)
     oficina = models.ForeignKey(OficinaRegional, on_delete=models.PROTECT)
     contrato = models.ForeignKey(Contrato, on_delete=models.PROTECT)
     supervisor = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expedientes_asignados")
-
     tipo_supervision = models.CharField(max_length=20, choices=TIPO_SUPERVISION)
     tipo_documento   = models.CharField(max_length=20, choices=TIPO_DOCUMENTO)
     carta_linea      = models.CharField(max_length=100, blank=True)
 
+    # Flujo
     estado = models.CharField(max_length=20, choices=ESTADOS, default="EN_PROCESO")
+
+    # Decisión de visita (Supervisor: Sí/No con checkboxes)
+    visita_decision = models.CharField("Visita", max_length=2, choices=[("SI", "Sí"), ("NO", "No")], blank=True)
+
     fecha_asignacion = models.DateField(auto_now_add=True)
     fecha_visita     = models.DateField(null=True, blank=True)
     fecha_derivacion = models.DateField(null=True, blank=True)
