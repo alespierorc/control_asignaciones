@@ -1,235 +1,236 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Registrar datos de visita</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#eef2f7; --ink:#0f172a; --muted:#6b7280;
-      --dark:#23303f; --dark-2:#2b3d51; --panel:#6f7a89; --panel-2:#7e8a9b;
-      --nav:#415164; --chip:#1b2a3a; --input:#122233; --input-ink:#cfe6ff;
-      --primary:#0ea5e9; --ok:#22c55e; --danger:#ef4444; --shadow:0 14px 34px rgba(17,24,39,.18);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;color:var(--ink)}
 
-    /* Topbar */
-    .topbar{position:sticky;top:0;z-index:40;background:var(--nav);padding:12px 18px;border-bottom-left-radius:20px;border-bottom-right-radius:20px;box-shadow:var(--shadow)}
-    .topbar .wrap{max-width:1220px;margin:0 auto;display:flex;gap:14px;align-items:center;justify-content:flex-start}
-    .pill{display:flex;align-items:center;gap:10px;background:rgba(15,23,42,.55);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:10px 16px;font-weight:700;text-decoration:none;transition:.15s}
-    .pill:hover{transform:translateY(-1px);background:rgba(15,23,42,.75)}
-    .pill svg{width:18px;height:18px;opacity:.9}
+{% block title %}Registrar datos de visita – Supervisor{% endblock %}
 
-    /* Layout */
-    .wrap-page{max-width:1220px;margin:26px auto;padding:0 16px}
-    .title{font-size:34px;font-weight:800;margin:10px 0 18px}
-    .divider{height:2px;background:#c9d4e2;border-radius:4px;margin-bottom:20px}
+{% block content %}
+<style>
+  .sup-wrap{display:grid;grid-template-columns:220px 420px 1fr;gap:18px}
+  @media (max-width:1280px){.sup-wrap{grid-template-columns:200px 1fr}.info-col{order:2}.form-col{order:3}}
+  @media (max-width:920px){.sup-wrap{grid-template-columns:1fr}.sidebar-col{order:1}.info-col{order:2}.form-col{order:3}}
 
-    .grid{display:grid;grid-template-columns:280px 1fr;gap:22px}
-    /* Sidebar */
-    .sidebar{background:var(--panel);color:#f0f6ff;border-radius:26px;padding:18px;box-shadow:var(--shadow);position:relative}
-    .avatar{width:180px;height:180px;margin:8px auto 16px;border-radius:50%;background:linear-gradient(145deg,#556173,#6a788c)}
-    .side-btn{display:flex;align-items:center;gap:10px;margin:8px auto;background:var(--chip);color:#e6f2ff;border:none;border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer;text-decoration:none;justify-content:center;width:120px}
-    .side-btn svg{width:16px;height:16px}
-    .user-badge{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#203449;border:1px solid rgba(255,255,255,.15)}
+  .sidebar{background:var(--panel);color:#fff;border-radius:var(--radius-xl);padding:16px;box-shadow:var(--shadow-lg);
+           display:grid;grid-template-rows:auto 1fr auto;align-items:start}
+  .brand-slot{height:44px;border-radius:14px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;
+              color:#cfe6ff;font-weight:700;letter-spacing:.2px}
+  .menu-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:#415062;color:#fff;padding:8px 12px;border-radius:999px;
+            font-weight:800;text-decoration:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+  .menu-btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .side-spacer{margin-top:8px;height:6px;border-radius:8px;background:#5e6676;opacity:.5}
+  .side-avatar{display:grid;place-items:center;height:40px;width:40px;border-radius:50%;background:#1e4a6a;color:#fff;margin-left:auto;
+               box-shadow:0 6px 14px rgba(0,0,0,.2)}
 
-    /* Info cards */
-    .info-stack{display:flex;flex-direction:column;gap:14px;margin-top:12px}
-    .card{background:var(--panel-2);border-radius:18px;padding:16px;color:#f1f6ff}
-    .card .head{display:flex;align-items:center;gap:10px;font-weight:800;margin-bottom:6px}
-    .card .head svg{width:18px;height:18px}
-    .card p{margin:0;color:#e6eefb;font-size:14px;line-height:1.45}
-    .muted{font-weight:700}
+  .info-col{display:grid;gap:12px}
+  .guide{background:rgba(255,255,255,.10);border-radius:16px;padding:12px 14px;color:#fff;box-shadow:var(--shadow);
+         display:grid;grid-template-columns:36px 1fr auto;gap:10px;min-height:110px;position:relative}
+  .guide .g-icon{display:flex;align-items:flex-start;justify-content:center;height:36px;width:36px;border-radius:10px;
+                 background:rgba(255,255,255,.12);color:#e7f0ff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);font-size:18px}
+  .guide h6{margin:0 0 4px;text-transform:uppercase;letter-spacing:.3px;font-size:12.5px;opacity:.95}
+  .guide p{margin:0;line-height:1.5;opacity:.96;font-size:14px}
+  .tip{display:inline-flex;align-items:center;justify-content:center;height:22px;width:22px;border-radius:50%;
+       background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);cursor:default}
+  .tip[data-tip]:hover::after{content:attr(data-tip);position:absolute;right:8px;top:-8px;transform:translateY(-100%);
+       background:#0f172a;color:#fff;font-size:12px;padding:6px 8px;border-radius:8px;box-shadow:var(--shadow);max-width:360px;width:max-content;white-space:normal}
 
-    /* Right form panel */
-    .panel{background:var(--panel);border-radius:24px;padding:20px;box-shadow:var(--shadow);color:#f6fbff}
-    .group{margin-bottom:14px}
-    .label{display:block;font-size:13px;margin-bottom:6px;opacity:.95}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form-card{background:rgba(255,255,255,.10);color:#fff;border-radius:16px;padding:16px;box-shadow:var(--shadow-lg)}
+  .form-card h4{margin:0 0 10px;text-transform:uppercase;letter-spacing:.3px}
+  .separator{border:none;height:3px;background:#5e6676;border-radius:10px;margin:10px 0 16px}
+  .fields-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .field label{font-size:12px;font-weight:700;letter-spacing:.3px;opacity:.95;margin-bottom:4px;text-transform:uppercase}
+  .blue-input,.blue-select{width:100%;background:#1e3b5a;color:#fff;border:none;outline:none;border-radius:10px;padding:10px 12px;
+                           box-shadow:0 8px 16px rgba(0,0,0,.18) inset,0 8px 16px rgba(0,0,0,.08)}
+  .blue-input[readonly]{opacity:.9}
+  .blue-select{appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.75) 50%),
+                     linear-gradient(135deg,rgba(255,255,255,.75) 50%,transparent 50%),
+                     linear-gradient(to right,transparent,transparent);
+    background-position:calc(100% - 18px) calc(1em - 2px),calc(100% - 13px) calc(1em - 2px),100% 0;
+    background-size:5px 5px,5px 5px,2.5em 2.5em;background-repeat:no-repeat}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .visit-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .fakecb{display:inline-flex;gap:8px;align-items:center;background:#163148;border:1px solid rgba(255,255,255,.16);
+          color:#cfe2ff;border-radius:999px;padding:7px 12px}
+  .fakecb input{accent-color:#1fb87a;width:16px;height:16px}
+  small.err{color:#ffd2d2}
+  .cta-row{display:flex;justify-content:flex-end;margin-top:10px}
+  .btn-primary{background:#163c5a;color:#fff;border:0;border-radius:14px;padding:12px 22px;font-weight:800;letter-spacing:.3px;
+               box-shadow:var(--shadow);cursor:pointer}
+  .btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
 
-    .i-select,.i-ro,.i-date{
-      width:100%;padding:12px 14px;border:none;border-radius:12px;background:var(--input);color:var(--input-ink);outline:none
-    }
-    .i-ro[readonly]{opacity:.9}
-    .visit-box{display:flex;align-items:center;gap:10px}
-    .chip-check{display:flex;align-items:center;gap:8px;background:var(--input);border:1px solid rgba(255,255,255,.1);padding:10px 14px;border-radius:999px;color:#cfe6ff;user-select:none}
-    .chip-check input{accent-color:#22d3ee;transform:scale(1.1)}
-    .actions{display:flex;justify-content:flex-end;margin-top:10px}
-    .btn{background:var(--chip);color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
-    .btn:hover{background:#142231}
-    .empty{background:#f9fafb;color:#475569;border-radius:10px;padding:12px 14px}
+  .toast-stack{position:fixed;right:18px;bottom:18px;display:grid;gap:10px;z-index:9999}
+  .toast{color:#fff;border-radius:12px;padding:10px 12px;min-width:260px;max-width:420px;box-shadow:var(--shadow-lg);
+         display:flex;gap:10px;align-items:flex-start;animation:slideIn .25s ease both}
+  .toast.success{background:#15803d}.toast.info{background:#1d4ed8}
+  .toast.warning{background:#b45309}.toast.error{background:#b91c1c}
+  .toast .ti{font-size:18px;line-height:1;margin-top:2px}
+  .toast .close{margin-left:auto;background:transparent;border:0;color:#fff;cursor:pointer;font-size:16px}
+  @keyframes slideIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style>
 
-    @media (max-width:980px){.grid{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="wrap">
-      <a class="pill" href="{% url 'asignaciones:home_supervisor' %}">
-        <!-- home icon -->
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-10.5Z"/></svg>
-        Menú principal
+<div class="panel">
+  <h2 class="panel-title">REGISTRAR DATOS DE VISITA</h2>
+  <hr class="separator"/>
+
+  <div class="sup-wrap">
+    <!-- Sidebar -->
+    <aside class="sidebar-col sidebar">
+      <div class="brand-slot"><i class="bi bi-clipboard2-check"></i>&nbsp;Supervisor</div>
+      <a class="menu-btn" href="{% url 'asignaciones:home_supervisor' %}">
+        <i class="bi bi-list"></i> Menú
       </a>
-      <a class="pill" href="{% url 'asignaciones:reportes' %}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h16v2H4zM4 7h10v2H4zM4 11h16v2H4zM4 15h12v2H4zM4 19h16v2H4z"/></svg>
-        Reportes
-      </a>
-      <a class="pill" href="{% url 'asignaciones:anuncios' %}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11h3l4 7V4L6 11H3zM15 7h6v2h-6zM15 11h6v2h-6zM15 15h6v2h-6z"/></svg>
-        Anuncios
-      </a>
-      <a class="pill" href="{% url 'asignaciones:bandeja' %}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12h6l2 2h4l2-2h6V6a2 2 0 0 0-2-2Zm0 12h-4l-2 2h-4l-2-2H4V6h16v10Z"/></svg>
-        Bandeja de entrada
-      </a>
-    </div>
-  </header>
+      <div class="side-spacer"></div>
+      <div class="side-avatar"><i class="bi bi-person"></i></div>
+    </aside>
 
-  <main class="wrap-page">
-    <h1 class="title">Registrar datos de visita</h1>
-    <div class="divider"></div>
-
-    <div class="grid">
-      <!-- SIDEBAR -->
-      <aside class="sidebar">
-        <div class="avatar"></div>
-        <a class="side-btn" href="{% url 'asignaciones:home_supervisor' %}">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12h18v2H3zM3 6h18v2H3zM3 18h18v2H3z"/></svg>
-          Menú
-        </a>
-
-        <div class="info-stack">
-          <section class="card">
-            <div class="head">
-              <!-- Supervisor icon -->
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 1.79-8 4v2h16v-2c0-2.21-3.67-4-8-4Z"/></svg>
-              Supervisor
-            </div>
-            <p>Selecciona el <span class="muted">N.º SIGED</span> para cargar el <span class="muted">código</span> y el <span class="muted">tipo</span> del expediente.</p>
-          </section>
-
-          <section class="card">
-            <div class="head">
-              <!-- Visit icon -->
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5a7 7 0 0 0-7 7 7 7 0 1 0 14 0 7 7 0 0 0-7-7Zm1 10h-2V8h2Zm0 4h-2v-2h2Z"/></svg>
-              Visita
-            </div>
-            <p>Marca <span class="muted">Sí</span> o <span class="muted">No</span>. Los checkboxes son excluyentes. Para cambiar, desmarca el seleccionado.</p>
-          </section>
-
-          <section class="card">
-            <div class="head">
-              <!-- Calendar icon -->
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v3H7zM15 2h2v3h-2zM3 6h18v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Zm2 4v10h14V10Z"/></svg>
-              Fecha
-            </div>
-            <p>Elige la <span class="muted">fecha de visita</span>. Al guardar, el estado quedará <span class="muted">PENDIENTE</span> hasta su conclusión.</p>
-          </section>
+    <!-- Guías -->
+    <section class="info-col">
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-journal-text"></i></div>
+        <div>
+          <h6>Supervisor</h6>
+          <p>Selecciona el <b>N.º SIGED</b> para cargar el <b>código</b> y el <b>tipo de supervisión</b> del expediente.</p>
         </div>
-
-        <div class="user-badge">
-          <!-- user icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#cfe6ff"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 1.79-8 4v2h16v-2c0-2.21-3.67-4-8-4Z"/></svg>
+        <span class="tip" data-tip="El SIGED proviene del registro realizado por el Coordinador."><i class="bi bi-info-lg"></i></span>
+      </article>
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+          <h6>Visita</h6>
+          <p>Marca <b>Sí</b> o <b>No</b>. Los checkboxes son <u>excluyentes</u>. Para cambiar de opción, quita la selección actual.</p>
         </div>
-      </aside>
+        <span class="tip" data-tip="Se usa para declarar si la visita aplica al expediente."><i class="bi bi-info-lg"></i></span>
+      </article>
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-calendar-event"></i></div>
+        <div>
+          <h6>Fecha</h6>
+          <p>Elige la <b>fecha de visita</b>. Al guardar, el expediente quedará con estado <b>PENDIENTE</b> hasta su conclusión.</p>
+        </div>
+        <span class="tip" data-tip="Puedes reprogramar la fecha desde este mismo módulo si fuera necesario."><i class="bi bi-info-lg"></i></span>
+      </article>
+    </section>
 
-      <!-- FORM -->
-      <section class="panel">
-        <form method="post" novalidate>
+    <!-- Formulario -->
+    <section class="form-col">
+      <div class="form-card">
+        <h4>Datos del expediente</h4>
+        <form method="post" id="frm-visita" novalidate>
           {% csrf_token %}
 
-          <!-- N° SIGED -->
-          <div class="group">
-            <label class="label">{{ form.siged.label }}</label>
-            {% if form.fields.siged.choices|length > 1 %}
-              {{ form.siged }}
-            {% else %}
-              <div class="empty">No tienes expedientes asignados.</div>
-            {% endif %}
-          </div>
-
-          <!-- Código / Tipo -->
-          <div class="row">
-            <div class="group">
-              <label class="label">{{ form.codigo.label }}</label>
-              {{ form.codigo }}
+          <div class="fields-grid">
+            <div class="field">
+              <label>N.° SIGED</label>
+              <select id="sel-exp" name="expediente" class="blue-select" required>
+                {% if expedientes %}
+                  <option value="">— Seleccionar —</option>
+                  {% for e in expedientes %}
+                    <option value="{{ e.id }}" data-codigo="{{ e.codigo|default_if_none:'' }}" data-tipo="{{ e.get_tipo_supervision_display }}">
+                      {{ e.siged }}
+                    </option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">No tienes expedientes asignados.</option>
+                {% endif %}
+              </select>
             </div>
-            <div class="group">
-              <label class="label">{{ form.tipo_supervision.label }}</label>
-              {{ form.tipo_supervision }}
+
+            <div class="two">
+              <div class="field">
+                <label>Código</label>
+                <input id="txt-codigo" type="text" class="blue-input" readonly>
+              </div>
+              <div class="field">
+                <label>Tipo de supervisión</label>
+                <input id="txt-tipo" type="text" class="blue-input" readonly>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Visita</label>
+              <div class="visit-row">
+                <label class="fakecb"><input type="checkbox" id="cb-si"> Sí</label>
+                <label class="fakecb"><input type="checkbox" id="cb-no"> No</label>
+                <input type="hidden" name="visita" id="hid-visita">
+                <span class="small" style="opacity:.9;color:#cfe2ff">(*excluyentes)</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>{{ form.fecha_visita.label }}</label>
+              {{ form.fecha_visita }}  {# sin add_class; el JS le pone .blue-input #}
+              {% if form.fecha_visita.errors %}<small class="err">{{ form.fecha_visita.errors|striptags }}</small>{% endif %}
             </div>
           </div>
 
-          <!-- (Estado del expediente oculto: ya no se muestra) -->
-          <input type="hidden" id="id_estado" value="">
-
-          <!-- Visita -->
-          <div class="group">
-            <label class="label">Visita</label>
-            <div class="visit-box">
-              <label class="chip-check"><input type="checkbox" id="visita_si"> Sí</label>
-              <label class="chip-check"><input type="checkbox" id="visita_no"> No</label>
-            </div>
-            {{ form.visita_decision }}
-          </div>
-
-          <!-- Fecha -->
-          <div class="group">
-            <label class="label">Fecha de visita</label>
-            {{ form.fecha_visita }}
-          </div>
-
-          <div class="actions">
-            <button class="btn" type="submit">Guardar</button>
+          <div class="cta-row">
+            <button class="btn-primary" type="submit">Guardar</button>
           </div>
         </form>
-      </section>
-    </div>
-  </main>
+      </div>
+    </section>
+  </div>
+</div>
 
-  <script>
-    /* Data inyectada desde la vista */
-    const DATA_SIGED = {{ data_siged|safe }};
-  </script>
-  <script>
-    (function () {
-      const sel = document.getElementById("id_siged");
-      const iCodigo = document.getElementById("id_codigo");
-      const iTipo = document.getElementById("id_tipo_supervision");
-      const hiddenVisita = document.getElementById("id_visita_decision");
-      const cbSi = document.getElementById("visita_si");
-      const cbNo = document.getElementById("visita_no");
+{% if messages %}
+<div class="toast-stack" id="toastStack">
+  {% for m in messages %}
+  <div class="toast {{ m.tags|default:'info' }}">
+    <span class="ti">
+      {% if 'success' in m.tags %}<i class="bi bi-check2-circle"></i>
+      {% elif 'warning' in m.tags %}<i class="bi bi-exclamation-triangle"></i>
+      {% elif 'error' in m.tags %}<i class="bi bi-x-circle"></i>
+      {% else %}<i class="bi bi-info-circle"></i>{% endif %}
+    </span>
+    <div>{{ m }}</div>
+    <button class="close" aria-label="Cerrar" onclick="this.parentElement.remove()">✕</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-      if (sel) {
-        sel.addEventListener("change", function () {
-          const v = this.value;
-          const obj = DATA_SIGED.find(x => x.siged === v);
-          if (obj) {
-            iCodigo.value = obj.codigo || "";
-            iTipo.value = obj.tipo || "";
-          } else {
-            iCodigo.value = "";
-            iTipo.value = "";
-          }
-        });
-      }
+<script>
+  // Poner clase de estilo al input date si no la trae
+  (function(){
+    const date = document.querySelector('input[type="date"]');
+    if(date && !date.classList.contains('blue-input')) date.classList.add('blue-input');
+  })();
 
-      function sync(which) {
-        if (which === "SI") {
-          if (cbSi.checked) { cbNo.checked = false; hiddenVisita.value = "SI"; }
-          else              { hiddenVisita.value = ""; }
-        } else {
-          if (cbNo.checked) { cbSi.checked = false; hiddenVisita.value = "NO"; }
-          else              { hiddenVisita.value = ""; }
-        }
-      }
-      cbSi && cbSi.addEventListener("change", () => sync("SI"));
-      cbNo && cbNo.addEventListener("change", () => sync("NO"));
-    })();
-  </script>
-</body>
-</html>
+  // Autocomplete desde N.º SIGED
+  const sel = document.getElementById('sel-exp');
+  const cod = document.getElementById('txt-codigo');
+  const tipo = document.getElementById('txt-tipo');
+  function fillFromSelect(){
+    const opt = sel?.options[sel.selectedIndex];
+    cod.value  = opt?.dataset?.codigo || '';
+    tipo.value = opt?.dataset?.tipo   || '';
+  }
+  sel?.addEventListener('change', fillFromSelect);
+  fillFromSelect();
+
+  // Checkboxes excluyentes
+  const cbSi = document.getElementById('cb-si');
+  const cbNo = document.getElementById('cb-no');
+  const hid  = document.getElementById('hid-visita');
+  function sync(){
+    if(cbSi.checked){ cbNo.checked=false; hid.value='true'; return; }
+    if(cbNo.checked){ cbSi.checked=false; hid.value='false'; return; }
+    hid.value='';
+  }
+  cbSi.addEventListener('change', sync);
+  cbNo.addEventListener('change', sync);
+  sync();
+
+  // Autocierre de toasts
+  (function(){
+    const stack = document.getElementById('toastStack');
+    if(!stack) return;
+    [...stack.children].forEach((el,i)=>{
+      setTimeout(()=>{
+        el.style.transition='opacity .35s ease, transform .35s ease';
+        el.style.opacity='0'; el.style.transform='translateY(6px)';
+        setTimeout(()=>el.remove(),380);
+      }, 4500 + i*300);
+    });
+  })();
+</script>
+{% endblock %}

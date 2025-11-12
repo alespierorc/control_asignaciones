@@ -1,9 +1,265 @@
 {% extends "base.html" %}
-{% block title %}Estado de expediente – Supervisor{% endblock %}
+{% load static %}
+
+{% block title %}Estado de expedientes – Supervisor{% endblock %}
+
 {% block content %}
+<style>
+  /* ===== GRID GENERAL (mismo lenguaje visual del registrar) ===== */
+  .sup-wrap{display:grid;grid-template-columns:220px 420px 1fr;gap:18px}
+  @media (max-width:1280px){.sup-wrap{grid-template-columns:200px 1fr}.info-col{order:2}.form-col{order:3}}
+  @media (max-width:920px){.sup-wrap{grid-template-columns:1fr}.sidebar-col{order:1}.info-col{order:2}.form-col{order:3}}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{background:var(--panel);color:#fff;border-radius:var(--radius-xl);padding:16px;box-shadow:var(--shadow-lg);
+           display:grid;grid-template-rows:auto 1fr auto;align-items:start}
+  .brand-slot{height:44px;border-radius:14px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;
+              color:#cfe6ff;font-weight:700;letter-spacing:.2px}
+  .menu-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:#415062;color:#fff;padding:8px 12px;border-radius:999px;
+            font-weight:800;text-decoration:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+  .menu-btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .side-spacer{margin-top:8px;height:6px;border-radius:8px;background:#5e6676;opacity:.5}
+  .side-avatar{display:grid;place-items:center;height:40px;width:40px;border-radius:50%;background:#1e4a6a;color:#fff;margin-left:auto;
+               box-shadow:0 6px 14px rgba(0,0,0,.2)}
+
+  /* ===== TARJETAS GUÍA ===== */
+  .info-col{display:grid;gap:12px}
+  .guide{background:rgba(255,255,255,.10);border-radius:16px;padding:12px 14px;color:#fff;box-shadow:var(--shadow);
+         display:grid;grid-template-columns:36px 1fr auto;gap:10px;min-height:110px;position:relative}
+  .guide .g-icon{display:flex;align-items:flex-start;justify-content:center;height:36px;width:36px;border-radius:10px;
+                 background:rgba(255,255,255,.12);color:#e7f0ff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);font-size:18px}
+  .guide h6{margin:0 0 4px;text-transform:uppercase;letter-spacing:.3px;font-size:12.5px;opacity:.95}
+  .guide p{margin:0;line-height:1.5;opacity:.96;font-size:14px}
+  .tip{display:inline-flex;align-items:center;justify-content:center;height:22px;width:22px;border-radius:50%;
+       background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);cursor:default}
+  .tip[data-tip]:hover::after{content:attr(data-tip);position:absolute;right:8px;top:-8px;transform:translateY(-100%);
+       background:#0f172a;color:#fff;font-size:12px;padding:6px 8px;border-radius:8px;box-shadow:var(--shadow);max-width:360px;width:max-content;white-space:normal}
+
+  /* ===== FORM ===== */
+  .form-card{background:rgba(255,255,255,.10);color:#fff;border-radius:16px;padding:16px;box-shadow:var(--shadow-lg)}
+  .form-card h4{margin:0 0 10px;text-transform:uppercase;letter-spacing:.3px}
+  .separator{border:none;height:3px;background:#5e6676;border-radius:10px;margin:10px 0 16px}
+  .fields-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field label{font-size:12px;font-weight:700;letter-spacing:.3px;opacity:.95;margin-bottom:4px;text-transform:uppercase}
+  .blue-input,.blue-select,.blue-textarea{width:100%;background:#1e3b5a;color:#fff;border:none;outline:none;border-radius:10px;padding:10px 12px;
+                           box-shadow:0 8px 16px rgba(0,0,0,.18) inset,0 8px 16px rgba(0,0,0,.08)}
+  .blue-input[readonly]{opacity:.9}
+  .blue-select{appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.75) 50%),
+                     linear-gradient(135deg,rgba(255,255,255,.75) 50%,transparent 50%),
+                     linear-gradient(to right,transparent,transparent);
+    background-position:calc(100% - 18px) calc(1em - 2px),calc(100% - 13px) calc(1em - 2px),100% 0;
+    background-size:5px 5px,5px 5px,2.5em 2.5em;background-repeat:no-repeat}
+  .checkline{display:flex;align-items:center;gap:10px}
+  .checkline input{accent-color:#1fb87a;width:18px;height:18px}
+  .cta-row{display:flex;justify-content:flex-end;margin-top:10px}
+  .btn-primary{background:#163c5a;color:#fff;border:0;border-radius:14px;padding:12px 22px;font-weight:800;letter-spacing:.3px;
+               box-shadow:var(--shadow);cursor:pointer}
+  .btn-primary:hover{filter:brightness(1.05));transform:translateY(-1px)}
+
+  /* ===== TOASTS (mensajes Django) ===== */
+  .toast-stack{position:fixed;right:18px;bottom:18px;display:grid;gap:10px;z-index:9999}
+  .toast{color:#fff;border-radius:12px;padding:10px 12px;min-width:260px;max-width:420px;box-shadow:var(--shadow-lg);
+         display:flex;gap:10px;align-items:flex-start;animation:slideIn .25s ease both}
+  .toast.success{background:#15803d}.toast.info{background:#1d4ed8}
+  .toast.warning{background:#b45309}.toast.error{background:#b91c1c}
+  .toast .ti{font-size:18px;line-height:1;margin-top:2px}
+  .toast .close{margin-left:auto;background:transparent;border:0;color:#fff;cursor:pointer;font-size:16px}
+  @keyframes slideIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style>
+
 <div class="panel">
-  <h1 style="margin:0">Estado de expediente</h1>
+  <h2 class="panel-title">ESTADO DE EXPEDIENTES</h2>
   <hr class="separator"/>
-  <p>Demo de la pantalla para ver el estado de los expedientes.</p>
+
+  <div class="sup-wrap">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar-col sidebar">
+      <div class="brand-slot"><i class="bi bi-clipboard2"></i>&nbsp;Supervisor</div>
+      <a class="menu-btn" href="{% url 'asignaciones:home_supervisor' %}">
+        <i class="bi bi-list"></i> Menú
+      </a>
+      <div class="side-spacer"></div>
+      <div class="side-avatar"><i class="bi bi-person"></i></div>
+    </aside>
+
+    <!-- ===== TARJETAS GUÍA ===== -->
+    <section class="info-col">
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-folder2-open"></i></div>
+        <div>
+          <h6>Estado</h6>
+          <p>Selecciona el <b>N.º SIGED</b> para mostrar automáticamente el <b>código</b> y el <b>tipo de supervisión</b> del expediente.</p>
+        </div>
+        <span class="tip" data-tip="Los expedientes listados son los asignados a tu usuario.">
+          <i class="bi bi-info-lg"></i>
+        </span>
+      </article>
+
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-calendar2-event"></i></div>
+        <div>
+          <h6>Derivación</h6>
+          <p>Registra la <b>fecha de derivación</b> si aplica al flujo. Puedes actualizarla más adelante.</p>
+        </div>
+        <span class="tip" data-tip="Usa el calendario para elegir la fecha de derivación.">
+          <i class="bi bi-info-lg"></i>
+        </span>
+      </article>
+
+      <article class="guide">
+        <div class="g-icon"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+          <h6>Conclusión</h6>
+          <p>Marca <b>Concluido</b> cuando el expediente esté cerrado. Añade <b>observaciones</b> si lo consideras necesario.</p>
+        </div>
+        <span class="tip" data-tip="Puedes guardar sin observaciones; el campo es opcional.">
+          <i class="bi bi-info-lg"></i>
+        </span>
+      </article>
+    </section>
+
+    <!-- ===== FORMULARIO ===== -->
+    <section class="form-col">
+      <div class="form-card">
+        <h4>Datos del expediente</h4>
+
+        <form method="post" id="frm-estado" novalidate>
+          {% csrf_token %}
+
+          <div class="fields-grid">
+            <!-- 1. N° SIGED -->
+            <div class="field">
+              <label>N.° de expediente SIGED de la orden de servicio</label>
+              <select id="sel-exp" name="expediente" class="blue-select" required>
+                {% if expedientes %}
+                  <option value="">— Seleccionar —</option>
+                  {% for e in expedientes %}
+                    <option value="{{ e.id }}"
+                            data-codigo="{{ e.codigo|default_if_none:'' }}"
+                            data-tipo="{{ e.get_tipo_supervision_display }}"
+                            data-derivacion="{{ e.fecha_derivacion|date:'Y-m-d' }}"
+                            data-concluido="{{ e.concluido|yesno:'1,0' }}"
+                            data-obs="{{ e.observaciones|default_if_none:''|escape }}">
+                      {{ e.siged }}
+                    </option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">No tienes expedientes asignados.</option>
+                {% endif %}
+              </select>
+            </div>
+
+            <!-- 2 y 3. Código / Tipo -->
+            <div class="two">
+              <div class="field">
+                <label>Código</label>
+                <input id="txt-codigo" type="text" class="blue-input" readonly>
+              </div>
+              <div class="field">
+                <label>Tipo de supervisión</label>
+                <input id="txt-tipo" type="text" class="blue-input" readonly>
+              </div>
+            </div>
+
+            <!-- 4. Fecha de derivación -->
+            <div class="field">
+              <label>Fecha de derivación</label>
+              {% if form and form.fecha_derivacion %}
+                {{ form.fecha_derivacion }}
+              {% else %}
+                <input type="date" id="inp-derivacion" name="fecha_derivacion">
+              {% endif %}
+            </div>
+
+            <!-- 5. Estado (Concluido) -->
+            <div class="field">
+              <label>Estado del expediente</label>
+              <div class="checkline">
+                <input type="checkbox" id="chk-concluido" name="concluido">
+                <label for="chk-concluido" style="margin:0;opacity:.95">Concluido</label>
+              </div>
+            </div>
+
+            <!-- 6. Observaciones -->
+            <div class="field">
+              <label>Observaciones</label>
+              {% if form and form.observaciones %}
+                {{ form.observaciones }}
+              {% else %}
+                <textarea id="txt-obs" name="observaciones" class="blue-textarea" rows="6"
+                          placeholder="Escribe observaciones (opcional)"></textarea>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
 </div>
+
+<!-- TOASTS -->
+{% if messages %}
+<div class="toast-stack" id="toastStack">
+  {% for m in messages %}
+  <div class="toast {{ m.tags|default:'info' }}">
+    <span class="ti">
+      {% if 'success' in m.tags %}<i class="bi bi-check2-circle"></i>
+      {% elif 'warning' in m.tags %}<i class="bi bi-exclamation-triangle"></i>
+      {% elif 'error' in m.tags %}<i class="bi bi-x-circle"></i>
+      {% else %}<i class="bi bi-info-circle"></i>{% endif %}
+    </span>
+    <div>{{ m }}</div>
+    <button class="close" aria-label="Cerrar" onclick="this.parentElement.remove()">✕</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+  // Asegurar estilos si los campos vienen del form sin clases
+  (function(){
+    const date = document.querySelector('input[type="date"]');
+    if(date && !date.classList.contains('blue-input')) date.classList.add('blue-input');
+    const ta = document.querySelector('textarea');
+    if(ta && !ta.classList.contains('blue-textarea')) ta.classList.add('blue-textarea');
+  })();
+
+  // Autocomplete al elegir SIGED
+  const sel  = document.getElementById('sel-exp');
+  const cod  = document.getElementById('txt-codigo');
+  const tipo = document.getElementById('txt-tipo');
+  const der  = document.getElementById('inp-derivacion') || document.querySelector('input[name="fecha_derivacion"]');
+  const chk  = document.getElementById('chk-concluido')  || document.querySelector('input[name="concluido"]');
+  const obs  = document.getElementById('txt-obs')        || document.querySelector('textarea[name="observaciones"]');
+
+  function fillFromSelect(){
+    const opt = sel?.options[sel.selectedIndex];
+    cod.value   = opt?.dataset?.codigo || '';
+    tipo.value  = opt?.dataset?.tipo   || '';
+    if(der) der.value = opt?.dataset?.derivacion || '';
+    if(chk) chk.checked = (opt?.dataset?.concluido === '1');
+    if(obs && typeof opt?.dataset?.obs === 'string') obs.value = opt.dataset.obs;
+  }
+  sel?.addEventListener('change', fillFromSelect);
+  fillFromSelect();
+
+  // Autocierre de toasts
+  (function(){
+    const stack = document.getElementById('toastStack');
+    if(!stack) return;
+    [...stack.children].forEach((el,i)=>{
+      setTimeout(()=>{
+        el.style.transition='opacity .35s ease, transform .35s ease';
+        el.style.opacity='0'; el.style.transform='translateY(6px)';
+        setTimeout(()=>el.remove(),380);
+      }, 4500 + i*300);
+    });
+  })();
+</script>
 {% endblock %}
