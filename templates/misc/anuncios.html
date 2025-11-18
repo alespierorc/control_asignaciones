@@ -1,5 +1,271 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Anuncios{% endblock %}
+
 {% block content %}
-<div class="panel"><h1 style="margin:0">Anuncios</h1><hr class="separator"/><p>Página de anuncios (placeholder).</p></div>
+<style>
+  .anuncios-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    color: #fff;
+  }
+
+  .anuncios-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border-radius: var(--radius-xl);
+    padding: 16px 20px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .anuncios-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .anuncios-header h2 i {
+    color: #60a5fa;
+    font-size: 22px;
+  }
+
+  .anuncios-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .anuncios-filtros input,
+  .anuncios-filtros select {
+    background: #152941;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .anuncios-filtros input:focus,
+  .anuncios-filtros select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+
+  /* === Tarjetas === */
+  .anuncios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .anuncio-card {
+    background: #1e2b3c;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .anuncio-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .anuncio-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .anuncio-titulo {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #f9fafb;
+  }
+
+  .anuncio-destino {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: #0d4a7a;
+    border-radius: 10px;
+    padding: 4px 10px;
+  }
+
+  .anuncio-contenido {
+    margin-top: 10px;
+    font-size: 14px;
+    opacity: 0.9;
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .anuncio-fecha {
+    margin-top: 10px;
+    font-size: 12px;
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* === Modal === */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal {
+    background: #1e293b;
+    border-radius: 18px;
+    color: #fff;
+    max-width: 600px;
+    width: 90%;
+    padding: 26px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #93c5fd;
+    margin: 0 0 10px;
+  }
+
+  .modal p {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .modal-footer {
+    margin-top: 18px;
+    text-align: right;
+  }
+
+  .btn-close {
+    background: #334155;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-close:hover {
+    background: #475569;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 40px;
+    opacity: 0.7;
+  }
+</style>
+
+<div class="anuncios-container">
+  <div class="anuncios-header">
+    <h2><i class="bi bi-megaphone-fill"></i> Anuncios</h2>
+    <div class="anuncios-filtros">
+      <input type="text" id="buscar" placeholder="Buscar anuncio...">
+      <select id="filtro">
+        <option value="">Todos</option>
+        <option value="SUP">Supervisores</option>
+        <option value="COORD">Coordinadores</option>
+        <option value="AMBOS">Ambos</option>
+      </select>
+    </div>
+  </div>
+
+  {% if anuncios %}
+  <div class="anuncios-grid" id="listaAnuncios">
+    {% for a in anuncios %}
+    <div class="anuncio-card" data-titulo="{{ a.titulo|lower }}" data-destino="{{ a.destino }}">
+      <div class="anuncio-top">
+        <div class="anuncio-titulo">{{ a.titulo }}</div>
+        <div class="anuncio-destino">{{ a.get_destino_display }}</div>
+      </div>
+      <div class="anuncio-contenido">{{ a.contenido|truncatewords:25 }}</div>
+      <div class="anuncio-fecha"><i class="bi bi-calendar3"></i> {{ a.creado_en|date:"d M Y" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-results">No hay anuncios publicados.</div>
+  {% endif %}
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitulo"></h3>
+    <p id="modalContenido"></p>
+    <div class="modal-footer">
+      <button class="btn-close" id="btnCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const buscar = document.getElementById('buscar');
+  const filtro = document.getElementById('filtro');
+  const cards = [...document.querySelectorAll('.anuncio-card')];
+  const modalBg = document.getElementById('modalBg');
+  const modalTitulo = document.getElementById('modalTitulo');
+  const modalContenido = document.getElementById('modalContenido');
+  const btnCerrar = document.getElementById('btnCerrar');
+
+  // Filtro dinámico
+  function filtrar() {
+    const text = buscar.value.toLowerCase();
+    const tipo = filtro.value;
+    cards.forEach(c => {
+      const coincideTexto = c.dataset.titulo.includes(text);
+      const coincideTipo = tipo === "" || c.dataset.destino === tipo;
+      c.style.display = coincideTexto && coincideTipo ? "flex" : "none";
+    });
+  }
+  buscar.addEventListener("input", filtrar);
+  filtro.addEventListener("change", filtrar);
+
+  // Modal de detalle
+  cards.forEach(c => {
+    c.addEventListener("click", () => {
+      modalTitulo.textContent = c.querySelector(".anuncio-titulo").textContent;
+      modalContenido.textContent = c.querySelector(".anuncio-contenido").textContent;
+      modalBg.style.display = "flex";
+    });
+  });
+
+  btnCerrar.addEventListener("click", () => modalBg.style.display = "none");
+  modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.style.display = "none"; });
+</script>
 {% endblock %}

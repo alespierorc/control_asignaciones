@@ -21,10 +21,10 @@ urlpatterns = [
     # Supervisor
     path("supervisor/panel/", views.supervisor_panel, name="supervisor_panel"),
     path("supervisor/registrar/", views.supervisor_registrar, name="supervisor_registrar"),
-    path("supervisor/revisar/", views.supervisor_revisar_demo, name="supervisor_revisar"),
-    path("supervisor/estado/", views.supervisor_estado_demo, name="supervisor_estado"),
-    path("supervisor/programar/<int:pk>/", views.programar_visita_redirect, name="programar_visita"),
+    path("supervisor/revisar/", views.supervisor_revisar, name="supervisor_revisar"),
+    path("supervisor/estado/", views.estado_expediente, name="supervisor_estado"),
 
+    
     # Coordinador
     path("coordinador/", views.coordinador_menu, name="coordinador_menu"),
     path("coordinador/registrar/", views.coordinador_registrar, name="coordinador_registrar"),

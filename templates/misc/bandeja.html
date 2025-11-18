@@ -1,5 +1,394 @@
 {% extends "base.html" %}
-{% block title %}Bandeja de entrada{% endblock %}
+{% load static %}
+
+{% block title %}Bandeja de mensajes{% endblock %}
+
 {% block content %}
-<div class="panel"><h1 style="margin:0">Bandeja de entrada</h1><hr class="separator"/><p>Página de mensajes (placeholder).</p></div>
+<style>
+  /* ======== ESTILO GENERAL ======== */
+  .bandeja-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    color: #fff;
+  }
+
+  .bandeja-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--panel);
+    border-radius: var(--radius-xl);
+    padding: 18px 22px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .bandeja-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .bandeja-header h2 i {
+    font-size: 22px;
+    color: #38bdf8;
+  }
+
+  .bandeja-filtros {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .bandeja-filtros input,
+  .bandeja-filtros select {
+    background: #162b47;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f1f5f9;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .bandeja-filtros input:focus,
+  .bandeja-filtros select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+
+  /* ======== BOTÓN CREAR MENSAJE ======== */
+  .crear-btn {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+  }
+
+  .crear-btn i {
+    margin-right: 6px;
+  }
+
+  .crear-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+  }
+
+  /* ======== LISTA DE MENSAJES ======== */
+  .mensajes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 18px;
+  }
+
+  .msg-card {
+    background: #1e2b3c;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .msg-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .msg-emisor {
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 15px;
+  }
+
+  .msg-tipo {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 3px 10px;
+  }
+
+  /* Colores por tipo de mensaje */
+  .msg-tipo.INFO {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+  }
+  .msg-tipo.IMPORTANTE {
+    background: rgba(250, 204, 21, 0.25);
+    color: #facc15;
+  }
+  .msg-tipo.URGENTE {
+    background: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+  }
+
+  .msg-asunto {
+    margin-top: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #f9fafb;
+  }
+
+  .msg-contenido {
+    margin-top: 8px;
+    font-size: 14px;
+    opacity: 0.9;
+    max-height: 65px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .msg-fecha {
+    margin-top: 12px;
+    font-size: 12px;
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ======== MODAL ======== */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal {
+    background: #1e293b;
+    border-radius: 18px;
+    color: #fff;
+    max-width: 600px;
+    width: 90%;
+    padding: 28px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #93c5fd;
+    margin-bottom: 10px;
+  }
+
+  .modal p {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .modal-footer {
+    margin-top: 18px;
+    text-align: right;
+  }
+
+  .btn-close {
+    background: #334155;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-close:hover {
+    background: #475569;
+  }
+
+  /* ======== FORMULARIO CREAR ======== */
+  .crear-form {
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    color: #fff;
+    display: none;
+  }
+
+  .crear-form.active {
+    display: block;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .crear-form h3 {
+    margin-top: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #60a5fa;
+    margin-bottom: 14px;
+  }
+
+  .crear-form input,
+  .crear-form textarea,
+  .crear-form select {
+    width: 100%;
+    background: #152941;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .crear-form textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .crear-form button {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .crear-form button:hover {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 40px;
+    opacity: 0.7;
+  }
+</style>
+
+<div class="bandeja-container">
+  <div class="bandeja-header">
+    <h2><i class="bi bi-envelope-paper"></i> Bandeja de mensajes</h2>
+    <div class="bandeja-filtros">
+      <input type="text" id="buscar" placeholder="Buscar mensaje...">
+      <select id="filtro">
+        <option value="">Todos</option>
+        <option value="INFO">Informativos</option>
+        <option value="IMPORTANTE">Importantes</option>
+        <option value="URGENTE">Urgentes</option>
+      </select>
+      <button class="crear-btn" id="toggleCrear"><i class="bi bi-pencil-square"></i> Crear mensaje</button>
+    </div>
+  </div>
+
+  <!-- FORMULARIO CREAR MENSAJE -->
+  <form class="crear-form" id="formCrear">
+    <h3>Nuevo mensaje</h3>
+    <input type="text" name="asunto" placeholder="Asunto" required>
+    <select name="tipo" required>
+      <option value="">Tipo de mensaje</option>
+      <option value="INFO">Informativo</option>
+      <option value="IMPORTANTE">Importante</option>
+      <option value="URGENTE">Urgente</option>
+    </select>
+    <textarea name="contenido" placeholder="Escribe el contenido del mensaje..." required></textarea>
+    <button type="submit"><i class="bi bi-send"></i> Enviar mensaje</button>
+  </form>
+
+  <!-- LISTA DE MENSAJES -->
+  {% if mensajes %}
+  <div class="mensajes-grid" id="listaMensajes">
+    {% for m in mensajes %}
+    <div class="msg-card" data-titulo="{{ m.asunto|lower }}" data-tipo="{{ m.tipo }}">
+      <div class="msg-header">
+        <div class="msg-emisor">{{ m.remitente }}</div>
+        <div class="msg-tipo {{ m.tipo }}">{{ m.get_tipo_display }}</div>
+      </div>
+      <div class="msg-asunto">{{ m.asunto }}</div>
+      <div class="msg-contenido">{{ m.contenido|truncatewords:25 }}</div>
+      <div class="msg-fecha"><i class="bi bi-clock"></i> {{ m.fecha|date:"d M Y, H:i" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-results">No hay mensajes en tu bandeja.</div>
+  {% endif %}
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitulo"></h3>
+    <p id="modalContenido"></p>
+    <div class="modal-footer">
+      <button class="btn-close" id="btnCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const buscar = document.getElementById('buscar');
+  const filtro = document.getElementById('filtro');
+  const cards = [...document.querySelectorAll('.msg-card')];
+  const modalBg = document.getElementById('modalBg');
+  const modalTitulo = document.getElementById('modalTitulo');
+  const modalContenido = document.getElementById('modalContenido');
+  const btnCerrar = document.getElementById('btnCerrar');
+  const toggleCrear = document.getElementById('toggleCrear');
+  const formCrear = document.getElementById('formCrear');
+
+  // Mostrar/Ocultar formulario crear
+  toggleCrear.addEventListener('click', () => {
+    formCrear.classList.toggle('active');
+  });
+
+  // Filtro dinámico
+  function filtrar() {
+    const text = buscar.value.toLowerCase();
+    const tipo = filtro.value;
+    cards.forEach(c => {
+      const coincideTexto = c.dataset.titulo.includes(text);
+      const coincideTipo = tipo === "" || c.dataset.tipo === tipo;
+      c.style.display = coincideTexto && coincideTipo ? "flex" : "none";
+    });
+  }
+  buscar.addEventListener("input", filtrar);
+  filtro.addEventListener("change", filtrar);
+
+  // Modal detalle mensaje
+  cards.forEach(c => {
+    c.addEventListener("click", () => {
+      modalTitulo.textContent = c.querySelector(".msg-asunto").textContent;
+      modalContenido.textContent = c.querySelector(".msg-contenido").textContent;
+      modalBg.style.display = "flex";
+    });
+  });
+  btnCerrar.addEventListener("click", () => modalBg.style.display = "none");
+  modalBg.addEventListener("click", e => { if (e.target === modalBg) modalBg.style.display = "none"; });
+</script>
 {% endblock %}

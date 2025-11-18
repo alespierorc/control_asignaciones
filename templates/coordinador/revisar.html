@@ -1,27 +1,117 @@
-{% extends "base.html" %}
-{% block title %}Coordinador – Revisar expediente{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Revisar Expediente{% endblock %}
 
 {% block content %}
-<div class="layout">
-  <aside class="sidebar panel">
-    <div class="sidebar-group">
-      <a class="btn-side btn-ghost" href="{% url 'asignaciones:coordinador_menu' %}">
-        <i class="bi bi-arrow-left"></i> Volver
-      </a>
-    </div>
-    <div class="profile">
-      <a class="avatar" href="#"><i class="bi bi-person"></i></a>
-    </div>
-  </aside>
+<div class="container mt-4">
+  <h5 class="fw-bold text-primary mb-4 text-uppercase" style="letter-spacing: 1px;">
+    📘 Revisar Expediente
+  </h5>
 
-  <section class="panel">
-    <h2 class="panel-title">Revisar expediente</h2>
-    <hr class="separator" />
-    <div class="form-card">
-      <p>Maqueta de ejemplo. Aquí pondrás listado/filtros de expedientes.</p>
-    </div>
-  </section>
+  <div class="row">
+    <!-- PANEL IZQUIERDO -->
+    <div class="col-md-3">
+      <div class="p-3 rounded-4 shadow-sm" style="background-color:#4b5563; color:#f9fafb;">
+        <h6 class="fw-bold text-uppercase mb-3">COORDINADOR</h6>
 
-  <section class="panel content-placeholder"></section>
+        <div class="mb-3 p-3 rounded" style="background-color:#6b7280;">
+          <p class="fw-semibold mb-1 text-white-50">INDICACIÓN</p>
+          <p class="small mb-0">
+            Revisa el avance de los expedientes por contrato y N.º SIGED. 
+            Verifica las fechas de visita, derivación y el estado actual del expediente.
+          </p>
+        </div>
+
+        <div class="p-3 rounded" style="background-color:#6b7280;">
+          <p class="fw-semibold mb-1 text-white-50">RECOMENDACIÓN</p>
+          <p class="small mb-0">
+            Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b> 
+            y coordina con el supervisor las acciones necesarias para concluirlos.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO -->
+    <div class="col-md-9">
+      <div class="p-4 rounded-4 shadow-sm" style="background-color:#374151; color:#f3f4f6;">
+        <h6 class="fw-bold text-uppercase mb-3">EXPEDIENTE</h6>
+
+        <!-- FILTROS -->
+        <form method="get" class="row g-3 mb-4 p-3 rounded-3" style="background-color:#4b5563;">
+          <div class="col-md-6">
+            <label class="form-label text-white-50 fw-semibold">Contrato</label>
+            <select name="contrato" class="form-select form-select-sm bg-dark text-light border-0 shadow-sm">
+              <option value="">— Seleccionar —</option>
+              {% for contrato in contratos %}
+                <option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
+                  {{ contrato.numero }} – {{ contrato.oficina.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-white-50 fw-semibold">N.º SIGED</label>
+            <input type="text" name="siged" value="{{ request.GET.siged }}" placeholder="Ej. 2025-XXXX"
+              class="form-control form-control-sm bg-dark text-light border-0 shadow-sm">
+          </div>
+          <div class="col-md-12 text-end">
+            <button type="submit" class="btn btn-sm btn-primary shadow-sm px-4">
+              🔍 Buscar
+            </button>
+          </div>
+        </form>
+
+        <!-- RESULTADOS -->
+        <div class="p-3 rounded-3" style="background-color:#4b5563;">
+          {% if expedientes %}
+            {% for exp in expedientes %}
+              <div class="mb-4 border border-secondary rounded-3 p-3" style="background-color:#6b7280;">
+                <div class="row small">
+                  <div class="col-md-6">
+                    <p><b>Supervisor:</b> {{ exp.supervisor.get_full_name|default:exp.supervisor.username }}</p>
+                    <p><b>Código OSINERGMIN:</b> {{ exp.codigo|default:"—" }}</p>
+                    <p><b>Código de Actividad:</b> {{ exp.codigo_actividad|default:"—" }}</p>
+                    <p><b>Razón Social del Agente y/o Instalación:</b> {{ exp.razon_social|default:"—" }}</p>
+                    <p><b>Contrato:</b> {{ exp.contrato.numero }}</p>
+                    <p><b>Tipo de Supervisión:</b> {{ exp.get_tipo_supervision_display }}</p>
+                    <p><b>Carta Línea:</b> {{ exp.carta_linea|default:"—" }}</p>
+                    <p><b>Fecha de Visita:</b> {{ exp.fecha_visita|date:"d/m/Y"|default:"—" }}</p>
+                  </div>
+
+                  <div class="col-md-6">
+                    <p><b>N.º Expediente SIGED:</b> {{ exp.siged }}</p>
+                    <p><b>Fecha de Asignación:</b> {{ exp.fecha_asignacion|date:"d/m/Y" }}</p>
+                    <p><b>Oficina:</b> {{ exp.oficina.nombre }}</p>
+                    <p><b>Tipo de Documento:</b> {{ exp.get_tipo_documento_display }}</p>
+                    <p><b>Visita Programada:</b> {{ exp.visita_decision|default:"—" }}</p>
+                    <p><b>Fecha de Derivación:</b> {{ exp.fecha_derivacion|date:"d/m/Y"|default:"—" }}</p>
+                    <p><b>Estado:</b> 
+                      {% if exp.estado == "CONCLUIDO" %}
+                        <span class="badge bg-success">{{ exp.get_estado_display }}</span>
+                      {% elif exp.estado == "PENDIENTE" %}
+                        <span class="badge bg-warning text-dark">{{ exp.get_estado_display }}</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ exp.get_estado_display }}</span>
+                      {% endif %}
+                    </p>
+                  </div>
+
+                  <div class="col-12 mt-2">
+                    <p><b>Observaciones:</b> {{ exp.observaciones|default:"Sin observaciones" }}</p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-white-50 py-4">
+              <i class="bi bi-inbox"></i> No se encontraron expedientes registrados.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
