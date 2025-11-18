@@ -2,43 +2,141 @@
 {% block title %}Coordinador · Asignaciones{% endblock %}
 
 {% block content %}
-<div class="layout">
-  <!-- Sidebar izquierda -->
-  <aside class="sidebar panel">
-    <div class="sidebar-group">
-      <a class="btn-side btn-ghost" href="#"><i class="bi bi-list-task"></i> Asignaciones</a>
-      <a class="btn-side btn-ghost" href="#"><i class="bi bi-geo-alt"></i> Gastos de viaje</a>
-    </div>
-    <div class="profile">
-      <a class="avatar" href="#"><i class="bi bi-person"></i></a>
-    </div>
-  </aside>
+<style>
+  .coord-home {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+  }
 
-  <!-- Tarjeta central -->
-  <section class="panel">
-    <h2 class="panel-title">ASIGNACIONES</h2>
-    <hr class="separator" />
+  @media (max-width: 960px) {
+    .coord-home {
+      grid-template-columns: 1fr;
+    }
+  }
 
-    <div class="acciones-grid">
-      <a class="btn-accion is-cta" href="{% url 'asignaciones:coordinador_registrar' %}">
-        <i class="bi bi-clipboard2-plus"></i>
+  .coord-card {
+    background: var(--panel);
+    border-radius: var(--radius-xl);
+    padding: 20px 18px;
+    box-shadow: var(--shadow-lg);
+    color: #fff;
+  }
+
+  .coord-card h2 {
+    margin: 0;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+  }
+
+  .coord-separator {
+    border: none;
+    height: 3px;
+    border-radius: 999px;
+    background: #5e6676;
+    margin: 10px 0 16px;
+  }
+
+  .coord-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+  }
+
+  .coord-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 16px;
+    padding: 12px 16px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: #0f3555;
+    color: #f5f7ff;
+    box-shadow: var(--shadow);
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+
+  .coord-btn i {
+    font-size: 18px;
+  }
+
+  .coord-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+    background: #144166;
+  }
+
+  .coord-btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .35);
+  }
+
+  .coord-btn-outline:hover {
+    background: rgba(15, 53, 85, .8);
+  }
+
+  .coord-placeholder {
+    background: var(--panel);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: #d4d9e6;
+  }
+
+  .coord-placeholder-inner {
+    text-align: center;
+    max-width: 420px;
+  }
+
+  .coord-placeholder-inner h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .coord-placeholder-inner p {
+    margin: 0;
+    font-size: 13px;
+    opacity: .85;
+  }
+</style>
+
+<div class="coord-home">
+  <!-- Tarjeta de acciones -->
+  <section class="coord-card">
+    <h2>Asignaciones</h2>
+    <hr class="coord-separator" />
+    <div class="coord-actions">
+      <a class="coord-btn" href="{% url 'asignaciones:coordinador_registrar' %}">
         <span>Registrar expedientes</span>
+        <i class="bi bi-clipboard2-plus"></i>
       </a>
-      <a class="btn-accion" href="{% url 'asignaciones:coordinador_revisar' %}">
+      <a class="coord-btn coord-btn-outline" href="{% url 'asignaciones:coordinador_revisar' %}">
+        <span>Revisar expedientes</span>
         <i class="bi bi-search"></i>
-        <span>Revisar expediente</span>
       </a>
-    </div>
-
-    <!-- Opcional: iconitos decorativos, como en supervisor -->
-    <div class="hero-illus">
-      <i class="bi bi-journal-text"></i>
-      <i class="bi bi-journal-plus"></i>
-      <i class="bi bi-patch-check"></i>
     </div>
   </section>
 
-  <!-- Lienzo derecho -->
-  <section class="panel content-placeholder"></section>
+  <!-- Panel derecho “vacío bonito” -->
+  <section class="coord-placeholder">
+    <div class="coord-placeholder-inner">
+      <h3>Panel de coordinación</h3>
+      <p>
+        Desde aquí puedes registrar nuevos items de expedientes para los
+        supervisores y consultar el estado de las asignaciones realizadas.
+      </p>
+    </div>
+  </section>
 </div>
 {% endblock %}

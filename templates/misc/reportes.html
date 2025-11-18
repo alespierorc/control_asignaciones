@@ -1,5 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Reportes{% endblock %}
+
 {% block content %}
-<div class="panel"><h1 style="margin:0">Reportes</h1><hr class="separator"/><p>Página de reportes (placeholder).</p></div>
+<style>
+  .reportes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:20px}
+  .reporte-card{background:rgba(255,255,255,.08);border-radius:18px;padding:20px;box-shadow:var(--shadow-lg);color:#fff;cursor:pointer;transition:.25s}
+  .reporte-card:hover{background:rgba(255,255,255,.14);transform:translateY(-2px)}
+  .reporte-card i{font-size:30px;margin-bottom:10px;display:block}
+  .reporte-card h4{margin:0 0 4px}
+  .reporte-card p{opacity:.8;margin:0;font-size:14px}
+</style>
+
+<div class="panel">
+  <h2 class="panel-title"><i class="bi bi-bar-chart"></i> REPORTES</h2>
+  <hr class="separator"/>
+
+  <div class="reportes-grid">
+    <div class="reporte-card">
+      <i class="bi bi-folder2-open"></i>
+      <h4>Expedientes</h4>
+      <p>Genera reportes de los expedientes por estado, tipo o fecha.</p>
+    </div>
+    <div class="reporte-card">
+      <i class="bi bi-people"></i>
+      <h4>Usuarios</h4>
+      <p>Resumen de supervisores, coordinadores y actividades registradas.</p>
+    </div>
+    <div class="reporte-card">
+      <i class="bi bi-geo-alt"></i>
+      <h4>Oficinas Regionales</h4>
+      <p>Consulta por región y supervisiones asignadas.</p>
+    </div>
+  </div>
+</div>
 {% endblock %}
