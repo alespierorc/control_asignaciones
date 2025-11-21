@@ -1,0 +1,22 @@
+{% for a in anuncios %}
+<div class="anuncio-item {{ a.tipo }}">
+  <div class="anuncio-titulo">
+    {% if a.tipo == 'alerta' %}
+      <i class="fas fa-exclamation-triangle" style="color:#f59e0b"></i>
+    {% elif a.tipo == 'recordatorio' %}
+      <i class="fas fa-clock" style="color:#10b981"></i>
+    {% elif a.tipo == 'asignacion' %}
+      <i class="fas fa-tasks" style="color:#3b82f6"></i>
+    {% else %}
+      <i class="fas fa-info-circle" style="color:#9ca3af"></i>
+    {% endif %}
+    {{ a.titulo }}
+  </div>
+  <div class="anuncio-meta">
+    Enviado por <b>{{ a.remitente.get_full_name }}</b> — {{ a.creado_en|date:"d/m/Y H:i" }}
+  </div>
+  <div class="anuncio-contenido">{{ a.contenido }}</div>
+</div>
+{% empty %}
+<p style="opacity:.8;">No hay anuncios disponibles.</p>
+{% endfor %}

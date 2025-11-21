@@ -4,113 +4,226 @@
 {% block title %}Revisar Expediente{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h5 class="fw-bold text-primary mb-4 text-uppercase" style="letter-spacing: 1px;">
-    📘 Revisar Expediente
-  </h5>
+<style>
+  .rev-wrapper {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    margin: 40px auto;
+    max-width: 95%;
+    color: #f3f4f6;
+  }
 
-  <div class="row">
-    <!-- PANEL IZQUIERDO -->
-    <div class="col-md-3">
-      <div class="p-3 rounded-4 shadow-sm" style="background-color:#4b5563; color:#f9fafb;">
-        <h6 class="fw-bold text-uppercase mb-3">COORDINADOR</h6>
+  @media (max-width: 960px) {
+    .rev-wrapper {
+      grid-template-columns: 1fr;
+    }
+  }
 
-        <div class="mb-3 p-3 rounded" style="background-color:#6b7280;">
-          <p class="fw-semibold mb-1 text-white-50">INDICACIÓN</p>
-          <p class="small mb-0">
-            Revisa el avance de los expedientes por contrato y N.º SIGED. 
-            Verifica las fechas de visita, derivación y el estado actual del expediente.
-          </p>
-        </div>
+  .rev-panel {
+    background: #4b5563;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
 
-        <div class="p-3 rounded" style="background-color:#6b7280;">
-          <p class="fw-semibold mb-1 text-white-50">RECOMENDACIÓN</p>
-          <p class="small mb-0">
-            Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b> 
-            y coordina con el supervisor las acciones necesarias para concluirlos.
-          </p>
-        </div>
-      </div>
+  .rev-panel h5 {
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .rev-section {
+    background: #374151;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+
+  .rev-section h5 {
+    font-weight: 700;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+
+  .rev-filter {
+    background: #4b5563;
+    padding: 18px;
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .rev-filter select,
+  .rev-filter input {
+    background: #6b7280;
+    border: 1px solid #81a1c1;
+    border-radius: 10px;
+    color: #f3f4f6;
+    padding: 10px 14px;
+    font-size: 14px;
+    min-width: 200px;
+  }
+
+  .rev-filter input::placeholder {
+    color: #cbd5e1;
+    opacity: 0.8;
+  }
+
+  .rev-filter button {
+    background: #5e81ac;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .rev-filter button:hover {
+    background: #81a1c1;
+  }
+
+  .rev-table-container {
+    background: #4b5563;
+    border-radius: 12px;
+    margin-top: 20px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    padding: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: 400px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+  }
+
+  thead {
+    background: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  }
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #6b7280;
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #e5e9f0;
+    font-weight: 600;
+  }
+
+  tbody tr:hover {
+    background: #6b7280;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 20px;
+    color: #d8dee9;
+  }
+</style>
+
+<div class="rev-wrapper">
+  <!-- PANEL IZQUIERDO -->
+  <div class="rev-panel">
+    <h5>Coordinador</h5>
+
+    <div class="p-3 mb-3 rounded" style="background:#6b7280;">
+      <p class="fw-semibold mb-1 text-white-50">Indicaciones</p>
+      <p class="small mb-0">
+        Revisa el avance de los expedientes por contrato y carta línea.
+        Verifica las fechas de visita, derivación y el estado actual del expediente.
+      </p>
     </div>
 
-    <!-- PANEL DERECHO -->
-    <div class="col-md-9">
-      <div class="p-4 rounded-4 shadow-sm" style="background-color:#374151; color:#f3f4f6;">
-        <h6 class="fw-bold text-uppercase mb-3">EXPEDIENTE</h6>
+    <div class="p-3 rounded" style="background:#6b7280;">
+      <p class="fw-semibold mb-1 text-white-50">Recomendación</p>
+      <p class="small mb-0">
+        Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b>
+        y coordina con el supervisor las acciones necesarias para concluirlos.
+      </p>
+    </div>
+  </div>
 
-        <!-- FILTROS -->
-        <form method="get" class="row g-3 mb-4 p-3 rounded-3" style="background-color:#4b5563;">
-          <div class="col-md-6">
-            <label class="form-label text-white-50 fw-semibold">Contrato</label>
-            <select name="contrato" class="form-select form-select-sm bg-dark text-light border-0 shadow-sm">
-              <option value="">— Seleccionar —</option>
-              {% for contrato in contratos %}
-                <option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
-                  {{ contrato.numero }} – {{ contrato.oficina.nombre }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label text-white-50 fw-semibold">N.º SIGED</label>
-            <input type="text" name="siged" value="{{ request.GET.siged }}" placeholder="Ej. 2025-XXXX"
-              class="form-control form-control-sm bg-dark text-light border-0 shadow-sm">
-          </div>
-          <div class="col-md-12 text-end">
-            <button type="submit" class="btn btn-sm btn-primary shadow-sm px-4">
-              🔍 Buscar
-            </button>
-          </div>
-        </form>
+  <!-- PANEL DERECHO -->
+  <div class="rev-section">
+    <h5>Revisar Expediente</h5>
 
-        <!-- RESULTADOS -->
-        <div class="p-3 rounded-3" style="background-color:#4b5563;">
+    <!-- FILTROS -->
+    <form method="get" class="rev-filter">
+      <select name="contrato">
+        <option value="">-- Seleccionar Contrato --</option>
+        {% for contrato in contratos %}
+          <option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
+            {{ contrato.numero }} – {{ contrato.oficina.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <input type="text" name="carta_linea" placeholder="Carta Línea" value="{{ request.GET.carta_linea }}">
+      <button type="submit">Buscar</button>
+    </form>
+
+    <!-- TABLA DE RESULTADOS -->
+    <div class="rev-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>N° SIGED</th>
+            <th>Carta Línea</th>
+            <th>Código OSINERGMIN</th>
+            <th>Código Actividad</th>
+            <th>Razón Social</th>
+            <th>Contrato</th>
+            <th>Oficina Regional</th>
+            <th>Supervisor</th>
+            <th>Fecha Asignación</th>
+            <th>Fecha Derivación</th>
+            <th>Fecha Visita</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
           {% if expedientes %}
-            {% for exp in expedientes %}
-              <div class="mb-4 border border-secondary rounded-3 p-3" style="background-color:#6b7280;">
-                <div class="row small">
-                  <div class="col-md-6">
-                    <p><b>Supervisor:</b> {{ exp.supervisor.get_full_name|default:exp.supervisor.username }}</p>
-                    <p><b>Código OSINERGMIN:</b> {{ exp.codigo|default:"—" }}</p>
-                    <p><b>Código de Actividad:</b> {{ exp.codigo_actividad|default:"—" }}</p>
-                    <p><b>Razón Social del Agente y/o Instalación:</b> {{ exp.razon_social|default:"—" }}</p>
-                    <p><b>Contrato:</b> {{ exp.contrato.numero }}</p>
-                    <p><b>Tipo de Supervisión:</b> {{ exp.get_tipo_supervision_display }}</p>
-                    <p><b>Carta Línea:</b> {{ exp.carta_linea|default:"—" }}</p>
-                    <p><b>Fecha de Visita:</b> {{ exp.fecha_visita|date:"d/m/Y"|default:"—" }}</p>
-                  </div>
-
-                  <div class="col-md-6">
-                    <p><b>N.º Expediente SIGED:</b> {{ exp.siged }}</p>
-                    <p><b>Fecha de Asignación:</b> {{ exp.fecha_asignacion|date:"d/m/Y" }}</p>
-                    <p><b>Oficina:</b> {{ exp.oficina.nombre }}</p>
-                    <p><b>Tipo de Documento:</b> {{ exp.get_tipo_documento_display }}</p>
-                    <p><b>Visita Programada:</b> {{ exp.visita_decision|default:"—" }}</p>
-                    <p><b>Fecha de Derivación:</b> {{ exp.fecha_derivacion|date:"d/m/Y"|default:"—" }}</p>
-                    <p><b>Estado:</b> 
-                      {% if exp.estado == "CONCLUIDO" %}
-                        <span class="badge bg-success">{{ exp.get_estado_display }}</span>
-                      {% elif exp.estado == "PENDIENTE" %}
-                        <span class="badge bg-warning text-dark">{{ exp.get_estado_display }}</span>
-                      {% else %}
-                        <span class="badge bg-secondary">{{ exp.get_estado_display }}</span>
-                      {% endif %}
-                    </p>
-                  </div>
-
-                  <div class="col-12 mt-2">
-                    <p><b>Observaciones:</b> {{ exp.observaciones|default:"Sin observaciones" }}</p>
-                  </div>
-                </div>
-              </div>
+            {% for e in expedientes %}
+              <tr>
+                <td>{{ e.siged }}</td>
+                <td>{{ e.carta_linea }}</td>
+                <td>{{ e.codigo }}</td>
+                <td>{{ e.codigo_actividad }}</td>
+                <td>{{ e.razon_social }}</td>
+                <td>{{ e.contrato.numero }}</td>
+                <td>{{ e.oficina.nombre }}</td>
+                <td>{{ e.supervisor.get_full_name }}</td>
+                <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+                <td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
+                <td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
+                <td>{{ e.estado }}</td>
+                <td>{{ e.observaciones|default:"Sin observaciones" }}</td>
+              </tr>
             {% endfor %}
           {% else %}
-            <div class="text-center text-white-50 py-4">
-              <i class="bi bi-inbox"></i> No se encontraron expedientes registrados.
-            </div>
+            <tr>
+              <td colspan="13" class="no-results">No se encontraron expedientes registrados.</td>
+            </tr>
           {% endif %}
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

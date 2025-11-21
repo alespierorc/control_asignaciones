@@ -1,29 +1,132 @@
 {% extends "base.html" %}
-{% block title %}Administración (simple){% endblock %}
+{% block title %}Panel Simple – Administrador{% endblock %}
 
 {% block content %}
-<div class="layout-grid">
-  <aside class="sidebar panel">
-    <div class="sidebar-group">
-      <a class="btn-side btn-ghost"><i class="bi bi-list-task"></i> Asignaciones</a>
-      <a class="btn-side btn-ghost"><i class="bi bi-geo-alt"></i> Gastos de viaje</a>
-    </div>
-    <div class="profile"><a class="avatar" href="#"><i class="bi bi-briefcase"></i></a></div>
-  </aside>
+<style>
+  .admin-home {
+    display: grid;
+    grid-template-columns: minmax(300px, 380px) 1fr;
+    gap: 24px;
+    padding: 24px;
+    align-items: stretch;
+  }
 
-  <section class="panel">
-    <h2 class="panel-title">ASIGNACIONES</h2>
-    <hr class="separator" />
-    <div class="acciones-grid">
-      <a class="btn-accion" href="{% url 'asignaciones:admin_simple_revisar' %}">
-        <i class="bi bi-search"></i> <span>Revisar expediente</span>
+  @media (max-width: 960px) {
+    .admin-home {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .admin-card {
+    background: #2e3440;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    color: #eceff4;
+  }
+
+  .admin-card h2 {
+    margin: 0;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #d8dee9;
+  }
+
+  .admin-separator {
+    border: none;
+    height: 3px;
+    border-radius: 999px;
+    background: #4c566a;
+    margin: 10px 0 16px;
+  }
+
+  .admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .admin-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 14px;
+    padding: 12px 16px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: #4c566a;
+    color: #eceff4;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+
+  .admin-btn i {
+    font-size: 18px;
+  }
+
+  .admin-btn:hover {
+    transform: translateY(-1px);
+    background: #5e81ac;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-placeholder {
+    background: #3b4252;
+    border-radius: 16px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: #d8dee9;
+  }
+
+  .admin-placeholder-inner {
+    text-align: center;
+    max-width: 420px;
+  }
+
+  .admin-placeholder-inner h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #eceff4;
+  }
+
+  .admin-placeholder-inner p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+</style>
+
+<div class="admin-home">
+  <!-- Panel lateral con acciones -->
+  <section class="admin-card">
+    <h2>Asignaciones</h2>
+    <hr class="admin-separator" />
+    <div class="admin-actions">
+      <a class="admin-btn" href="{% url 'asignaciones:admin_simple_revisar' %}">
+        <span>Revisar Expediente</span>
+        <i class="bi bi-search"></i>
       </a>
-      <a class="btn-accion" href="{% url 'asignaciones:admin_simple_descargar' %}">
-        <i class="bi bi-download"></i> <span>Descargar</span>
+      <a class="admin-btn" href="{% url 'asignaciones:admin_simple_descargar' %}">
+        <span>Descargar</span>
+        <i class="bi bi-download"></i>
       </a>
     </div>
   </section>
 
-  <section class="panel content-placeholder"></section>
+  <!-- Panel derecho de bienvenida -->
+  <section class="admin-placeholder">
+    <div class="admin-placeholder-inner">
+      <h3>Panel Simple del Administrador</h3>
+      <p>Desde este panel puedes revisar y descargar los expedientes asignados.</p>
+    </div>
+  </section>
 </div>
 {% endblock %}

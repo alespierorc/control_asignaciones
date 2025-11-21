@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear anuncio{% endblock %}
+
+{% block content %}
+<style>
+  .crear-wrap {
+    margin-top: 30px;
+    background: #1f2937;
+    border-radius: 18px;
+    padding: 28px;
+    color: #f3f4f6;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    max-width: 850px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .crear-wrap h2 {
+    font-size: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .form-field {
+    margin-bottom: 16px;
+  }
+
+  .form-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .btn-submit {
+    background: #2563eb;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .btn-submit:hover {
+    background: #3b82f6;
+    transform: translateY(-1px);
+  }
+
+  .toast {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    background: #10b981;
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-15px);
+    transition: all 0.4s ease;
+  }
+
+  .toast.error {
+    background: #ef4444;
+  }
+
+  .toast.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+</style>
+
+<div class="crear-wrap">
+  <h2><i class="fas fa-plus-circle"></i> Crear nuevo anuncio</h2>
+
+  <form id="formAnuncio" method="POST" novalidate>
+    {% csrf_token %}
+    <div class="form-field">
+      <label for="titulo">Título del anuncio</label>
+      <input type="text" id="titulo" name="titulo" class="form-input" placeholder="Ej. Recordatorio de reunión semanal" required>
+    </div>
+
+    <div class="form-field">
+      <label for="contenido">Contenido</label>
+      <textarea id="contenido" name="contenido" class="form-textarea" placeholder="Escribe el contenido del anuncio..." required></textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="tipo">Tipo de anuncio</label>
+      <select id="tipo" name="tipo" class="form-select">
+        <option value="general">General</option>
+        <option value="asignacion">Asignación</option>
+        <option value="alerta">Alerta</option>
+        <option value="recordatorio">Recordatorio</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label for="grupo_destino">Enviar a grupo (opcional)</label>
+      <select id="grupo_destino" name="grupo_destino" class="form-select">
+        <option value="">-- Selecciona un grupo --</option>
+        {% for g in grupos %}
+          <option value="{{ g.id }}">{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label for="destinatario">Enviar a usuario específico (opcional)</label>
+      <select id="destinatario" name="destinatario" class="form-select">
+        <option value="">-- Selecciona un usuario --</option>
+        {% for u in usuarios %}
+          <option value="{{ u.id }}">{{ u.get_full_name }} ({{ u.username }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+      <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Enviar anuncio</button>
+    </div>
+  </form>
+</div>
+
+<!-- TOASTS -->
+<div class="toast" id="toastSuccess"><i class="fas fa-check-circle"></i> Anuncio enviado correctamente</div>
+<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> Debes completar los campos obligatorios</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("formAnuncio");
+  const toastSuccess = document.getElementById("toastSuccess");
+  const toastError = document.getElementById("toastError");
+
+  const showToast = (el) => {
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3000);
+  };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const titulo = formData.get("titulo").trim();
+    const contenido = formData.get("contenido").trim();
+
+    if (!titulo || !contenido) {
+      showToast(toastError);
+      return;
+    }
+
+    const response = await fetch("{% url 'asignaciones:crear_anuncio' %}", {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (data.status === "success") {
+      showToast(toastSuccess);
+      form.reset();
+      setTimeout(() => { window.location.href = "{% url 'asignaciones:anuncios' %}"; }, 1000);
+    } else {
+      showToast(toastError);
+    }
+  });
+});
+</script>
+{% endblock %}

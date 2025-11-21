@@ -8,8 +8,12 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
-    "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
-    "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     "asignaciones",  # <- nuestra app
 ]
 
@@ -28,7 +32,7 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],   # <- carpeta global de plantillas
+        "DIRS": [BASE_DIR / "templates"],  # carpeta global de plantillas
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -36,6 +40,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # 👇 Agregado: context processor para mostrar anuncios globales
+                "asignaciones.context_processors.anuncios_context",
             ],
         },
     },
@@ -57,9 +63,6 @@ STATICFILES_DIRS = [BASE_DIR / "static"]  # <- carpeta global de estáticos
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Login / Redirecciones
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "asignaciones:supervisor_menu"  # o "asignaciones:home"
-
 LOGIN_REDIRECT_URL = "asignaciones:home_router"
-
-

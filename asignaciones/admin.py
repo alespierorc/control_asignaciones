@@ -64,9 +64,11 @@ class MensajeAdmin(admin.ModelAdmin):
 # ============================================================
 #                 ADMINISTRADOR: ANUNCIOS
 # ============================================================
+from django.contrib import admin
+from .models import Anuncio
+
 @admin.register(Anuncio)
 class AnuncioAdmin(admin.ModelAdmin):
-    list_display = ("titulo", "destino", "creador", "creado_en")
-    search_fields = ("titulo", "contenido", "creador__username")
-    list_filter = ("destino", "creado_en")
-    ordering = ("-creado_en",)
+    list_display = ("titulo", "destinatario", "remitente", "fecha_creacion")
+    list_filter = ("tipo", "grupo_destino", "fecha_creacion")
+    ordering = ["-fecha_creacion"]

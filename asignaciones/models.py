@@ -98,23 +98,37 @@ class Mensaje(models.Model):
         return f"{self.asunto} ({self.remitente} → {self.destinatario})"
 
 
-# ============================================================
-#                  ANUNCIOS INTERNOS
-# ============================================================
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import User, Group
 
 class Anuncio(models.Model):
-    """Anuncios publicados por administradores o coordinadores."""
-    DESTINOS = [
-        ("SUP", "Supervisores"),
-        ("COORD", "Coordinadores"),
-        ("AMBOS", "Ambos"),
+    TIPOS = [
+        ("general", "General"),
+        ("asignacion", "Asignación"),
+        ("alerta", "Alerta"),
+        ("recordatorio", "Recordatorio"),
     ]
 
     titulo = models.CharField(max_length=200)
     contenido = models.TextField()
-    destino = models.CharField(max_length=10, choices=DESTINOS)
-    creador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    creado_en = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=20, choices=TIPOS, default="general")
+    remitente = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="anuncios_enviados"
+    )
+    destinatario = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="anuncios_recibidos"
+    )
+    grupo_destino = models.ForeignKey(
+        Group, on_delete=models.SET_NULL, null=True, blank=True, related_name="anuncios_grupo"
+    )
+    fecha_creacion = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.titulo} ({self.destino})"
+        return f"{self.titulo} ({self.tipo})"
+
+    class Meta:
+        ordering = ["-fecha_creacion"]
+        verbose_name = "Anuncio"
+        verbose_name_plural = "Anuncios"
+
