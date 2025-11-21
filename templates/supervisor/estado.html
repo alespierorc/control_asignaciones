@@ -1,166 +1,403 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Estado de expedientes – Supervisor{% endblock %}
+{% block title %}Gestión de estado del expediente{% endblock %}
 
 {% block content %}
 <style>
-  /* Mantenemos el mismo estilo base, no repetimos todo por brevedad */
-  .panel { color: #fff; padding: 20px; }
-  .sup-wrap { display: grid; grid-template-columns: 240px 420px 1fr; gap: 22px; align-items: start; }
-  @media (max-width:1280px){.sup-wrap{grid-template-columns:200px 1fr}}
-  @media (max-width:960px){.sup-wrap{grid-template-columns:1fr}}
-  .sidebar{background:#1c2635;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(0,0,0,0.35);display:flex;flex-direction:column;justify-content:space-between;}
-  .brand-slot{background:#2e3a4b;padding:10px 0;border-radius:12px;text-align:center;font-weight:700;color:#dbeafe;letter-spacing:.5px}
-  .menu-btn{display:flex;align-items:center;gap:8px;background:#3b556e;padding:10px 14px;border-radius:999px;color:#fff;font-weight:600;text-decoration:none;transition:all .2s ease}
-  .menu-btn:hover{background:#4c6788;transform:translateY(-2px)}
-  .side-avatar{background:#20435d;height:48px;width:48px;border-radius:50%;display:grid;place-items:center;font-size:22px;margin-left:auto;box-shadow:0 6px 12px rgba(0,0,0,0.3)}
-  .info-col{display:grid;gap:12px}
-  .guide{background:#243347;border-radius:14px;padding:14px 16px;color:#e5e9f0;display:grid;grid-template-columns:38px 1fr auto;align-items:start;gap:12px;position:relative;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06),0 2px 6px rgba(0,0,0,0.3)}
-  .g-icon{height:38px;width:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:grid;place-items:center;color:#9cc4ff;font-size:18px}
-  .form-card{background:#1e2b3c;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,0.35)}
-  .form-card h4{margin:0 0 10px;text-transform:uppercase;letter-spacing:.6px}
-  .separator{border:none;height:3px;background:#3b4758;border-radius:6px;margin:8px 0 16px}
-  .fields-grid{display:grid;gap:12px}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .field label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;opacity:.85}
-  .blue-input,.blue-select,.blue-textarea{width:100%;background:#0f2a44;border:1px solid rgba(255,255,255,.08);color:#f3f4f6;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;transition:all .2s ease}
-  .blue-input:focus,.blue-select:focus,.blue-textarea:focus{border-color:#60a5fa;background:#143b61;box-shadow:0 0 0 2px rgba(96,165,250,.25)}
-  .blue-textarea{resize:vertical;min-height:100px}
-  .checkline{display:flex;align-items:center;gap:10px}
-  .btn-primary{background:#0d4a7a;color:#fff;border:0;border-radius:14px;padding:12px 24px;font-weight:800;cursor:pointer;transition:all .2s ease}
-  .btn-primary:hover{background:#14639f;transform:translateY(-1px)}
+  /* ======= ESTRUCTURA PRINCIPAL ======= */
+  .estado-wrap {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 22px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 960px) {
+    .estado-wrap { grid-template-columns: 1fr; }
+  }
+
+  /* ======= PANEL IZQUIERDO ======= */
+  .panel-left {
+    background: #374151;
+    color: #f3f4f6;
+    border-radius: 16px;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+
+  .info-card {
+    background: #1f2937;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+
+  .info-card:hover {
+    background: #2d3748;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  }
+
+  .icon-circle {
+    width: 40px; height: 40px; min-width: 40px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: #3b82f6; color: #fff; font-size: 16px;
+  }
+
+  .icon-circle.warning { background: #9ca3af; }
+
+  .info-text h5 { margin-bottom: 6px; font-size: 15px; font-weight: 700; }
+  .info-text p { font-size: 13.5px; opacity: .9; margin-bottom: 6px; }
+
+  .info-text ul {
+    margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; opacity: .95;
+  }
+
+  .info-text li { margin-bottom: 4px; }
+
+  /* ======= CONTENEDOR PRINCIPAL ======= */
+  .estado-main {
+    background: #1f2937; border-radius: 18px; color: #f9fafb;
+    padding: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .estado-main h4 { font-weight: 700; font-size: 18px; margin-bottom: 18px; }
+
+  /* ======= FILTROS ======= */
+  .filtros {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 18px;
+  }
+
+  .filtros input {
+    background: #111827; border: 1px solid #374151; border-radius: 10px;
+    padding: 10px; color: #e5e7eb; width: 240px;
+  }
+
+  .filtros button {
+    background: #3b82f6; border: none; color: #fff; font-weight: 600;
+    border-radius: 10px; padding: 10px 20px; cursor: pointer; transition: background 0.3s;
+  }
+
+  .filtros button:hover { background: #2563eb; }
+
+  /* ======= TABLA PRINCIPAL ======= */
+  .tabla-container {
+    background: #2d3748; border-radius: 12px; overflow-x: auto;
+    padding: 10px; margin-bottom: 20px;
+  }
+
+  table { width: 100%; border-collapse: collapse; color: #e5e7eb; font-size: 14px; }
+
+  th, td { padding: 10px 8px; white-space: nowrap; }
+
+  th {
+    text-transform: uppercase; font-size: 12px; letter-spacing: 0.3px;
+    opacity: 0.8; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  tr:nth-child(even) { background: rgba(255,255,255,0.04); }
+
+  /* ======= FORMULARIO ======= */
+  .estado-form {
+    background: #2d3748; border-radius: 12px; padding: 20px;
+  }
+
+  .estado-form label {
+    display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px;
+  }
+
+  .estado-form input, .estado-form textarea {
+    background: #111827; border: 1px solid #374151; border-radius: 10px;
+    color: #f9fafb; padding: 10px; width: 100%; margin-bottom: 14px;
+  }
+
+  .estado-form textarea { resize: none; height: 90px; }
+
+  /* Toggle Switch */
+  .toggle-wrapper {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; margin-bottom: 12px;
+  }
+
+  .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #4b5563; transition: .3s; border-radius: 20px;
+  }
+
+  .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px;
+    left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%;
+  }
+
+  input:checked + .slider { background-color: #10b981; }
+  input:checked + .slider:before { transform: translateX(20px); }
+
+  .toggle-wrapper span { font-weight: 600; color: #f3f4f6; }
+
+  /* ======= BOTÓN GUARDAR ======= */
+  .btn-guardar {
+    background: #2563eb; border: none; color: white; font-weight: 600;
+    border-radius: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.3s;
+  }
+
+  .btn-guardar.active { background: #10b981; }
+  .btn-guardar.active:hover { background: #059669; }
+
+  /* ======= TABLA FINAL ======= */
+  .tabla-final {
+    background: #1f2937; border-radius: 14px; padding: 18px; margin-top: 28px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .tabla-final h5 {
+    font-weight: 700; font-size: 18px; text-align: center;
+    margin-bottom: 14px; color: #f9fafb;
+    border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
+  }
+
+  /* ======= TOAST ======= */
+  .toast {
+    position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff;
+    padding: 14px 20px; border-radius: 10px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
+    transform: translateY(-15px); transition: all 0.4s ease;
+  }
+
+  .toast.error { background: #ef4444; }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 </style>
 
-<div class="panel">
-  <h2 class="panel-title">📋 Estado de expedientes</h2>
-  <hr class="separator"/>
-
-  <div class="sup-wrap">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div>
-        <div class="brand-slot"><i class="bi bi-clipboard2"></i> Supervisor</div>
-        <a class="menu-btn" href="{% url 'asignaciones:home_supervisor' %}">
-          <i class="bi bi-list"></i> Menú
-        </a>
+<div class="estado-wrap">
+  <div class="panel-left">
+    <div class="info-card">
+      <div class="icon-circle"><i class="fas fa-info"></i></div>
+      <div class="info-text">
+        <h5>Indicaciones</h5>
+        <p>Busca el expediente por <b>N.º SIGED</b> o <b>Carta de línea</b>, asigna <b>fecha de derivación</b> y márcalo como <b>concluido</b> cuando corresponda.</p>
       </div>
-      <div class="side-avatar"><i class="bi bi-person"></i></div>
-    </aside>
+    </div>
 
-    <!-- Guías -->
-    <section class="info-col">
-      <article class="guide">
-        <div class="g-icon"><i class="bi bi-folder2-open"></i></div>
-        <div>
-          <h6>Estado</h6>
-          <p>Selecciona el <b>N.º SIGED</b> para cargar automáticamente sus datos.</p>
-        </div>
-        <span class="tip"><i class="bi bi-info-lg"></i></span>
-      </article>
-      <article class="guide">
-        <div class="g-icon"><i class="bi bi-calendar2-event"></i></div>
-        <div>
-          <h6>Derivación</h6>
-          <p>Registra o ajusta la <b>fecha de derivación</b>.</p>
-        </div>
-        <span class="tip"><i class="bi bi-info-lg"></i></span>
-      </article>
-      <article class="guide">
-        <div class="g-icon"><i class="bi bi-clipboard-check"></i></div>
-        <div>
-          <h6>Conclusión</h6>
-          <p>Marca <b>Concluido</b> y agrega observaciones si lo consideras necesario.</p>
-        </div>
-        <span class="tip"><i class="bi bi-info-lg"></i></span>
-      </article>
-    </section>
+    <div class="info-card">
+      <div class="icon-circle warning"><i class="fas fa-exclamation-circle"></i></div>
+      <div class="info-text">
+        <h5>Recomendaciones</h5>
+        <ul>
+          <li>Verifica los datos antes de guardar.</li>
+          <li>Si no marcas “Concluido”, no se permitirá guardar.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="estado-main">
+    <h4>Gestión de estado del expediente</h4>
+
+    <!-- Filtros -->
+    <form method="get" class="filtros">
+      <div>
+        <label>N.º SIGED</label>
+        <input type="text" id="sigedInput" name="siged" list="sigedList" placeholder="Ej. 2025-0001">
+        <datalist id="sigedList"></datalist>
+      </div>
+      <div>
+        <label>Carta de línea</label>
+        <input type="text" id="cartaInput" name="carta_linea" list="cartaList" placeholder="Ej. CARTA 045-2025-OSIN">
+        <datalist id="cartaList"></datalist>
+      </div>
+      <button type="button" id="btnBuscar">Buscar</button>
+    </form>
+
+    <!-- Tabla principal -->
+    <div class="tabla-container">
+      <table id="tablaBusqueda">
+        <thead>
+          <tr>
+            <th>Seleccionar</th>
+            <th>N.º SIGED</th>
+            <th>Carta línea</th>
+            <th>Código actividad</th>
+            <th>Tipo supervisión</th>
+            <th>Fecha asignación</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="6">Sin resultados.</td></tr></tbody>
+      </table>
+    </div>
 
     <!-- Formulario -->
-    <section class="form-col">
-      <div class="form-card">
-        <h4>Datos del expediente</h4>
+    <form method="post" id="formEstado" class="estado-form">
+      {% csrf_token %}
+      <label>Fecha de derivación</label>
+      <input type="date" name="fecha_derivacion" id="fechaDerivacion">
 
-        <form method="post" id="frm-estado" novalidate>
-          {% csrf_token %}
-          <div class="fields-grid">
-            <div class="field">
-              <label><i class="bi bi-hash"></i> N.º de expediente SIGED</label>
-              <select id="sel-exp" name="expediente" class="blue-select" required>
-                {% if expedientes %}
-                  <option value="">— Seleccionar —</option>
-                  {% for e in expedientes %}
-                    <option value="{{ e.id }}"
-                      data-codigo="{{ e.codigo|default_if_none:'' }}"
-                      data-carta="{{ e.carta_linea|default_if_none:'' }}"
-                      data-derivacion="{{ e.fecha_derivacion|date:'Y-m-d' }}"
-                      data-concluido="{{ e.concluido|yesno:'1,0' }}"
-                      data-obs="{{ e.observaciones|default_if_none:''|escape }}">
-                      {{ e.siged }}
-                    </option>
-                  {% endfor %}
-                {% else %}
-                  <option>No tienes expedientes asignados.</option>
-                {% endif %}
-              </select>
-            </div>
-
-            <div class="two">
-              <div class="field">
-                <label><i class="bi bi-123"></i> Código OSINERGMIN</label>
-                <input id="txt-codigo" type="text" class="blue-input" readonly>
-              </div>
-              <div class="field">
-                <label><i class="bi bi-envelope-paper"></i> Carta de línea</label>
-                <input id="txt-carta" type="text" class="blue-input" readonly>
-              </div>
-            </div>
-
-            <div class="field">
-              <label><i class="bi bi-calendar3"></i> Fecha de derivación</label>
-              {{ form.fecha_derivacion }}
-            </div>
-
-            <div class="field">
-              <label><i class="bi bi-check2-square"></i> Estado del expediente</label>
-              <div class="checkline">
-                {{ form.concluido }}
-                <label for="chk-concluido" style="margin:0;opacity:.95">Concluido</label>
-              </div>
-            </div>
-
-            <div class="field">
-              <label><i class="bi bi-journal-text"></i> Observaciones</label>
-              {{ form.observaciones }}
-            </div>
-          </div>
-
-          <div class="cta-row" style="margin-top:16px;text-align:right">
-            <button class="btn-primary" type="submit">💾 Guardar cambios</button>
-          </div>
-        </form>
+      <div class="toggle-wrapper">
+        <label class="switch">
+          <input type="checkbox" id="estadoToggle" name="estado" value="CONCLUIDO">
+          <span class="slider"></span>
+        </label>
+        <span>Marcar como Concluido</span>
       </div>
-    </section>
+
+      <label>Observaciones</label>
+      <textarea name="observaciones" id="observaciones" placeholder="Escribe observaciones (opcional)"></textarea>
+
+      <div style="text-align:right;">
+        <button type="button" id="btnGuardar" class="btn-guardar">Guardar cambios</button>
+      </div>
+    </form>
   </div>
 </div>
 
-<script>
-const sel = document.getElementById('sel-exp');
-const cod = document.getElementById('txt-codigo');
-const carta = document.getElementById('txt-carta');
-const der = document.querySelector('input[name="fecha_derivacion"]');
-const chk = document.querySelector('input[name="concluido"]');
-const obs = document.querySelector('textarea[name="observaciones"]');
+<!-- Tabla inferior -->
+<div class="tabla-final">
+  <h5><i class="fas fa-folder-open"></i> Expedientes asignados</h5>
+  <div style="overflow-x:auto;">
+    <table id="tablaExpedientes">
+      <thead>
+        <tr>
+          <th>N.º SIGED</th>
+          <th>Código OSINERGMIN</th>
+          <th>Código Actividad</th>
+          <th>Razón social</th>
+          <th>Carta línea</th>
+          <th>Tipo supervisión</th>
+          <th>Tipo documento</th>
+          <th>Contrato</th>
+          <th>Fecha asignación</th>
+          <th>Fecha visita</th>
+          <th>Fecha derivación</th>
+          <th>Estado</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="13">No hay expedientes asignados.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-function fillFromSelect() {
-  const opt = sel?.options[sel.selectedIndex];
-  cod.value = opt?.dataset?.codigo || '';
-  carta.value = opt?.dataset?.carta || '';
-  if (der) der.value = opt?.dataset?.derivacion || '';
-  if (chk) chk.checked = opt?.dataset?.concluido === '1';
-  if (obs && typeof opt?.dataset?.obs === 'string') obs.value = opt.dataset.obs;
-}
-sel?.addEventListener('change', fillFromSelect);
-fillFromSelect();
+<!-- Toasts -->
+<div class="toast success" id="toastSuccess"><i class="fas fa-check-circle"></i> Cambios guardados correctamente</div>
+<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> No puedes guardar sin marcar como concluido</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sigedInput = document.getElementById("sigedInput");
+  const cartaInput = document.getElementById("cartaInput");
+  const fechaDeriv = document.getElementById("fechaDerivacion");
+  const toggle = document.getElementById("estadoToggle");
+  const observaciones = document.getElementById("observaciones");
+  const btnGuardar = document.getElementById("btnGuardar");
+  const tabla = document.querySelector("#tablaExpedientes tbody");
+  const toastSuccess = document.getElementById("toastSuccess");
+  const toastError = document.getElementById("toastError");
+
+  // ===== Toasts =====
+  const showToast = el => { el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 3000); };
+  const shakeToast = el => { el.classList.add("shake"); setTimeout(() => el.classList.remove("shake"), 500); };
+
+  // ===== Autocompletado =====
+  function setupAutocomplete(input, field) {
+    input.addEventListener("input", async e => {
+      const value = e.target.value.trim();
+      if (value.length < 2) return;
+      try {
+        const response = await fetch(`/ajax/autocomplete/?field=${field}&q=${encodeURIComponent(value)}`);
+        const data = await response.json();
+        const datalist = document.getElementById(`${field}List`);
+        datalist.innerHTML = "";
+        data.results.forEach(item => {
+          const option = document.createElement("option");
+          option.value = item;
+          datalist.appendChild(option);
+        });
+      } catch (err) {
+        console.error("Error en autocompletado:", err);
+      }
+    });
+  }
+
+  setupAutocomplete(sigedInput, "siged");
+  setupAutocomplete(cartaInput, "carta_linea");
+
+  // ===== Guardar con AJAX =====
+  btnGuardar.addEventListener("click", async e => {
+    e.preventDefault();
+
+    if (!toggle.checked) {
+      showToast(toastError);
+      shakeToast(toastError);
+      return;
+    }
+
+    const siged = sigedInput.value.trim();
+    const carta = cartaInput.value.trim();
+    const fecha = fechaDeriv.value;
+    const obs = observaciones.value.trim();
+
+    if (!siged && !carta) {
+      showToast(toastError);
+      shakeToast(toastError);
+      return;
+    }
+    if (!fecha) {
+      showToast(toastError);
+      shakeToast(toastError);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("siged", siged);
+      formData.append("carta_linea", carta);
+      formData.append("fecha_derivacion", fecha);
+      formData.append("estado", "CONCLUIDO");
+      formData.append("observaciones", obs);
+
+      const response = await fetch("{% url 'asignaciones:supervisor_estado' %}", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        showToast(toastSuccess);
+
+        // Actualizar tabla
+        const existingRow = Array.from(tabla.rows).find(r => r.cells[0]?.textContent === siged);
+        if (existingRow) {
+          existingRow.cells[10].textContent = new Date(fecha).toLocaleDateString("es-PE");
+          existingRow.cells[11].textContent = "CONCLUIDO";
+          existingRow.cells[12].textContent = obs || "—";
+        }
+
+        document.getElementById("formEstado").reset();
+        toggle.checked = false;
+        btnGuardar.classList.remove("active");
+      } else {
+        showToast(toastError);
+        shakeToast(toastError);
+      }
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      showToast(toastError);
+      shakeToast(toastError);
+    }
+  });
+});
 </script>
 {% endblock %}

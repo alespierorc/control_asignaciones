@@ -10,235 +10,295 @@
     grid-template-columns: 260px 1fr;
     gap: 22px;
     align-items: start;
+    margin-top: 30px;
   }
+
   @media (max-width: 960px) {
-    .sup-wrap {
-      grid-template-columns: 1fr;
-    }
+    .sup-wrap { grid-template-columns: 1fr; }
   }
 
-  /* Panel izquierdo */
   .side-card {
-    background: var(--panel);
-    color: #fff;
-    border-radius: var(--radius-xl);
-    padding: 18px 16px;
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .side-card h4 {
-    font-size: 16px;
-    margin-bottom: 6px;
-  }
-  .side-card p {
-    font-size: 14px;
-    line-height: 1.5;
-    opacity: .9;
+    background: #374151; color: #f3f4f6; border-radius: 16px;
+    padding: 20px 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display: flex; flex-direction: column; gap: 18px;
   }
 
-  /* Formulario principal */
+  .side-card h4 { font-size: 15px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+
   .form-card {
-    background: rgba(255,255,255,.08);
-    border-radius: var(--radius-xl);
-    padding: 22px;
-    box-shadow: var(--shadow-lg);
-    color: #fff;
+    background: #1f2937; border-radius: 18px; padding: 28px;
+    color: #f3f4f6; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
   }
 
-  .form-card h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .form-card small {
-    opacity: .85;
-  }
+  .form-card h2 { font-size: 20px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+  .separator { border: none; height: 2px; background: #4b5563; margin: 16px 0 22px; }
 
-  .separator {
-    border: none;
-    height: 3px;
-    border-radius: 6px;
-    background: #4b5563;
-    margin: 12px 0 18px;
-  }
-
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    letter-spacing: .3px;
-    opacity: .95;
-  }
-
-  .blue-select, .blue-input {
-    width: 100%;
-    background: #14283f;
-    color: #f3f4f6;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 10px;
-    padding: 10px 12px;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,.2);
-    font-size: 14px;
-    outline: none;
-    transition: all .2s ease;
-  }
-  .blue-select:focus, .blue-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59,130,246,.25);
+  .blue-input {
+    width: 100%; background: #111827; color: #f3f4f6; border: 1px solid #374151;
+    border-radius: 10px; padding: 10px 12px; font-size: 14px;
   }
 
   .btn-primary {
-    background: #0d4a7a;
-    color: #fff;
-    border: 0;
-    border-radius: 12px;
-    padding: 12px 22px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .2s ease;
-  }
-  .btn-primary:hover {
-    background: #1669aa;
-    transform: translateY(-1px);
+    background: #2563eb; color: #fff; border: 0; border-radius: 10px;
+    padding: 10px 22px; font-weight: 600; cursor: pointer; transition: 0.2s;
   }
 
-  /* Panel inferior - últimos expedientes */
-  .recent-card {
-    background: #1e2b3c;
-    border-radius: 16px;
-    margin-top: 24px;
-    box-shadow: var(--shadow);
-    color: #fff;
-    padding: 18px;
+  .btn-primary:hover { background: #3b82f6; transform: translateY(-1px); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; color: #e5e7eb; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+  th { text-transform: uppercase; font-size: 12px; opacity: 0.8; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+
+  .toast {
+    position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff;
+    padding: 14px 20px; border-radius: 10px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
+    transform: translateY(-15px); transition: all 0.4s ease; display: flex; align-items: center;
   }
 
-  .recent-card h3 {
-    font-size: 17px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-
-  .recent-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-
-  .recent-table th, .recent-table td {
-    padding: 10px 8px;
-    text-align: left;
-  }
-
-  .recent-table th {
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: .4px;
-    opacity: .8;
-    border-bottom: 1px solid rgba(255,255,255,.15);
-  }
-
-  .recent-table tr:nth-child(even) {
-    background: rgba(255,255,255,.04);
-  }
-
-  .recent-table td {
-    opacity: .95;
-  }
-
-  .no-records {
-    text-align: center;
-    padding: 16px 0;
-    opacity: .75;
-  }
+  .toast.error { background: #ef4444; }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .toast i { margin-right: 8px; }
 </style>
 
-<div class="panel">
-  <div class="sup-wrap">
-    <!-- Panel izquierdo -->
-    <section class="side-card">
-      <div>
-        <h4>📝 Indicación</h4>
-        <p>Selecciona un expediente (N.º SIGED) y registra la <b>fecha real</b> de la visita.</p>
+<div class="sup-wrap">
+  <section class="side-card">
+    <div>
+      <h4>Indicación</h4>
+      <p>Busca un expediente (N.º SIGED o Carta Línea), selecciónalo y registra la fecha real de la visita.</p>
+    </div>
+    <div>
+      <h4>Recomendación</h4>
+      <p>Revisa los expedientes activos antes de registrar una nueva fecha para evitar duplicados o errores.</p>
+    </div>
+  </section>
+
+  <section class="form-card">
+    <h2>Buscar y registrar visita del expediente</h2>
+    <hr class="separator" />
+
+    <form method="get" class="search-form">
+      <div class="field">
+        <label>N.º SIGED</label>
+        <input type="text" id="sigedInput" name="siged" list="sigedList" class="blue-input" placeholder="Ej. 2025-XXXX">
+        <datalist id="sigedList"></datalist>
       </div>
-      <div>
-        <h4>💡 Recomendación</h4>
-        <p>Revisa los expedientes activos antes de registrar una nueva fecha para evitar duplicados o errores.</p>
+      <div class="field">
+        <label>Carta Línea</label>
+        <input type="text" id="cartaInput" name="carta_linea" list="cartaList" class="blue-input" placeholder="Ej. Carta N° 045-2025-OSINERGMIN">
+        <datalist id="cartaList"></datalist>
       </div>
-    </section>
+      <div style="text-align:right;margin-top:12px">
+        <button type="button" class="btn-primary" id="btnBuscar">Buscar</button>
+      </div>
+    </form>
 
-    <!-- Formulario de registro -->
-    <section class="form-card">
-      <h2>Registrar visita del expediente</h2>
-      <small>Completa la fecha de visita del expediente asignado.</small>
-      <hr class="separator" />
+    <div class="recent-card" style="margin-top:25px">
+      <h3>Resultados de búsqueda</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Seleccionar</th>
+              <th>N.º SIGED</th>
+              <th>Código OSINERGMIN</th>
+              <th>Carta de Línea</th>
+              <th>Razón Social</th>
+              <th>Contrato</th>
+              <th>Oficina Regional</th>
+              <th>Fecha de Asignación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8">No se encontraron resultados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="field">
-          <label for="sel-exp">N.º SIGED</label>
-          <select id="sel-exp" name="siged_choices" class="blue-select" required>
-            {% if expedientes %}
-              <option value="">— Seleccionar —</option>
-              {% for e in expedientes %}
-                <option value="{{ e.siged }}">{{ e.siged }}</option>
-              {% endfor %}
-            {% else %}
-              <option value="">No tienes expedientes asignados.</option>
-            {% endif %}
-          </select>
-        </div>
+    <form method="post" id="formRegistrar" novalidate style="margin-top:25px">
+      {% csrf_token %}
+      <div class="field">
+        <label for="fecha_visita">Fecha de visita</label>
+        <input type="date" id="fecha_visita" name="fecha_visita" class="blue-input" required>
+      </div>
+      <div style="text-align:right;margin-top:18px">
+        <button class="btn-primary" type="button" id="btnGuardar">Registrar visita</button>
+      </div>
+    </form>
+  </section>
+</div>
 
-        <div class="field">
-          <label for="fecha_visita">Fecha de visita</label>
-          <input type="date" id="fecha_visita" name="fecha_visita" class="blue-input" required>
-        </div>
-
-        <div style="text-align:right;margin-top:18px">
-          <button class="btn-primary" type="submit">💾 Registrar visita</button>
-        </div>
-      </form>
-
-      <!-- Panel inferior: últimos expedientes asignados -->
-      <div class="recent-card">
-        <h3>📂 Últimos expedientes asignados</h3>
+<div class="form-card" style="margin-top:35px">
+  <h2>Expedientes asignados</h2>
+  <div class="table-container">
+    <table id="tablaExpedientes">
+      <thead>
+        <tr>
+          <th>N.º SIGED</th>
+          <th>Código OSINERGMIN</th>
+          <th>Código Actividad</th>
+          <th>Razón Social</th>
+          <th>Carta de Línea</th>
+          <th>Tipo Supervisión</th>
+          <th>Tipo Documento</th>
+          <th>Contrato</th>
+          <th>Oficina Regional</th>
+          <th>Fecha de Asignación</th>
+          <th>Fecha de Visita</th>
+        </tr>
+      </thead>
+      <tbody>
         {% if expedientes %}
-          <table class="recent-table">
-            <thead>
-              <tr>
-                <th>N.º SIGED</th>
-                <th>Código OSINERGMIN</th>
-                <th>Carta de línea</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for e in expedientes|slice:":5" %}
-              <tr>
-                <td>{{ e.siged }}</td>
-                <td>{{ e.codigo|default:"—" }}</td>
-                <td>{{ e.carta_linea|default:"—" }}</td>
-                <td>
-                  {% if e.estado == "CONCLUIDO" %}
-                    ✅ Concluido
-                  {% elif e.estado == "PENDIENTE" %}
-                    ⏳ Pendiente
-                  {% else %}
-                    🕓 {{ e.estado|default:"Sin estado" }}
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+          {% for e in expedientes|slice:":5" %}
+          <tr>
+            <td>{{ e.siged }}</td>
+            <td>{{ e.codigo|default:"—" }}</td>
+            <td>{{ e.codigo_actividad|default:"—" }}</td>
+            <td>{{ e.razon_social|default:"—" }}</td>
+            <td>{{ e.carta_linea|default:"—" }}</td>
+            <td>{{ e.tipo_supervision|default:"—" }}</td>
+            <td>{{ e.tipo_documento|default:"—" }}</td>
+            <td>{{ e.contrato.numero }}</td>
+            <td>{{ e.oficina.nombre }}</td>
+            <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_visita|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% endfor %}
         {% else %}
-          <div class="no-records">No hay expedientes registrados aún.</div>
+          <tr><td colspan="11">No hay expedientes registrados aún.</td></tr>
         {% endif %}
-      </div>
-    </section>
+      </tbody>
+    </table>
   </div>
 </div>
+
+<!-- TOASTS -->
+<div class="toast success" id="toastSuccess"><i class="fas fa-check-circle"></i> Visita registrada correctamente</div>
+<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> Debe seleccionar un expediente y una fecha válida</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sigedInput = document.querySelector('input[name="siged"]');
+  const cartaInput = document.querySelector('input[name="carta_linea"]');
+  const fechaInput = document.getElementById("fecha_visita");
+  const btnGuardar = document.getElementById("btnGuardar") || document.querySelector('button[type="submit"]');
+  const tabla = document.querySelector("#tablaExpedientes tbody");
+  const toastSuccess = document.getElementById("toastSuccess");
+  const toastError = document.getElementById("toastError");
+
+  // ===== Toasts =====
+  const showToast = (el) => {
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3000);
+  };
+  const shakeToast = (el) => {
+    el.classList.add("shake");
+    setTimeout(() => el.classList.remove("shake"), 500);
+  };
+
+  // ===== Autocompletado AJAX =====
+  function setupAutocomplete(input, field) {
+    const datalist = document.createElement("datalist");
+    datalist.id = `${field}-list`;
+    input.setAttribute("list", datalist.id);
+    document.body.appendChild(datalist);
+
+    input.addEventListener("input", async (e) => {
+      const value = e.target.value.trim();
+      if (value.length < 2) return;
+      try {
+        const response = await fetch(`/ajax/autocomplete/?field=${field}&q=${encodeURIComponent(value)}`);
+        const data = await response.json();
+        datalist.innerHTML = "";
+        data.results.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item;
+          datalist.appendChild(option);
+        });
+      } catch (err) {
+        console.error("Error en autocompletado:", err);
+      }
+    });
+  }
+
+  setupAutocomplete(sigedInput, "siged");
+  setupAutocomplete(cartaInput, "carta_linea");
+
+  // ===== Guardar Fecha de Visita =====
+  btnGuardar.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const siged = sigedInput.value.trim();
+    const carta = cartaInput.value.trim();
+    const fecha = fechaInput.value;
+
+    if (!siged && !carta) {
+      showToast(toastError);
+      shakeToast(toastError);
+      return;
+    }
+    if (!fecha) {
+      showToast(toastError);
+      shakeToast(toastError);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("siged", siged);
+      formData.append("carta_linea", carta);
+      formData.append("fecha_visita", fecha);
+
+      const response = await fetch("{% url 'asignaciones:supervisor_registrar' %}", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        showToast(toastSuccess);
+
+        // Actualizar tabla visualmente
+        const tbody = document.querySelector(".form-card table tbody");
+        const existingRow = Array.from(tbody.rows).find(
+          (r) => r.cells[0]?.textContent === siged
+        );
+
+        if (existingRow) {
+          existingRow.cells[9].textContent = new Date(fecha).toLocaleDateString("es-PE");
+        } else {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${siged || "—"}</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>${carta || "—"}</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>${new Date().toLocaleDateString("es-PE")}</td>
+            <td>${new Date(fecha).toLocaleDateString("es-PE")}</td>
+          `;
+          tbody.prepend(row);
+        }
+
+        // Limpiar formulario
+        document.getElementById("formRegistrar")?.reset();
+      } else {
+        showToast(toastError);
+        shakeToast(toastError);
+      }
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      showToast(toastError);
+      shakeToast(toastError);
+    }
+  });
+});
+</script>
 {% endblock %}

@@ -1,9 +1,194 @@
 {% extends "base.html" %}
-{% block title %}Administración · Revisar{% endblock %}
+{% block title %}Revisar Expedientes{% endblock %}
+
 {% block content %}
-<div class="panel">
-  <h2 class="panel-title">Revisar expedientes (Administración)</h2>
-  <hr class="separator"/>
-  <p>Contenido de revisión para el área administrativa.</p>
+<style>
+  .rev-container {
+    background: #2e3440;
+    border-radius: 16px;
+    padding: 28px;
+    margin: 40px auto;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    color: #eceff4;
+    max-width: 96%;
+  }
+
+  .rev-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #4c566a;
+    padding-bottom: 8px;
+  }
+
+  .rev-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #e5e9f0;
+    letter-spacing: 0.05em;
+  }
+
+  .rev-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: #3b4252;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .rev-filter select,
+  .rev-filter input {
+    background: #4c566a;
+    border: 1px solid #5e81ac;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #eceff4;
+    font-size: 14px;
+    min-width: 200px;
+    transition: border-color 0.2s ease;
+  }
+
+  .rev-filter select:focus,
+  .rev-filter input:focus {
+    outline: none;
+    border-color: #81a1c1;
+  }
+
+  .rev-filter button {
+    background: #5e81ac;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+
+  .rev-filter button:hover {
+    background: #81a1c1;
+    transform: translateY(-1px);
+  }
+
+  .rev-table-wrapper {
+    background: #3b4252;
+    border-radius: 16px;
+    margin-top: 28px;
+    overflow-x: auto;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1200px;
+  }
+
+  thead {
+    background: #434c5e;
+    color: #eceff4;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #4c566a;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  tbody tr:hover {
+    background: #4c566a;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 14px;
+    font-size: 15px;
+    color: #e5e9f0;
+    background: #3b4252;
+  }
+</style>
+
+<div class="rev-container">
+  <div class="rev-header">
+    <h2>Revisar Expedientes</h2>
+  </div>
+
+  <form method="get" class="rev-filter">
+    <select name="contrato">
+      <option value="">-- Seleccionar Contrato --</option>
+      {% for c in contratos %}
+        <option value="{{ c.id }}" {% if request.GET.contrato == c.id|stringformat:"s" %}selected{% endif %}>
+          {{ c.numero }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <input type="text" name="siged" placeholder="N° SIGED" value="{{ request.GET.siged }}">
+    <input type="text" name="carta_linea" placeholder="Carta línea" value="{{ request.GET.carta_linea }}">
+    <button type="submit">Buscar</button>
+  </form>
+
+  <div class="rev-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>N° SIGED</th>
+          <th>Carta Línea</th>
+          <th>Código OSINERGMIN</th>
+          <th>Código Actividad</th>
+          <th>Razón Social</th>
+          <th>Tipo Supervisión</th>
+          <th>Tipo Documento</th>
+          <th>Contrato</th>
+          <th>Oficina Regional</th>
+          <th>Supervisor</th>
+          <th>Fecha Asignación</th>
+          <th>Fecha Derivación</th>
+          <th>Fecha Visita</th>
+          <th>Estado</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if expedientes %}
+          {% for e in expedientes %}
+          <tr>
+            <td>{{ e.siged }}</td>
+            <td>{{ e.carta_linea }}</td>
+            <td>{{ e.codigo }}</td>
+            <td>{{ e.codigo_actividad }}</td>
+            <td>{{ e.razon_social }}</td>
+            <td>{{ e.tipo_supervision }}</td>
+            <td>{{ e.tipo_documento }}</td>
+            <td>{{ e.contrato.numero }}</td>
+            <td>{{ e.oficina.nombre }}</td>
+            <td>{{ e.supervisor.get_full_name }}</td>
+            <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
+            <td>{{ e.estado }}</td>
+            <td>{{ e.observaciones }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="15" class="no-results">No se encontraron resultados.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
