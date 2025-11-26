@@ -1,149 +1,167 @@
-{% extends "base.html" %}
-{% block title %}Panel General – Administrador{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<style>
-  .admin-home {
-    display: grid;
-    grid-template-columns: minmax(300px, 380px) 1fr;
-    gap: 24px;
-    padding: 24px;
-    align-items: stretch;
-  }
+<div class="panel-container">
+  <div class="menu-lateral">
+    <h3>Panel del Administrador General</h3>
+    <ul>
+      <li>
+        <a href="{% url 'asignaciones:admin_general_revisar' %}">
+          <i class="fas fa-folder-open"></i> Revisar expedientes
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'asignaciones:admin_general_descargar' %}">
+          <i class="fas fa-download"></i> Descargar
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'asignaciones:coordinador_menu' %}">
+          <i class="fas fa-user-tie"></i> Panel Coordinador
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'asignaciones:supervisor_panel' %}">
+          <i class="fas fa-user-check"></i> Panel Supervisor
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'asignaciones:crear_anuncio' %}">
+          <i class="fas fa-bullhorn"></i> Crear anuncio
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'asignaciones:crear_usuario' %}">
+          <i class="fas fa-user-plus"></i> Crear Usuario
+        </a>
+      </li>
+      <li>
+  <a href="{% url 'asignaciones:lista_usuarios' %}">
+    <i class="fas fa-users"></i> Ver usuarios
+  </a>
+</li>
+    </ul>
+  </div>
 
-  @media (max-width: 960px) {
-    .admin-home {
-      grid-template-columns: 1fr;
-    }
-  }
+  <div class="panel-contenido">
+    {% if messages %}
+      <div class="mensajes">
+        {% for message in messages %}
+          <div class="alerta {{ message.tags }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
 
-  .admin-card {
-    background: #2e3440;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
-    color: #eceff4;
-  }
-
-  .admin-card h2 {
-    margin: 0;
-    font-size: 18px;
-    text-transform: uppercase;
-    letter-spacing: .12em;
-    color: #d8dee9;
-  }
-
-  .admin-separator {
-    border: none;
-    height: 3px;
-    border-radius: 999px;
-    background: #4c566a;
-    margin: 10px 0 16px;
-  }
-
-  .admin-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .admin-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 14px;
-    padding: 12px 16px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    background: #4c566a;
-    color: #eceff4;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
-  }
-
-  .admin-btn i {
-    font-size: 18px;
-  }
-
-  .admin-btn:hover {
-    transform: translateY(-1px);
-    background: #5e81ac;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  .admin-btn-outline {
-    background: transparent;
-    border: 1px solid rgba(236, 239, 244, 0.4);
-  }
-
-  .admin-btn-outline:hover {
-    background: rgba(94, 129, 172, 0.3);
-  }
-
-  .admin-placeholder {
-    background: #3b4252;
-    border-radius: 16px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    color: #d8dee9;
-  }
-
-  .admin-placeholder-inner {
-    text-align: center;
-    max-width: 420px;
-  }
-
-  .admin-placeholder-inner h3 {
-    margin: 0 0 6px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #eceff4;
-  }
-
-  .admin-placeholder-inner p {
-    margin: 0;
-    font-size: 14px;
-    opacity: 0.9;
-  }
-</style>
-
-<div class="admin-home">
-  <!-- Panel lateral con acciones -->
-  <section class="admin-card">
-    <h2>Asignaciones</h2>
-    <hr class="admin-separator" />
-    <div class="admin-actions">
-      <a class="admin-btn" href="{% url 'asignaciones:admin_general_revisar' %}">
-        <span>Revisar Expediente</span>
-        <i class="bi bi-search"></i>
-      </a>
-      <a class="admin-btn" href="{% url 'asignaciones:admin_general_descargar' %}">
-        <span>Descargar</span>
-        <i class="bi bi-download"></i>
-      </a>
-      <a class="admin-btn admin-btn-outline" href="{% url 'asignaciones:coordinador_menu' %}">
-        <span>Panel Coordinador</span>
-        <i class="bi bi-diagram-3"></i>
-      </a>
-      <a class="admin-btn admin-btn-outline" href="{% url 'asignaciones:supervisor_panel' %}">
-        <span>Panel Supervisor</span>
-        <i class="bi bi-person-gear"></i>
-      </a>
-    </div>
-  </section>
-
-  <!-- Panel derecho de bienvenida -->
-  <section class="admin-placeholder">
-    <div class="admin-placeholder-inner">
-      <h3>Panel General del Administrador</h3>
-      <p>Desde este panel puedes revisar, descargar y acceder directamente a los paneles del Coordinador y del Supervisor.</p>
-    </div>
-  </section>
+    <h2>Panel General del Administrador</h2>
+    <p>
+      Desde este panel puedes revisar, descargar expedientes y acceder directamente
+      a los paneles del Coordinador y del Supervisor, además de crear anuncios o nuevos usuarios.
+    </p>
+  </div>
 </div>
+
+<style>
+.panel-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 40px;
+  gap: 30px;
+}
+
+.menu-lateral {
+  width: 280px;
+  background-color: #161d29;
+  border-radius: 12px;
+  padding: 25px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.menu-lateral h3 {
+  color: #d9e0ec;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.menu-lateral ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-lateral ul li {
+  margin-bottom: 10px;
+}
+
+.menu-lateral ul li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  background: #212b3d;
+  padding: 12px 15px;
+  border-radius: 8px;
+  color: #d9e0ec;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.menu-lateral ul li a:hover {
+  background-color: #3a4a63;
+  transform: translateX(4px);
+}
+
+.menu-lateral ul li i {
+  color: #8ab4f8;
+}
+
+.panel-contenido {
+  flex: 1;
+  background-color: #161d29;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.panel-contenido h2 {
+  color: #d9e0ec;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.panel-contenido p {
+  color: #aab2c3;
+  font-size: 15px;
+}
+
+/* Estilos para los mensajes */
+.mensajes {
+  margin-bottom: 20px;
+}
+
+.alerta {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.alerta.success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.alerta.error {
+  background-color: #dc2626;
+  color: white;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="editar-container">
+  <div class="editar-card">
+    <h2>✏️ Editar usuario</h2>
+
+    {% if messages %}
+      <div class="mensajes">
+        {% for message in messages %}
+          <div class="alerta {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="campo">
+        <label>Nombre de usuario:</label>
+        <input type="text" name="username" value="{{ usuario.username }}" readonly>
+      </div>
+
+      <div class="campo">
+        <label>Nombre:</label>
+        <input type="text" name="first_name" value="{{ usuario.first_name }}" placeholder="Nombre del usuario">
+      </div>
+
+      <div class="campo">
+        <label>Apellido:</label>
+        <input type="text" name="last_name" value="{{ usuario.last_name }}" placeholder="Apellido del usuario">
+      </div>
+
+      <div class="campo">
+        <label>Correo electrónico:</label>
+        <input type="email" name="email" value="{{ usuario.email }}" placeholder="Correo electrónico">
+      </div>
+
+      <div class="campo">
+        <label>Rol actual:</label>
+        <input type="text" value="{{ rol_actual }}" readonly>
+      </div>
+
+      <div class="campo">
+        <label>Nuevo rol:</label>
+        <select name="rol">
+          <option value="">-- Mantener rol actual --</option>
+          {% for g in grupos %}
+            <option value="{{ g.name }}">{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="botones">
+        <button type="submit" class="btn-guardar">💾 Guardar cambios</button>
+        <a href="{% url 'asignaciones:lista_usuarios' %}" class="btn-volver">← Volver</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.editar-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 100px);
+  background-color: #0f1624;
+  padding: 40px;
+}
+
+.editar-card {
+  background-color: #161d29;
+  padding: 40px;
+  border-radius: 16px;
+  width: 480px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e3e9f3;
+}
+
+.editar-card h2 {
+  text-align: center;
+  color: #8ab4f8;
+  margin-bottom: 25px;
+}
+
+.campo {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.campo label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #c7d0e0;
+}
+
+.campo input, .campo select {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: #1f2a3c;
+  color: #f0f4fa;
+  font-size: 14px;
+}
+
+.campo input:focus, .campo select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.botones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+}
+
+.btn-guardar {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-guardar:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-volver {
+  background-color: #374151;
+  color: #f3f4f6;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-volver:hover {
+  background-color: #4b5563;
+}
+
+/* Mensajes */
+.mensajes {
+  margin-bottom: 15px;
+}
+
+.alerta {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.alerta.success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.alerta.error {
+  background-color: #dc2626;
+  color: white;
+}
+</style>
+{% endblock %}

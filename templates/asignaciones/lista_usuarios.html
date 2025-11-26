@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="usuarios-container">
+  <div class="tabla-card">
+    <h2>👥 Lista de usuarios registrados</h2>
+
+    {% if messages %}
+      <div class="mensajes">
+        {% for message in messages %}
+          <div class="alerta {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Correo electrónico</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.username }}</td>
+          <td>{{ u.first_name }}</td>
+          <td>{{ u.last_name }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.group }}</td>
+          <td>
+            <a href="{% url 'asignaciones:editar_usuario' u.id %}" class="btn-editar">✏️ Editar</a>
+            {% if u.username != 'Admin' %}
+              <a href="{% url 'asignaciones:eliminar_usuario' u.id %}" 
+                 class="btn-eliminar" 
+                 onclick="return confirm('¿Seguro que deseas eliminar al usuario {{ u.username }}?');">
+                 🗑️ Eliminar
+              </a>
+            {% else %}
+              <span class="no-accion">No permitido</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center;">No hay usuarios registrados</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a href="{% url 'asignaciones:admin_general_menu' %}" class="volver-btn">← Volver al panel</a>
+  </div>
+</div>
+
+<style>
+.usuarios-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+  background-color: #0f1624;
+  min-height: calc(100vh - 100px);
+}
+
+.tabla-card {
+  background-color: #161d29;
+  padding: 30px 40px;
+  border-radius: 16px;
+  width: 950px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e3e9f3;
+}
+
+.tabla-card h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #8ab4f8;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1f2a3c;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #2d3b4f;
+}
+
+th {
+  background-color: #212b3d;
+  color: #8ab4f8;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+tr:hover {
+  background-color: #2b3b54;
+}
+
+.btn-editar {
+  background-color: #2563eb;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  margin-right: 6px;
+  transition: background 0.2s;
+}
+
+.btn-editar:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-eliminar {
+  background-color: #dc2626;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-eliminar:hover {
+  background-color: #b91c1c;
+}
+
+.no-accion {
+  color: #888;
+  font-size: 13px;
+}
+
+.volver-btn {
+  display: inline-block;
+  margin-top: 20px;
+  color: #8ab4f8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.volver-btn:hover {
+  color: #c3dafd;
+}
+
+/* Mensajes */
+.mensajes {
+  margin-bottom: 15px;
+}
+
+.alerta {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.alerta.success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.alerta.error {
+  background-color: #dc2626;
+  color: white;
+}
+</style>
+{% endblock %}

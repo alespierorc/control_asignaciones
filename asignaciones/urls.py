@@ -26,6 +26,7 @@ urlpatterns = [
     path("supervisor/registrar/", views.supervisor_registrar, name="supervisor_registrar"),
     path("supervisor/revisar/", views.supervisor_revisar, name="supervisor_revisar"),
     path("supervisor/estado/", views.estado_expediente, name="supervisor_estado"),
+    path("supervisor/", views.supervisor_panel, name="supervisor_panel"),
 
     # ✅ Nueva ruta: concluir expediente manualmente
     path("supervisor/concluir/<int:pk>/", views.concluir_expediente, name="supervisor_concluir"),
@@ -58,4 +59,14 @@ urlpatterns = [
     # Anuncios
     path("anuncios/", views.anuncios, name="anuncios"),
     path("anuncios/crear/", views.crear_anuncio, name="crear_anuncio"),
+
+    # Gestión de usuarios
+    path("usuarios/crear/", views.crear_usuario, name="crear_usuario"),
+    path('crear_usuario/', views.crear_usuario, name='crear_usuario'),
+    path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
+    path('usuarios/editar/<int:user_id>/', views.editar_usuario, name='editar_usuario'),
+    path('usuarios/eliminar/<int:user_id>/', views.eliminar_usuario, name='eliminar_usuario'),
+
+
+
 ]

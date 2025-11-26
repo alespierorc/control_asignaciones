@@ -14,8 +14,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "asignaciones",  # <- nuestra app
+    "asignaciones.apps.AsignacionesConfig",  
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -40,7 +41,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # 👇 Agregado: context processor para mostrar anuncios globales
+                # 👇 Context processor personalizado para anuncios
                 "asignaciones.context_processors.anuncios_context",
             ],
         },
@@ -49,9 +50,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
+# ============================================================
+#               CONFIGURACIÓN DE BASE DE DATOS (PostgreSQL)
+# ============================================================
+
 DATABASES = {
-    "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'control_asignaciones',
+        'USER': 'control_user',
+        'PASSWORD': 'Control2025',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
+
+
+# ============================================================
 
 LANGUAGE_CODE = "es-pe"
 TIME_ZONE = "America/Lima"
