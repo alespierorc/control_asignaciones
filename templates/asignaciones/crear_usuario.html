@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="crear-usuario-container">
+  <div class="form-card">
+    <h2>👤 Crear nuevo usuario</h2>
+
+    {% if messages %}
+      <div class="mensajes">
+        {% for message in messages %}
+          <div class="alerta {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="formulario">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_username">Nombre de usuario:</label>
+        {{ form.username }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_first_name">Nombre:</label>
+        {{ form.first_name }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_last_name">Apellido:</label>
+        {{ form.last_name }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_email">Correo electrónico:</label>
+        {{ form.email }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">Contraseña:</label>
+        {{ form.password }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_group">Rol:</label>
+        {{ form.group }}
+      </div>
+
+      <button type="submit" class="btn-crear">Crear usuario</button>
+    </form>
+
+    <a href="{% url 'asignaciones:admin_general_menu' %}" class="volver-btn">
+      ← Volver al panel
+    </a>
+  </div>
+</div>
+
+<style>
+.crear-usuario-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 100px);
+  background-color: #0f1624;
+}
+
+.form-card {
+  background-color: #161d29;
+  padding: 40px 50px;
+  border-radius: 16px;
+  width: 450px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e3e9f3;
+  text-align: left;
+}
+
+.form-card h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-weight: 600;
+  color: #8ab4f8;
+}
+
+.formulario .form-group {
+  margin-bottom: 18px;
+}
+
+.formulario label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #b8c2d8;
+}
+
+.formulario input, .formulario select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background-color: #1f2a3c;
+  color: #e3e9f3;
+  font-size: 15px;
+}
+
+.formulario input:focus, .formulario select:focus {
+  outline: 2px solid #8ab4f8;
+}
+
+.btn-crear {
+  width: 100%;
+  padding: 12px;
+  background-color: #2563eb;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 10px;
+}
+
+.btn-crear:hover {
+  background-color: #1d4ed8;
+}
+
+.volver-btn {
+  display: inline-block;
+  margin-top: 20px;
+  color: #8ab4f8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.volver-btn:hover {
+  color: #c3dafd;
+}
+
+/* Estilos para los mensajes */
+.mensajes {
+  margin-bottom: 15px;
+}
+
+.alerta {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.alerta.success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.alerta.error {
+  background-color: #dc2626;
+  color: white;
+}
+</style>
+{% endblock %}

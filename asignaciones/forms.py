@@ -161,3 +161,55 @@ class SupervisorEstadoForm(forms.ModelForm):
                 }
             ),
         }
+
+# ============================================================
+#             FORMULARIO: CREAR USUARIO + ASIGNAR ROL
+# ============================================================
+from django.contrib.auth.models import Group
+
+class CrearUsuarioForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Contraseña"}),
+        label="Contraseña"
+    )
+    confirmar_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Confirmar contraseña"}),
+        label="Confirmar contraseña"
+    )
+    grupo = forms.ModelChoiceField(
+        queryset=Group.objects.all(),
+        required=True,
+        label="Rol del usuario",
+        widget=forms.Select(attrs={"class": "i-select"})
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email"]
+
+    def clean(self):
+        cleaned = super().clean()
+        pw1 = cleaned.get("password")
+        pw2 = cleaned.get("confirmar_password")
+        if pw1 != pw2:
+            raise forms.ValidationError("Las contraseñas no coinciden.")
+        return cleaned
+
+from django import forms
+from django.contrib.auth.models import User, Group
+
+class UsuarioForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput)
+    group = forms.ModelChoiceField(queryset=Group.objects.all(), label="Rol")
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'password', 'group']
+        labels = {
+            'username': 'Nombre de usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo electrónico',
+            'password': 'Contraseña',
+            'group': 'Rol',
+        }

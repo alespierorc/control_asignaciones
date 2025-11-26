@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="user-container">
+  <h2>Gestión de Usuarios</h2>
+  <form method="post" class="user-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Crear usuario</button>
+  </form>
+
+  <hr>
+  <h3>Usuarios existentes</h3>
+  <table>
+    <tr>
+      <th>Usuario</th>
+      <th>Nombre</th>
+      <th>Email</th>
+      <th>Rol</th>
+    </tr>
+    {% for u in usuarios %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.get_full_name }}</td>
+      <td>{{ u.email }}</td>
+      <td>{% for g in u.groups.all %}{{ g.name }} {% empty %}-{% endfor %}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4">No hay usuarios registrados.</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<style>
+.user-container {
+  margin: 40px auto;
+  background-color: #161d29;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 800px;
+  color: #d9e0ec;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.user-form {
+  margin-bottom: 20px;
+}
+.btn-primary {
+  background-color: #3a4a63;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+}
+.btn-primary:hover {
+  background-color: #4b6283;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #d9e0ec;
+}
+th, td {
+  border-bottom: 1px solid #3a4a63;
+  padding: 10px;
+  text-align: left;
+}
+</style>
+{% endblock %}

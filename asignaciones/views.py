@@ -289,8 +289,16 @@ def concluir_expediente(request, pk):
 # ============================================================
 
 def coordinador_menu(request):
-    return render(request, "coordinador/menu.html")
+    # Verifica si el usuario tiene permisos para crear anuncios
+    puede_crear_anuncio = request.user.groups.filter(
+        name__in=["Coordinador", "Administrador General", "Administrador Simple"]
+    ).exists()
 
+    return render(
+        request,
+        "coordinador/menu.html",
+        {"puede_crear_anuncio": puede_crear_anuncio}
+    )
 
 def coordinador_registrar(request):
     supervisors = User.objects.filter(groups__name="Supervisor").order_by("first_name", "last_name").distinct()
@@ -469,6 +477,35 @@ def admin_simple_revisar(request):
         "expedientes": expedientes,
     }
     return render(request, "admin/revisar_simple.html", context)
+
+from django.contrib.auth.models import Group, User
+from .forms import CrearUsuarioForm
+from django.contrib import messages
+from django.shortcuts import render, redirect
+
+def crear_usuario(request):
+    """
+    Permite crear nuevos usuarios y asignarles un rol (grupo).
+    Temporalmente sin restricción de login.
+    """
+    if request.method == "POST":
+        form = CrearUsuarioForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data["password"])
+            user.save()
+
+            grupo = form.cleaned_data["grupo"]
+            user.groups.add(grupo)
+
+            messages.success(request, f"✅ Usuario '{user.username}' creado con rol '{grupo.name}'.")
+            return redirect("crear_usuario")
+    else:
+        form = CrearUsuarioForm()
+
+    usuarios = User.objects.all().order_by("username")
+    return render(request, "usuarios/crear.html", {"form": form, "usuarios": usuarios})
+
 
 # ============================================================
 #                  BANDEJA DE ENTRADA (MENSAJES)
@@ -767,3 +804,100 @@ def ajax_actualizar_estado(request):
         "estado": exp.estado,
         "observaciones": exp.observaciones,
     })
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User, Group
+from django.contrib import messages
+from .forms import UsuarioForm
+
+def crear_usuario(request):
+    """
+    Permite crear nuevos usuarios y asignarles un rol (grupo).
+    Temporalmente sin requerir autenticación (sin @login_required).
+    """
+    if request.method == 'POST':
+        form = UsuarioForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            password = form.cleaned_data['password']
+            group = form.cleaned_data['group']
+            user.set_password(password)
+            user.save()
+            user.groups.add(group)
+
+            messages.success(request, f"✅ Usuario '{user.username}' creado con rol '{group.name}'.")
+            return redirect('asignaciones:admin_general_menu')  # Redirección corregida
+        else:
+            messages.error(request, "❌ Error al crear el usuario. Verifica los datos ingresados.")
+    else:
+        form = UsuarioForm()
+
+    return render(request, 'asignaciones/crear_usuario.html', {'form': form})
+
+from django.contrib.auth.models import User, Group
+from django.shortcuts import render
+
+def lista_usuarios(request):
+    usuarios = User.objects.all().order_by('id')
+    usuarios_data = []
+
+    for u in usuarios:
+        grupo = u.groups.first().name if u.groups.exists() else "Sin rol"
+        usuarios_data.append({
+            'id': u.id,
+            'username': u.username,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+            'email': u.email,
+            'group': grupo
+        })
+
+    context = {'usuarios': usuarios_data}
+    return render(request, 'asignaciones/lista_usuarios.html', context)
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+def eliminar_usuario(request, user_id):
+    usuario = get_object_or_404(User, id=user_id)
+
+    if usuario.username.lower() == "admin" or usuario.is_superuser:
+        messages.error(request, "⚠️ No se puede eliminar al usuario administrador principal.")
+        return redirect('asignaciones:lista_usuarios')
+
+    usuario.delete()
+    messages.success(request, f"✅ Usuario '{usuario.username}' eliminado correctamente.")
+    return redirect('asignaciones:lista_usuarios')
+
+
+def editar_usuario(request, user_id):
+    usuario = get_object_or_404(User, id=user_id)
+    grupos = Group.objects.all()  # lista de roles
+
+    if request.method == "POST":
+        usuario.first_name = request.POST.get("first_name")
+        usuario.last_name = request.POST.get("last_name")
+        usuario.email = request.POST.get("email")
+
+        nuevo_rol = request.POST.get("rol")
+        if nuevo_rol:
+            usuario.groups.clear()
+            grupo = Group.objects.get(name=nuevo_rol)
+            usuario.groups.add(grupo)
+
+        usuario.save()
+        messages.success(request, f"✅ Usuario '{usuario.username}' actualizado correctamente.")
+        return redirect("asignaciones:lista_usuarios")
+
+    rol_actual = usuario.groups.first().name if usuario.groups.exists() else "Sin rol"
+
+    context = {
+        "usuario": usuario,
+        "grupos": grupos,
+        "rol_actual": rol_actual,
+    }
+    return render(request, "asignaciones/editar_usuario.html", context)
+
+
+
