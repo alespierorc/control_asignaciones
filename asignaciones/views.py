@@ -1,30 +1,47 @@
-from django.db.models import Count, Q
+# ============================================================
+#                CONTROL DE ASIGNACIONES - SERMINCO
+# ============================================================
+# Archivo: views.py
+# Propósito: Control de vistas, seguridad por roles y lógica de negocio.
+# Roles soportados: AdministradorLider, Administrador, Coordinador, Supervisor
+# ============================================================
+
+from django.db.models import Q
 from django.urls import reverse
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
-from .models import Expediente, Contrato, OficinaRegional, Mensaje, Anuncio
-from django.db import models
-from .forms import SupervisorEstadoForm, SupervisorVisitaForm
+from django.contrib.auth.models import User, Group
+from django.views.decorators.http import require_POST
 import datetime
+from django.views.decorators.csrf import csrf_protect
+from .models import Expediente, Contrato, OficinaRegional, Mensaje, Anuncio
+from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.csrf import csrf_protect
+from django.contrib import messages
+
 from .forms import (
     ProgramarVisitaForm,
     ConcluirForm,
     CoordinadorRegistroForm,
+    CrearUsuarioForm,
 )
 
 # ============================================================
-#                      Helpers de roles
+#                       FUNCIONES DE ROL
 # ============================================================
 
-def has_group(user, name: str) -> bool:
-    return user.is_authenticated and user.groups.filter(name=name).exists()
+def has_group(user, group_name):
+    """Verifica si el usuario pertenece a un grupo específico."""
+    return user.is_authenticated and user.groups.filter(name=group_name).exists()
 
 
 def user_role(user):
-    if user.is_superuser or has_group(user, "AdminGeneral") or has_group(user, "Administracion") or has_group(user, "Administración"):
+    """Devuelve el rol principal del usuario."""
+    if user.is_superuser or has_group(user, "AdministradorLider"):
+        return "ADMIN_LIDER"
+    if has_group(user, "Administrador"):
         return "ADMIN"
     if has_group(user, "Coordinador"):
         return "COORD"
@@ -33,553 +50,653 @@ def user_role(user):
     return None
 
 
-def is_in(group_name):
-    def check(u):
-        return u.is_superuser or has_group(u, group_name)
-    return check
-
+def role_required(groups):
+    """Decorador que restringe el acceso según el grupo."""
+    def decorator(view_func):
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            user = request.user
+            if user.is_superuser or has_group(user, "AdministradorLider"):
+                return view_func(request, *args, **kwargs)
+            if any(has_group(user, g) for g in groups):
+                return view_func(request, *args, **kwargs)
+            messages.error(request, "⚠️ No tienes permisos para acceder a esta sección.")
+            return redirect("asignaciones:home_router")
+        return wrapper
+    return decorator
 
 # ============================================================
-#                           DEMO / Homes
+# AUTENTICACIÓN Y REDIRECCIÓN POR ROL
 # ============================================================
 
+@csrf_protect
 def login_demo(request):
+    """Inicio de sesión personalizado SERMINCO."""
     if request.method == "POST":
-        next_url = request.POST.get("next") or request.GET.get("next")
-        return redirect(next_url or "asignaciones:home_selector")
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, f"👋 Bienvenido, {user.first_name or user.username}.")
+            return redirect("asignaciones:home_router")
+        else:
+            messages.error(request, "❌ Usuario o contraseña incorrectos.")
+            return redirect("asignaciones:login")
+
+    if request.user.is_authenticated:
+        return redirect("asignaciones:home_router")
+
     return render(request, "registration/login.html")
 
+@login_required
+def home_router(request):
+    """Redirige al panel correspondiente según el rol del usuario."""
+    user = request.user
 
-def home_selector(request):
-    return render(request, "roles/home_selector.html")
+    role = user_role(user)
+    if role == "ADMIN_LIDER":
+        return redirect("asignaciones:admin_lider_menu")
+    elif role == "ADMIN":
+        return redirect("asignaciones:admin_menu")
+    elif role == "COORD":
+        return redirect("asignaciones:coordinador_menu")
+    elif role == "SUP":
+        return redirect("asignaciones:supervisor_panel")
+    else:
+        messages.warning(request, "Tu cuenta no tiene un rol asignado. Contacta con el AdministradorLider.")
+        logout(request)
+        return redirect("asignaciones:login")
 
 
+@csrf_protect
+@login_required
+def logout_view(request):
+    """
+    Cierra completamente la sesión del usuario y limpia las cookies.
+    """
+    try:
+        logout(request)  # Cierra la sesión en Django
+        request.session.flush()  # Elimina los datos de sesión
+        response = redirect("asignaciones:login")
+        response.delete_cookie("sessionid")
+        response.delete_cookie("csrftoken")
+        messages.success(request, "👋 Has cerrado sesión correctamente.")
+        return response
+    except Exception as e:
+        print(f"⚠️ Error al cerrar sesión: {e}")
+        messages.error(request, "⚠️ No se pudo cerrar sesión correctamente.")
+        return redirect("asignaciones:home_router")
+
+# ============================================================
+#                        SUPERVISOR
+# ============================================================
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name__in=["Supervisor", "AdministradorLider"]).exists())
+def supervisor_panel(request):
+    """
+    Panel principal del Supervisor.
+    - Solo los usuarios con rol 'Supervisor' o 'AdministradorLider' pueden acceder.
+    - El AdministradorLider tiene control total sobre este panel también.
+    """
+    return render(request, "roles/supervisor_home.html")
+
+@role_required(["Supervisor"])
 def home_supervisor(request):
     return render(request, "roles/supervisor_home.html")
 
-
-def home_coordinador(request):
-    return redirect("asignaciones:coordinador_menu")
-
-
-def home_admin(request):
-    return render(request, "roles/admin_home.html")
-
-
 # ============================================================
-#                         Supervisor
+#            REGISTRO DE VISITA POR SUPERVISOR
 # ============================================================
-
-# ============================================================
-# Panel principal del supervisor
-# ============================================================
-
-def supervisor_panel(request):
-    """
-    Solo muestra el panel principal del supervisor.
-    """
-    return render(request, "supervisor/panel.html")
+from datetime import datetime
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.contrib import messages
+from .models import Expediente, Anuncio
+from .decorators import role_required
+from django.contrib.auth.models import User
 
 
-# ============================================================
-# Registrar visita del expediente
-# ============================================================
-
+@role_required(["Supervisor"])
 def supervisor_registrar(request):
     """
-    Permite buscar un expediente (por N° SIGED o Carta Línea) y registrar su fecha real de visita.
-    La actualización es mediante AJAX para reflejar cambios en tiempo real.
+    Permite al supervisor registrar la fecha de visita de un expediente.
+    Retorna JSON si la solicitud es AJAX, o renderiza la vista normal.
     """
+    supervisor = request.user
+    expedientes = Expediente.objects.filter(supervisor=supervisor).select_related("contrato", "oficina")
 
-    expedientes = (
-        Expediente.objects.select_related("contrato", "oficina", "supervisor")
-        .order_by("-fecha_asignacion", "-created_at")
-    )
+    # === Si el usuario envía el formulario vía AJAX ===
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        try:
+            expediente_id = request.POST.get("expediente_id")
+            fecha_visita_str = request.POST.get("fecha_visita")
 
-    resultados = []
-    query_siged = request.GET.get("siged", "").strip()
-    query_carta = request.GET.get("carta_linea", "").strip()
+            if not expediente_id or not fecha_visita_str:
+                return JsonResponse({"status": "error", "message": "Datos incompletos"})
 
-    # 🔹 Filtro de búsqueda
-    if query_siged or query_carta:
-        filtros = Q()
-        if query_siged:
-            filtros &= Q(siged__icontains=query_siged)
-        if query_carta:
-            filtros &= Q(carta_linea__icontains=query_carta)
-        resultados = Expediente.objects.filter(filtros).select_related("contrato", "oficina", "supervisor")
+            # ✅ Convertir la fecha desde string a objeto date
+            try:
+                fecha_visita = datetime.strptime(fecha_visita_str, "%Y-%m-%d").date()
+            except ValueError:
+                return JsonResponse({"status": "error", "message": "Formato de fecha inválido"})
 
-        if not resultados.exists():
-            messages.info(request, "No se encontraron expedientes con esos criterios.")
+            expediente = Expediente.objects.filter(id=expediente_id, supervisor=supervisor).first()
+            if not expediente:
+                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado"})
 
-    # 🔹 AJAX: Registrar fecha de visita
-    if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "POST":
-        exp_id = request.POST.get("expediente_sel")
-        fecha_val = request.POST.get("fecha_visita")
+            # ✅ Guardar la fecha de visita y actualizar estado
+            expediente.fecha_visita = fecha_visita
+            expediente.estado = "CONCLUIDO"
+            expediente.save()
 
-        if not exp_id or not fecha_val:
+            # ✅ Crear anuncio para el Coordinador
+            coordinadores = User.objects.filter(groups__name="Coordinador")
+            for coord in coordinadores:
+                Anuncio.objects.create(
+                    titulo=f"Visita registrada - {expediente.siged}",
+                    contenido=f"El supervisor {supervisor.get_full_name()} registró la visita el {fecha_visita.strftime('%d/%m/%Y')}",
+                    tipo="INFO",
+                    remitente=supervisor,
+                    destinatario=coord,
+                )
+
             return JsonResponse({
-                "status": "error",
-                "message": "Debes seleccionar un expediente y una fecha válida."
+                "status": "success",
+                "message": "Visita registrada correctamente",
+                "fecha_visita": fecha_visita.strftime("%d/%m/%Y"),
             })
 
-        exp = get_object_or_404(Expediente, id=exp_id)
-        exp.fecha_visita = fecha_val
-        exp.estado = "EN_PROCESO"
-        exp.save()
+        except Exception as e:
+            print(f"❌ Error al guardar visita: {e}")
+            return JsonResponse({"status": "error", "message": str(e)})
 
-        return JsonResponse({
-            "status": "success",
-            "message": f"✅ Fecha de visita registrada correctamente para el expediente {exp.siged}.",
-            "fecha_visita": exp.fecha_visita.strftime("%d/%m/%Y"),
-            "siged": exp.siged,
-        })
+    # === Renderizado normal (GET) ===
+    return render(request, "supervisor/registrar.html", {"expedientes": expedientes})
 
-    context = {
-        "expedientes": expedientes,
-        "resultados": resultados,
-        "query_siged": query_siged,
-        "query_carta": query_carta,
-    }
-
-    return render(request, "supervisor/registrar.html", context)
-
-
-# ============================================================
-# Gestión de estado del expediente
-# ============================================================
-
+@role_required(["Supervisor", "AdministradorLider"])
 def estado_expediente(request):
     """
-    Aquí manejo la actualización del estado de los expedientes:
-    - Fecha de derivación
-    - Observaciones
-    - Estado: Concluido o En Proceso (mediante toggle)
+    Vista para gestión de estado de expedientes:
+    - GET AJAX: búsqueda de expedientes por SIGED o carta de línea
+    - POST AJAX: actualización de estado, fecha derivación y observaciones
     """
+    # ==== BÚSQUEDA (AJAX GET) ====
+    if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "GET":
+        siged = request.GET.get("siged", "").strip()
+        carta = request.GET.get("carta_linea", "").strip()
+        query = siged or carta
+        if not query:
+            return JsonResponse({"status": "error", "message": "Sin parámetros de búsqueda.", "results": []})
 
-    expedientes = Expediente.objects.select_related("contrato", "oficina", "supervisor").order_by("-fecha_asignacion")
-    resultados = []
-    query_siged = request.GET.get("siged", "").strip()
-    query_carta = request.GET.get("carta_linea", "").strip()
+        expedientes = Expediente.objects.all()
+        if request.user.groups.filter(name="Supervisor").exists():
+            expedientes = expedientes.filter(supervisor=request.user)
 
-    # 🔹 Filtro de búsqueda
-    if query_siged or query_carta:
-        filtros = Q()
-        if query_siged:
-            filtros &= Q(siged__icontains=query_siged)
-        if query_carta:
-            filtros &= Q(carta_linea__icontains=query_carta)
-        resultados = Expediente.objects.filter(filtros).select_related("contrato", "oficina", "supervisor")
+        filtro = Q()
+        if siged:
+            filtro |= Q(siged__icontains=siged)
+        if carta:
+            filtro |= Q(carta_linea__icontains=carta)
 
-        if not resultados.exists():
-            messages.info(request, "No se encontraron expedientes con esos criterios.")
+        expedientes = expedientes.filter(filtro).select_related(
+            "contrato", "oficina", "tipo_supervision"
+        )[:20]
 
-    # 🔹 AJAX: Actualización sin recargar
+        resultados = [
+            {
+                "id": e.id,
+                "siged": e.siged,
+                "carta_linea": e.carta_linea or "",
+                "razon_social": e.razon_social or "",
+                "contrato": e.contrato.numero if e.contrato else "",
+                "oficina": e.oficina.nombre if e.oficina else "",
+                "codigo_actividad": e.codigo_actividad or "",
+                "tipo_supervision": e.tipo_supervision.nombre if e.tipo_supervision else "—",
+                "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "—",
+                "estado": e.estado or "EN PROCESO",
+                "fecha_derivacion": e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "—",
+                "observaciones": e.observaciones or "—",
+            }
+            for e in expedientes
+        ]
+
+        return JsonResponse({"status": "success", "results": resultados})
+
+    # ==== ACTUALIZACIÓN (AJAX POST) ====
     if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "POST":
-        exp_id = request.POST.get("expediente")
-        fecha_deriv = request.POST.get("fecha_derivacion")
-        estado_concluido = request.POST.get("estado") == "CONCLUIDO"
-        observaciones = request.POST.get("observaciones", "").strip()
+        try:
+            exp_id = request.POST.get("expediente", "").strip()
+            fecha_deriv = request.POST.get("fecha_derivacion", "").strip()
+            observaciones = request.POST.get("observaciones", "").strip()
+            estado = request.POST.get("estado", "").strip()
 
-        if not exp_id:
-            return JsonResponse({"status": "error", "message": "Debes seleccionar un expediente antes de guardar."})
+            if not exp_id:
+                return JsonResponse({"status": "error", "message": "No se identificó el expediente."})
+            if not fecha_deriv:
+                return JsonResponse({"status": "error", "message": "Debe ingresar la fecha de derivación."})
 
-        exp = get_object_or_404(Expediente, id=exp_id)
+            exp = Expediente.objects.filter(id=exp_id).first()
+            if request.user.groups.filter(name="Supervisor").exists():
+                exp = Expediente.objects.filter(id=exp.id, supervisor=request.user).first()
 
-        if not fecha_deriv:
-            return JsonResponse({"status": "error", "message": "Debes registrar una fecha de derivación válida."})
+            if not exp:
+                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado."})
 
-        exp.fecha_derivacion = fecha_deriv
-        exp.observaciones = observaciones if observaciones else "-"
-        exp.estado = "CONCLUIDO" if estado_concluido else "EN_PROCESO"
-        exp.save()
-
-        return JsonResponse({
-            "status": "success",
-            "message": f"✅ Expediente {exp.siged} actualizado correctamente.",
-            "estado": exp.estado,
-            "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y"),
-        })
-
-    context = {
-        "expedientes": expedientes,
-        "resultados": resultados,
-        "query_siged": query_siged,
-        "query_carta": query_carta,
-    }
-
-    return render(request, "supervisor/estado.html", context)
-
-
-# ============================================================
-# Endpoint AJAX para autocompletado
-# ============================================================
-
-def autocomplete_expediente(request):
-    """
-    Endpoint que devuelve coincidencias de N° SIGED o Carta Línea
-    para el autocompletado en los formularios (usado por datalist).
-    """
-    field = request.GET.get("field")
-    query = request.GET.get("q", "").strip()
-
-    if not field or not query:
-        return JsonResponse({"results": []})
-
-    if field == "siged":
-        results = list(Expediente.objects.filter(siged__icontains=query).values_list("siged", flat=True)[:10])
-    elif field == "carta_linea":
-        results = list(Expediente.objects.filter(carta_linea__icontains=query).values_list("carta_linea", flat=True)[:10])
-    else:
-        results = []
-
-    return JsonResponse({"results": results})
-
-
-# ============================================================
-# Revisión general de expedientes
-# ============================================================
-
-def supervisor_revisar(request):
-    """
-    Muestra todos los expedientes disponibles para revisión general.
-    """
-    expedientes = (
-        Expediente.objects.select_related("contrato", "oficina", "supervisor")
-        .order_by("-fecha_asignacion")
-    )
-    return render(request, "supervisor/revisar.html", {"expedientes": expedientes})
-
-
-# ============================================================
-# Concluir expediente manualmente
-# ============================================================
-
-def concluir_expediente(request, pk):
-    """
-    Permite marcar manualmente un expediente como concluido,
-    siempre que tenga una fecha de visita registrada.
-    """
-    exp = get_object_or_404(Expediente, pk=pk)
-
-    if exp.estado == "CONCLUIDO":
-        messages.info(request, "El expediente ya está concluido.")
-        return redirect("asignaciones:supervisor_revisar")
-
-    if not getattr(exp, "fecha_visita", None):
-        messages.warning(request, "Debes registrar la fecha de visita antes de concluir.")
-        return redirect("asignaciones:supervisor_registrar")
-
-    if request.method == "POST":
-        form = ConcluirForm(request.POST, instance=exp)
-        if form.is_valid():
-            exp = form.save(commit=False)
-            exp.estado = "CONCLUIDO"
-            exp.save()
-            messages.success(request, f"✅ El expediente {exp.siged} ha sido marcado como concluido.")
-            return redirect("asignaciones:supervisor_revisar")
-    else:
-        form = ConcluirForm(instance=exp)
-
-    return render(request, "asignaciones/concluir.html", {"form": form, "exp": exp})
-
-
-# ============================================================
-#                         Coordinador
-# ============================================================
-
-def coordinador_menu(request):
-    # Verifica si el usuario tiene permisos para crear anuncios
-    puede_crear_anuncio = request.user.groups.filter(
-        name__in=["Coordinador", "Administrador General", "Administrador Simple"]
-    ).exists()
-
-    return render(
-        request,
-        "coordinador/menu.html",
-        {"puede_crear_anuncio": puede_crear_anuncio}
-    )
-
-def coordinador_registrar(request):
-    supervisors = User.objects.filter(groups__name="Supervisor").order_by("first_name", "last_name").distinct()
-    contratos = Contrato.objects.select_related("oficina").order_by("numero")
-    oficinas = OficinaRegional.objects.all().order_by("nombre")
-
-    data = {
-        "contrato": "",
-        "siged": "",
-        "carta_linea": "",
-        "codigo": "",
-        "codigo_actividad": "",
-        "razon_social": "",
-        "tipo_supervision": "",
-        "tipo_documento": "",
-        "oficina": "",
-        "supervisor_id": "",
-        "visita_decision": "NO",
-        "fecha_asignacion": "",
-    }
-
-    if request.method == "POST":
-        for key in data.keys():
-            data[key] = (request.POST.get(key) or "").strip()
-
-        errors = []
-        if not data["siged"]:
-            errors.append("El N.º SIGED es obligatorio.")
-        if not data["carta_linea"]:
-            errors.append("La carta de línea es obligatoria.")
-        if not data["razon_social"]:
-            errors.append("La razón social es obligatoria.")
-
-        supervisor_obj = supervisors.filter(id=data["supervisor_id"]).first() if data["supervisor_id"] else None
-
-        fecha_asignacion = None
-        if data["fecha_asignacion"]:
+            # Convertir string a date
             try:
-                fecha_asignacion = datetime.date.fromisoformat(data["fecha_asignacion"])
+                fecha_convertida = datetime.strptime(fecha_deriv, "%Y-%m-%d").date()
             except ValueError:
-                errors.append("La fecha de asignación no tiene un formato válido (AAAA-MM-DD).")
-        else:
-            errors.append("Debes seleccionar una fecha de asignación.")
+                return JsonResponse({"status": "error", "message": "Formato de fecha no válido."})
 
-        if not errors:
+            exp.fecha_derivacion = fecha_convertida
+            exp.observaciones = observaciones or "-"
+            exp.estado = "CONCLUIDO" if estado == "CONCLUIDO" else "EN PROCESO"
+            exp.save()
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Expediente actualizado correctamente.",
+                "expediente": {
+                    "id": exp.id,
+                    "siged": exp.siged,
+                    "estado": exp.estado,
+                    "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y"),
+                    "observaciones": exp.observaciones,
+                }
+            })
+        except Exception as e:
+            print("❌ Error en estado_expediente:", e)
+            return JsonResponse({"status": "error", "message": f"Error interno: {e}"})
+
+    # ==== RENDER NORMAL ====
+    expedientes = Expediente.objects.filter(supervisor=request.user).select_related(
+        "contrato", "oficina", "tipo_supervision", "tipo_documento"
+    )
+    return render(request, "supervisor/estado.html", {"expedientes": expedientes})
+
+# ============================================================
+#                         COORDINADOR
+# ============================================================
+
+@role_required(["Coordinador"])
+def coordinador_menu(request):
+    return render(request, "coordinador/menu.html")
+
+# ============================================================
+#          VISTA: REGISTRAR EXPEDIENTE (COORDINADOR)
+# ============================================================
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.models import User
+from .models import (
+    Expediente,
+    OficinaRegional,
+    Contrato,
+    TipoSupervision,
+    TipoDocumento,
+    Anuncio,
+)
+from django.db import transaction
+from asignaciones.decorators import role_required
+
+
+@role_required(["Coordinador"])
+@transaction.atomic
+def coordinador_registrar(request):
+    """
+    Permite al coordinador registrar un nuevo expediente.
+    Incluye selección de contrato, oficina, tipo de supervisión y documento.
+    """
+
+    # Cargar datos base para los selects
+    supervisores = User.objects.filter(groups__name="Supervisor").order_by("first_name")
+    contratos = Contrato.objects.all().order_by("numero")
+    oficinas = OficinaRegional.objects.all().order_by("nombre")
+    tipos_supervision = TipoSupervision.objects.all().order_by("nombre")
+    tipos_documento = TipoDocumento.objects.all().order_by("nombre")
+
+    data = {}
+
+    if request.method == "POST":
+        # Obtener datos del formulario
+        data = {k: request.POST.get(k, "").strip() for k in request.POST.keys()}
+
+        # Validar campos obligatorios mínimos
+        campos_obligatorios = ["siged", "carta_linea", "contrato", "oficina", "supervisor_id"]
+        faltantes = [c for c in campos_obligatorios if not data.get(c)]
+
+        if faltantes:
+            messages.error(request, f"⚠️ Debes completar los campos obligatorios: {', '.join(faltantes)}.")
+            return render(request, "coordinador/registrar.html", {
+                "data": data,
+                "supervisores": supervisores,
+                "contratos": contratos,
+                "oficinas": oficinas,
+                "tipos_supervision_choices": [(t.id, t.nombre) for t in tipos_supervision],
+                "tipos_documento_choices": [(t.id, t.nombre) for t in tipos_documento],
+            })
+
+        try:
+            # Convertir IDs en objetos
+            contrato = Contrato.objects.get(id=data["contrato"])
+            oficina = OficinaRegional.objects.get(id=data["oficina"])
+            supervisor = User.objects.get(id=data["supervisor_id"])
+
+            tipo_supervision = (
+                TipoSupervision.objects.get(id=data["tipo_supervision"])
+                if data.get("tipo_supervision") else None
+            )
+            tipo_documento = (
+                TipoDocumento.objects.get(id=data["tipo_documento"])
+                if data.get("tipo_documento") else None
+            )
+
+            # Crear expediente
             expediente = Expediente.objects.create(
-                contrato_id=data["contrato"] or None,
                 siged=data["siged"],
                 carta_linea=data["carta_linea"],
-                codigo=data["codigo"] or None,
-                codigo_actividad=data["codigo_actividad"] or None,
-                razon_social=data["razon_social"],
-                tipo_supervision=data["tipo_supervision"] or None,
-                tipo_documento=data["tipo_documento"] or None,
-                oficina_id=data["oficina"] or None,
-                supervisor=supervisor_obj,
-                visita_decision=data["visita_decision"],
-                fecha_asignacion=fecha_asignacion,
+                codigo=data.get("codigo", ""),
+                codigo_actividad=data.get("codigo_actividad", ""),
+                razon_social=data.get("razon_social", ""),
+                visita_decision=data.get("visita_decision", "NO"),
+                fecha_asignacion=data.get("fecha_asignacion") or None,
+                contrato=contrato,
+                oficina=oficina,
+                supervisor=supervisor,
+                tipo_supervision=tipo_supervision,
+                tipo_documento=tipo_documento,
                 estado="EN_PROCESO",
             )
 
-            # 🔹 Crear anuncio automático para el supervisor asignado
-            if supervisor_obj and supervisor_obj.user:
-                Anuncio.objects.create(
-                    titulo=f"Nuevo expediente asignado: {expediente.siged}",
-                    contenido=(
-                        f"El coordinador {request.user.get_full_name()} te ha asignado el expediente "
-                        f"N° {expediente.siged} ({expediente.carta_linea}).\n\n"
-                        f"**Razón social:** {expediente.razon_social}\n"
-                        f"**Tipo de supervisión:** {expediente.tipo_supervision or 'No especificado'}\n"
-                        f"**Fecha de asignación:** {expediente.fecha_asignacion.strftime('%d/%m/%Y')}"
-                    ),
-                    tipo="asignacion",
-                    destinatario=supervisor_obj.user,
-                    remitente=request.user,
-                )
+            # Crear anuncio para el supervisor
+            Anuncio.objects.create(
+                titulo=f"Nuevo expediente asignado: {expediente.siged}",
+                contenido=f"Has recibido un nuevo expediente asignado por {request.user.get_full_name()}.",
+                tipo="INFO",
+                destinatario=supervisor,
+                remitente=request.user,
+            )
 
-            messages.success(request, "✅ Expediente registrado correctamente y anuncio enviado al supervisor.")
+            messages.success(request, f"✅ Expediente {expediente.siged} registrado correctamente.")
             return redirect("asignaciones:coordinador_registrar")
 
-        for e in errors:
-            messages.error(request, e)
+        except Exception as e:
+            messages.error(request, f"❌ Error al guardar el expediente: {e}")
 
-    context = {
-        "supervisores": supervisors,
-        "oficinas": oficinas,
-        "contratos": contratos,
+    # Render inicial o reintento fallido
+    return render(request, "coordinador/registrar.html", {
         "data": data,
-    }
-    return render(request, "coordinador/registrar.html", context)
+        "supervisores": supervisores,
+        "contratos": contratos,
+        "oficinas": oficinas,
+        "tipos_supervision_choices": [(t.id, t.nombre) for t in tipos_supervision],
+        "tipos_documento_choices": [(t.id, t.nombre) for t in tipos_documento],
+    })
 
 
+
+@role_required(["Coordinador"])
 def coordinador_revisar(request):
     qs = Expediente.objects.select_related("supervisor", "contrato", "oficina").order_by("-created_at")
-    contrato_id = request.GET.get("contrato")
     siged = request.GET.get("siged", "").strip()
-    if contrato_id:
-        qs = qs.filter(contrato_id=contrato_id)
     if siged:
         qs = qs.filter(siged__icontains=siged)
-
-    contratos = Contrato.objects.select_related("oficina").order_by("numero")
-    return render(request, "coordinador/revisar.html", {"expedientes": qs, "contratos": contratos})
-
+    return render(request, "coordinador/revisar.html", {"expedientes": qs})
 
 # ============================================================
-#                         Admin / Paneles
+#                      ADMINISTRADORES
+# ============================================================
+# Roles:
+# - AdministradorLíder → Control total
+# - Administrador → Panel simple
 # ============================================================
 
-def admin_general_menu(request):
-    return render(request, "admin/menu_general.html")
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render
+from .models import Contrato, Expediente
+
+# ============================================================
+# UTILIDAD: VALIDADORES DE ROL
+# ============================================================
+
+def es_admin_lider(user):
+    """Valida si el usuario pertenece al grupo 'AdministradorLider'."""
+    return user.is_authenticated and user.groups.filter(name="AdministradorLider").exists()
+
+def es_admin(user):
+    """Valida si el usuario pertenece al grupo 'Administrador'."""
+    return user.is_authenticated and user.groups.filter(name="Administrador").exists()
+
+# ============================================================
+# ADMINISTRADOR LÍDER (control total del sistema)
+# ============================================================
+
+@login_required
+@user_passes_test(es_admin_lider)
+def admin_lider_menu(request):
+    """
+    Panel principal del AdministradorLíder.
+    Tiene acceso completo a todos los paneles (coordinador, supervisor, etc.)
+    y puede crear usuarios, revisar y descargar expedientes.
+    """
+    return render(request, "admin/admin_lider_menu.html")
 
 
-def admin_simple_menu(request):
-    return render(request, "admin/menu_simple.html")
-
-
-def admin_general_descargar(request):
-    return render(request, "admin/descargar_general.html")
-
-
-def admin_simple_descargar(request):
-    return render(request, "admin/descargar_simple.html")
-
-def admin_general_revisar(request):
-    contratos = Contrato.objects.all().order_by("numero")
-    expedientes = []
-
-    contrato_id = request.GET.get("contrato")
+@login_required
+@user_passes_test(es_admin_lider)
+def admin_lider_revisar(request):
+    """
+    Permite revisar expedientes asignados o totales.
+    El AdministradorLíder puede filtrar por SIGED o Contrato.
+    """
     siged = request.GET.get("siged", "").strip()
-    carta_linea = request.GET.get("carta_linea", "").strip()
+    contratos = Contrato.objects.all().order_by("numero")
+    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
 
-    if contrato_id or siged or carta_linea:
-        qs = Expediente.objects.select_related("contrato", "oficina", "supervisor")
-        if contrato_id:
-            qs = qs.filter(contrato_id=contrato_id)
-        if siged:
-            qs = qs.filter(siged__icontains=siged)
-        if carta_linea:
-            qs = qs.filter(carta_linea__icontains=carta_linea)
+    if siged:
+        expedientes = expedientes.filter(siged__icontains=siged)
 
-        expedientes = qs.order_by("-fecha_asignacion")
-        if not expedientes:
-            messages.info(request, "No se encontraron expedientes con los filtros aplicados.")
+    context = {
+        "siged": siged,
+        "contratos": contratos,
+        "expedientes": expedientes,
+    }
+    return render(request, "admin/admin_lider_revisar.html", context)
+
+
+@login_required
+@user_passes_test(es_admin_lider)
+def admin_lider_descargar(request):
+    """
+    Vista del AdministradorLíder para descargar informes, reportes o expedientes.
+    """
+    contratos = Contrato.objects.all().order_by("numero")
+    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
 
     context = {
         "contratos": contratos,
         "expedientes": expedientes,
     }
-    return render(request, "admin/revisar_general.html", context)
+    return render(request, "admin/admin_lider_descargar.html", context)
 
 
-def admin_simple_revisar(request):
-    contratos = Contrato.objects.all().order_by("numero")
-    expedientes = []
+# ============================================================
+# ADMINISTRADOR (nivel intermedio, acceso restringido)
+# ============================================================
 
-    contrato_id = request.GET.get("contrato")
+@login_required
+@user_passes_test(es_admin)
+def admin_menu(request):
+    """
+    Panel principal del Administrador.
+    Puede revisar y descargar expedientes propios o asignados,
+    pero no puede crear usuarios ni acceder a paneles de otros roles.
+    """
+    return render(request, "admin/admin_menu.html")
+
+
+@login_required
+@user_passes_test(es_admin)
+def admin_revisar(request):
+    """
+    Vista de revisión simple de expedientes.
+    """
     siged = request.GET.get("siged", "").strip()
-    carta_linea = request.GET.get("carta_linea", "").strip()
+    contratos = Contrato.objects.all().order_by("numero")
+    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
 
-    if contrato_id or siged or carta_linea:
-        qs = Expediente.objects.select_related("contrato", "oficina", "supervisor")
-        if contrato_id:
-            qs = qs.filter(contrato_id=contrato_id)
-        if siged:
-            qs = qs.filter(siged__icontains=siged)
-        if carta_linea:
-            qs = qs.filter(carta_linea__icontains=carta_linea)
+    if siged:
+        expedientes = expedientes.filter(siged__icontains=siged)
 
-        expedientes = qs.order_by("-fecha_asignacion")
-        if not expedientes:
-            messages.info(request, "No se encontraron expedientes con los filtros aplicados.")
+    context = {
+        "siged": siged,
+        "contratos": contratos,
+        "expedientes": expedientes,
+    }
+    return render(request, "admin/admin_revisar.html", context)
+
+
+@login_required
+@user_passes_test(es_admin)
+def admin_descargar(request):
+    """
+    Permite descargar listados o reportes.
+    """
+    contratos = Contrato.objects.all().order_by("numero")
+    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
 
     context = {
         "contratos": contratos,
         "expedientes": expedientes,
     }
-    return render(request, "admin/revisar_simple.html", context)
+    return render(request, "admin/admin_descargar.html", context)
 
-from django.contrib.auth.models import Group, User
-from .forms import CrearUsuarioForm
-from django.contrib import messages
-from django.shortcuts import render, redirect
 
+# ============================================================
+#                        GESTIÓN DE USUARIOS
+# ============================================================
+
+@role_required(["AdministradorLider"])
 def crear_usuario(request):
     """
-    Permite crear nuevos usuarios y asignarles un rol (grupo).
-    Temporalmente sin restricción de login.
+    Solo el AdministradorLider puede crear cuentas.
+    Crea usuarios, les asigna rol y muestra errores claros si algo falla.
     """
     if request.method == "POST":
         form = CrearUsuarioForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data["password"])
-            user.save()
-
-            grupo = form.cleaned_data["grupo"]
-            user.groups.add(grupo)
-
-            messages.success(request, f"✅ Usuario '{user.username}' creado con rol '{grupo.name}'.")
-            return redirect("crear_usuario")
+            user = form.save()
+            messages.success(request, f"✅ Usuario '{user.username}' creado correctamente.")
+            return redirect("asignaciones:lista_usuarios")
+        else:
+            # Muestra los errores de validación directamente en consola y en el formulario
+            print("❌ Errores al crear usuario:", form.errors)
+            messages.error(request, "⚠️ Revisa los campos marcados. No se pudo crear el usuario.")
     else:
         form = CrearUsuarioForm()
 
-    usuarios = User.objects.all().order_by("username")
-    return render(request, "usuarios/crear.html", {"form": form, "usuarios": usuarios})
+    return render(request, "usuarios/crear.html", {"form": form})
 
+
+@role_required(["AdministradorLider"])
+def lista_usuarios(request):
+    usuarios = User.objects.all().order_by("id")
+    usuarios_data = [
+        {
+            "id": u.id,
+            "username": u.username,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "email": u.email,
+            "group": u.groups.first().name if u.groups.exists() else "Sin rol",
+        }
+        for u in usuarios
+    ]
+    return render(request, "asignaciones/lista_usuarios.html", {"usuarios": usuarios_data})
+
+@role_required(["AdministradorLider"])
+def eliminar_usuario(request, user_id):
+    usuario = get_object_or_404(User, id=user_id)
+    if usuario.is_superuser or usuario.username.lower() == "admin":
+        messages.error(request, "⚠️ No se puede eliminar al administrador principal.")
+    else:
+        usuario.delete()
+        messages.success(request, f"✅ Usuario '{usuario.username}' eliminado correctamente.")
+    return redirect("asignaciones:lista_usuarios")
 
 # ============================================================
-#                  BANDEJA DE ENTRADA (MENSAJES)
+#        ADMINISTRADOR LÍDER - EDITAR USUARIO
 # ============================================================
 
-def bandeja(request):
-    usuario = getattr(request, 'user', None)
-    if not usuario or not getattr(usuario, 'is_authenticated', False):
-        class DummyUser:
-            id = 0
-            username = "Invitado"
-            is_authenticated = False
-        usuario = DummyUser()
+from django.contrib.auth.models import User, Group
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .forms import CrearUsuarioForm as UsuarioForm
 
-    role = user_role(usuario) if usuario.is_authenticated else "INVITADO"
-
-    recibidos = Mensaje.objects.filter(destinatario=usuario).select_related("remitente") if usuario.is_authenticated else Mensaje.objects.all()[:25]
+@role_required(["AdministradorLider"])
+def editar_usuario(request, user_id):
+    """
+    Permite al AdministradorLíder editar un usuario existente.
+    """
+    usuario = get_object_or_404(User, id=user_id)
 
     if request.method == "POST":
-        dest_id = request.POST.get("destinatario")
-        asunto = request.POST.get("asunto", "").strip()
-        cuerpo = request.POST.get("cuerpo", "").strip()
+        form = UsuarioForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Usuario '{usuario.username}' actualizado correctamente.")
+            return redirect("asignaciones:lista_usuarios")
+    else:
+        form = UsuarioForm(instance=usuario)
 
-        if not asunto or not cuerpo:
-            messages.error(request, "Todos los campos son obligatorios.")
-        else:
-            destinatario = User.objects.filter(id=dest_id).first() if dest_id else None
-            Mensaje.objects.create(
-                remitente=usuario if hasattr(usuario, "id") else None,
-                destinatario=destinatario,
-                asunto=asunto or "(Sin asunto)",
-                cuerpo=cuerpo,
-            )
-            messages.success(request, "Mensaje enviado correctamente.")
-            return redirect("asignaciones:bandeja")
-
-    usuarios = User.objects.all().order_by("username")
-
-    return render(request, "misc/bandeja.html", {"recibidos": recibidos, "usuarios": usuarios, "role": role})
+    return render(request, "usuarios/editar_usuario.html", {"form": form, "usuario": usuario})
 
 
 # ============================================================
-#                     ANUNCIOS (MÓDULO MISC)
+#                       BANDEJA 
 # ============================================================
 
-from django.contrib.auth.models import Group
+@login_required
+def bandeja(request):
+    """Todos los usuarios autenticados pueden acceder."""
+    recibidos = Mensaje.objects.filter(destinatario=request.user).select_related("remitente")
+    usuarios = User.objects.all()
+    return render(request, "misc/bandeja.html", {"recibidos": recibidos, "usuarios": usuarios})
+
+# ============================================================
+#                  ANUNCIOS - CREACIÓN Y LISTADO
+# ============================================================
+
+from django.contrib.auth.models import Group, User
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.db import models
-from django.contrib.auth.models import User
 from .models import Anuncio
+from django.db import models
 
-
-# ------------------------------------------------------------
-# Listar anuncios
-# ------------------------------------------------------------
+@login_required
 def anuncios(request):
     """
-    Muestra los anuncios para el usuario actual.
-    Si no está autenticado, solo muestra los generales.
-    Si es petición AJAX, devuelve el bloque HTML para refresco.
+    Muestra los anuncios visibles para el usuario actual.
+    - Los Coordinadores, Administradores y AdministradorLider pueden crear anuncios.
+    - Los Supervisores solo pueden leer.
     """
     user = request.user
 
-    # Validar si el usuario puede crear anuncios
+    # Validar permisos de creación
     puede_crear = False
     if user.is_authenticated and user.groups.filter(
-        name__in=["Coordinador", "Administrador General", "Administrador Simple"]
+        name__in=["AdministradorLider", "Administrador", "Coordinador"]
     ).exists():
         puede_crear = True
 
-    # Mostrar anuncios según el tipo de usuario
+    # Mostrar anuncios relevantes
     if not user.is_authenticated:
         anuncios = Anuncio.objects.filter(tipo="general").order_by("-fecha_creacion")
     else:
@@ -589,30 +706,27 @@ def anuncios(request):
             | models.Q(tipo="general")
         ).select_related("remitente").order_by("-fecha_creacion")
 
-    # Si es llamada AJAX, devuelvo solo la lista renderizada
     if request.GET.get("ajax"):
         html = render_to_string("misc/partials/_anuncios_list.html", {"anuncios": anuncios})
         return HttpResponse(html)
 
-    # Paso la variable `puede_crear` al contexto del template
     return render(
         request,
         "misc/anuncios.html",
         {"anuncios": anuncios, "puede_crear": puede_crear},
     )
 
-# ------------------------------------------------------------
-# Crear anuncio (solo coordinadores o administradores)
-# ------------------------------------------------------------
+
+@login_required
 def crear_anuncio(request):
     """
-    Permite a coordinadores y administradores crear nuevos anuncios
-    dirigidos a grupos completos o a usuarios específicos.
+    Permite a los AdministradoresLider, Administradores y Coordinadores crear anuncios.
+    Los Supervisores no pueden crear.
     """
     if not request.user.groups.filter(
-        name__in=["Coordinador", "Administrador General", "Administrador Simple"]
+        name__in=["AdministradorLider", "Administrador", "Coordinador"]
     ).exists():
-        messages.error(request, "No tienes permiso para crear anuncios.")
+        messages.error(request, "❌ No tienes permiso para crear anuncios.")
         return redirect("asignaciones:anuncios")
 
     grupos = Group.objects.all().order_by("name")
@@ -626,7 +740,8 @@ def crear_anuncio(request):
         destinatario_id = request.POST.get("destinatario")
 
         if not titulo or not contenido:
-            return JsonResponse({"status": "error", "message": "Campos incompletos."})
+            messages.error(request, "Todos los campos son obligatorios.")
+            return redirect("asignaciones:crear_anuncio")
 
         anuncio = Anuncio(
             titulo=titulo,
@@ -641,263 +756,137 @@ def crear_anuncio(request):
             anuncio.destinatario_id = destinatario_id
 
         anuncio.save()
-        return JsonResponse({"status": "success"})
+        messages.success(request, f"✅ Anuncio '{titulo}' creado correctamente.")
+        return redirect("asignaciones:anuncios")
 
     return render(request, "misc/crear_anuncio.html", {"grupos": grupos, "usuarios": usuarios})
 
 
-# ------------------------------------------------------------
-# Crear anuncio global (para generar automáticamente)
-# ------------------------------------------------------------
-def crear_anuncio_global(tipo, titulo, contenido, remitente, grupo_nombre=None):
-    """
-    Función utilitaria para generar anuncios globales automáticamente.
-    Puede ser llamada desde cualquier vista o evento del sistema.
-    """
-    grupo = None
-    if grupo_nombre:
-        grupo = Group.objects.filter(name=grupo_nombre).first()
-
-    Anuncio.objects.create(
-        titulo=titulo,
-        contenido=contenido,
-        tipo=tipo,
-        remitente=remitente,
-        grupo_destino=grupo,
-    )
-
-
 # ============================================================
-#                          REPORTES
+#                       REPORTES
 # ============================================================
 
+@login_required
 def reportes(request):
-    usuario = getattr(request, 'user', None)
-    role = user_role(usuario) if usuario and getattr(usuario, 'is_authenticated', False) else "INVITADO"
+    role = user_role(request.user)
     return render(request, "misc/reportes.html", {"role": role})
 
 # ============================================================
-# Endpoint AJAX con filtrado por supervisor logueado
+#                ENDPOINT AJAX - AUTOCOMPLETADO (MEJORADO)
 # ============================================================
 
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Expediente
+from .decorators import role_required
 
+
+@role_required(["AdministradorLider", "Administrador", "Coordinador", "Supervisor"])
+@login_required
 def ajax_autocomplete(request):
     """
-    Este endpoint devuelve sugerencias en tiempo real para los campos:
-      - N° SIGED
-      - Carta Línea
-    Filtra automáticamente los expedientes del supervisor logueado (si aplica).
+    Retorna coincidencias para autocompletar campos (SIGED o Carta Línea)
+    mostrando solo los expedientes visibles por el usuario actual.
+    - Los supervisores solo ven sus expedientes asignados.
+    - Los administradores y coordinadores pueden ver todos.
     """
-
-    field = request.GET.get("field", "").strip()
     query = request.GET.get("q", "").strip()
+    tipo = request.GET.get("tipo", "").strip()  # puede ser "siged" o "carta_linea"
 
-    if not field or not query:
+    if not query or not tipo:
         return JsonResponse({"results": []})
 
-    # Obtengo el supervisor actual si está autenticado
-    supervisor = getattr(request.user, "supervisor", None)
-
-    # Base de expedientes
+    # Filtrar base según el rol del usuario
+    user = request.user
     expedientes = Expediente.objects.all()
 
-    # 🔒 Si el usuario logueado tiene rol de supervisor, filtro solo los suyos
-    if supervisor:
-        expedientes = expedientes.filter(supervisor=supervisor)
+    if user.groups.filter(name="Supervisor").exists():
+        expedientes = expedientes.filter(supervisor=user)
 
-    # Filtro dinámico según el campo
-    if field == "siged":
-        resultados = (
-            expedientes.filter(siged__icontains=query)
-            .values_list("siged", flat=True)
-            .distinct()[:10]
-        )
-    elif field == "carta_linea":
-        resultados = (
-            expedientes.filter(carta_linea__icontains=query)
-            .values_list("carta_linea", flat=True)
-            .distinct()[:10]
-        )
+    # Filtro según el campo de búsqueda
+    if tipo == "siged":
+        expedientes = expedientes.filter(siged__icontains=query)
+    elif tipo == "carta_linea":
+        expedientes = expedientes.filter(carta_linea__icontains=query)
     else:
-        resultados = []
+        return JsonResponse({"results": []})
 
-    return JsonResponse({"results": list(resultados)})
+    # Armar lista JSON detallada para la tabla del frontend
+    resultados = [
+        {
+            "id": e.id,
+            "siged": e.siged,
+            "carta_linea": e.carta_linea,
+            "razon_social": e.razon_social or "",
+            "contrato": e.contrato.numero if e.contrato else "",
+            "oficina": e.oficina.nombre if e.oficina else "",
+            "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+        }
+        for e in expedientes[:10]
+    ]
+
+    return JsonResponse({"results": resultados})
+
+
 # ============================================================
-# AJAX: Registrar fecha de visita
+#        ENDPOINT AJAX - REGISTRAR VISITA (Supervisor)
 # ============================================================
+
 from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+from .models import Expediente
 
 @require_POST
+@role_required(["Supervisor", "AdministradorLider"])
 def ajax_registrar_visita(request):
     """
-    Registra o actualiza la fecha de visita de un expediente mediante AJAX.
-    Esta ruta se usa desde registrar.html sin recargar la página.
+    Permite al Supervisor registrar o actualizar la fecha de visita
+    desde una llamada AJAX sin recargar la página.
     """
-    siged = request.POST.get("siged", "").strip()
-    carta = request.POST.get("carta_linea", "").strip()
-    fecha_visita = request.POST.get("fecha_visita", "").strip()
+    try:
+        expediente_id = request.POST.get("expediente_id")
+        fecha_visita = request.POST.get("fecha_visita")
 
-    if not siged and not carta:
-        return JsonResponse({"status": "error", "message": "Debe ingresar N° SIGED o Carta Línea."})
-    if not fecha_visita:
-        return JsonResponse({"status": "error", "message": "Debe ingresar una fecha válida."})
+        expediente = get_object_or_404(Expediente, id=expediente_id)
+        expediente.fecha_visita = fecha_visita
+        expediente.save()
 
-    # Busco el expediente correspondiente
-    exp = Expediente.objects.filter(
-        Q(siged__iexact=siged) | Q(carta_linea__iexact=carta)
-    ).first()
+        return JsonResponse({"success": True, "message": "Visita registrada correctamente."})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)})
 
-    if not exp:
-        return JsonResponse({"status": "error", "message": "No se encontró el expediente."})
-
-    exp.fecha_visita = fecha_visita
-    exp.estado = "EN_PROCESO"
-    exp.save()
-
-    return JsonResponse({
-        "status": "success",
-        "message": f"Fecha de visita registrada correctamente para el expediente {exp.siged}.",
-        "siged": exp.siged,
-        "carta_linea": exp.carta_linea,
-        "fecha_visita": exp.fecha_visita.strftime("%d/%m/%Y"),
-        "razon_social": exp.razon_social or "—",
-    })
 # ============================================================
-# AJAX: Actualizar estado de expediente
+#     ENDPOINT AJAX - ACTUALIZAR ESTADO DE EXPEDIENTE
 # ============================================================
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .models import Expediente
+
 @require_POST
+@role_required(["AdministradorLider", "Administrador", "Coordinador", "Supervisor"])
 def ajax_actualizar_estado(request):
     """
-    Permite al supervisor actualizar el estado del expediente vía AJAX.
-    Valida que se haya marcado el toggle 'Concluido' y una fecha válida.
+    Permite actualizar el estado de un expediente vía AJAX.
+    Usado por roles con permisos para modificar (Coordinador, Admins, Supervisor).
     """
-    siged = request.POST.get("siged", "").strip()
-    carta = request.POST.get("carta_linea", "").strip()
-    fecha_derivacion = request.POST.get("fecha_derivacion", "").strip()
-    observaciones = request.POST.get("observaciones", "").strip()
-    estado = request.POST.get("estado", "").strip()
+    try:
+        expediente_id = request.POST.get("expediente_id")
+        nuevo_estado = request.POST.get("nuevo_estado")
 
-    if not siged and not carta:
-        return JsonResponse({"status": "error", "message": "Debe ingresar N° SIGED o Carta Línea."})
-    if not fecha_derivacion:
-        return JsonResponse({"status": "error", "message": "Debe ingresar la fecha de derivación."})
-    if estado != "CONCLUIDO":
-        return JsonResponse({"status": "error", "message": "Solo se puede guardar si se marca como concluido."})
+        expediente = get_object_or_404(Expediente, id=expediente_id)
+        expediente.estado = nuevo_estado
+        expediente.save()
 
-    exp = Expediente.objects.filter(
-        Q(siged__iexact=siged) | Q(carta_linea__iexact=carta)
-    ).first()
-
-    if not exp:
-        return JsonResponse({"status": "error", "message": "Expediente no encontrado."})
-
-    exp.fecha_derivacion = fecha_derivacion
-    exp.observaciones = observaciones or "-"
-    exp.estado = "CONCLUIDO"
-    exp.save()
-
-    return JsonResponse({
-        "status": "success",
-        "message": f"Expediente {exp.siged} actualizado como concluido.",
-        "siged": exp.siged,
-        "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y"),
-        "estado": exp.estado,
-        "observaciones": exp.observaciones,
-    })
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.models import User, Group
-from django.contrib import messages
-from .forms import UsuarioForm
-
-def crear_usuario(request):
-    """
-    Permite crear nuevos usuarios y asignarles un rol (grupo).
-    Temporalmente sin requerir autenticación (sin @login_required).
-    """
-    if request.method == 'POST':
-        form = UsuarioForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            password = form.cleaned_data['password']
-            group = form.cleaned_data['group']
-            user.set_password(password)
-            user.save()
-            user.groups.add(group)
-
-            messages.success(request, f"✅ Usuario '{user.username}' creado con rol '{group.name}'.")
-            return redirect('asignaciones:admin_general_menu')  # Redirección corregida
-        else:
-            messages.error(request, "❌ Error al crear el usuario. Verifica los datos ingresados.")
-    else:
-        form = UsuarioForm()
-
-    return render(request, 'asignaciones/crear_usuario.html', {'form': form})
-
-from django.contrib.auth.models import User, Group
-from django.shortcuts import render
-
-def lista_usuarios(request):
-    usuarios = User.objects.all().order_by('id')
-    usuarios_data = []
-
-    for u in usuarios:
-        grupo = u.groups.first().name if u.groups.exists() else "Sin rol"
-        usuarios_data.append({
-            'id': u.id,
-            'username': u.username,
-            'first_name': u.first_name,
-            'last_name': u.last_name,
-            'email': u.email,
-            'group': grupo
+        return JsonResponse({
+            "success": True,
+            "message": f"El estado del expediente {expediente.siged} fue actualizado a '{nuevo_estado}'."
         })
 
-    context = {'usuarios': usuarios_data}
-    return render(request, 'asignaciones/lista_usuarios.html', context)
-
-
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-
-def eliminar_usuario(request, user_id):
-    usuario = get_object_or_404(User, id=user_id)
-
-    if usuario.username.lower() == "admin" or usuario.is_superuser:
-        messages.error(request, "⚠️ No se puede eliminar al usuario administrador principal.")
-        return redirect('asignaciones:lista_usuarios')
-
-    usuario.delete()
-    messages.success(request, f"✅ Usuario '{usuario.username}' eliminado correctamente.")
-    return redirect('asignaciones:lista_usuarios')
-
-
-def editar_usuario(request, user_id):
-    usuario = get_object_or_404(User, id=user_id)
-    grupos = Group.objects.all()  # lista de roles
-
-    if request.method == "POST":
-        usuario.first_name = request.POST.get("first_name")
-        usuario.last_name = request.POST.get("last_name")
-        usuario.email = request.POST.get("email")
-
-        nuevo_rol = request.POST.get("rol")
-        if nuevo_rol:
-            usuario.groups.clear()
-            grupo = Group.objects.get(name=nuevo_rol)
-            usuario.groups.add(grupo)
-
-        usuario.save()
-        messages.success(request, f"✅ Usuario '{usuario.username}' actualizado correctamente.")
-        return redirect("asignaciones:lista_usuarios")
-
-    rol_actual = usuario.groups.first().name if usuario.groups.exists() else "Sin rol"
-
-    context = {
-        "usuario": usuario,
-        "grupos": grupos,
-        "rol_actual": rol_actual,
-    }
-    return render(request, "asignaciones/editar_usuario.html", context)
-
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error al actualizar estado: {str(e)}"
+        })
 
 

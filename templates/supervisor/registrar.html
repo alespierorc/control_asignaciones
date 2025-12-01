@@ -18,29 +18,48 @@
   }
 
   .side-card {
-    background: #374151; color: #f3f4f6; border-radius: 16px;
-    padding: 20px 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    display: flex; flex-direction: column; gap: 18px;
+    background: #374151;
+    color: #f3f4f6;
+    border-radius: 16px;
+    padding: 20px 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
   }
 
   .side-card h4 { font-size: 15px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
 
   .form-card {
-    background: #1f2937; border-radius: 18px; padding: 28px;
-    color: #f3f4f6; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    background: #1f2937;
+    border-radius: 18px;
+    padding: 28px;
+    color: #f3f4f6;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
   }
 
   .form-card h2 { font-size: 20px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
   .separator { border: none; height: 2px; background: #4b5563; margin: 16px 0 22px; }
 
   .blue-input {
-    width: 100%; background: #111827; color: #f3f4f6; border: 1px solid #374151;
-    border-radius: 10px; padding: 10px 12px; font-size: 14px;
+    width: 100%;
+    background: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
   }
 
   .btn-primary {
-    background: #2563eb; color: #fff; border: 0; border-radius: 10px;
-    padding: 10px 22px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    background: #2563eb;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
   }
 
   .btn-primary:hover { background: #3b82f6; transform: translateY(-1px); }
@@ -50,11 +69,28 @@
   th { text-transform: uppercase; font-size: 12px; opacity: 0.8; }
   tbody tr:nth-child(even) { background: rgba(255,255,255,0.05); }
 
+  tr.updated {
+    background: rgba(16,185,129,0.2);
+    transition: background-color 1.5s ease;
+  }
+
   .toast {
-    position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff;
-    padding: 14px 20px; border-radius: 10px; font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
-    transform: translateY(-15px); transition: all 0.4s ease; display: flex; align-items: center;
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    background: #10b981;
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-15px);
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    z-index: 9999;
   }
 
   .toast.error { background: #ef4444; }
@@ -78,16 +114,14 @@
     <h2>Buscar y registrar visita del expediente</h2>
     <hr class="separator" />
 
-    <form method="get" class="search-form">
+    <form class="search-form" id="formBusqueda">
       <div class="field">
         <label>N.º SIGED</label>
-        <input type="text" id="sigedInput" name="siged" list="sigedList" class="blue-input" placeholder="Ej. 2025-XXXX">
-        <datalist id="sigedList"></datalist>
+        <input type="text" id="sigedInput" name="siged" class="blue-input" placeholder="Ej. 2025-XXXX">
       </div>
       <div class="field">
         <label>Carta Línea</label>
-        <input type="text" id="cartaInput" name="carta_linea" list="cartaList" class="blue-input" placeholder="Ej. Carta N° 045-2025-OSINERGMIN">
-        <datalist id="cartaList"></datalist>
+        <input type="text" id="cartaInput" name="carta_linea" class="blue-input" placeholder="Ej. Carta N° 045-2025-OSINERGMIN">
       </div>
       <div style="text-align:right;margin-top:12px">
         <button type="button" class="btn-primary" id="btnBuscar">Buscar</button>
@@ -97,21 +131,20 @@
     <div class="recent-card" style="margin-top:25px">
       <h3>Resultados de búsqueda</h3>
       <div class="table-container">
-        <table>
+        <table id="tablaResultados">
           <thead>
             <tr>
               <th>Seleccionar</th>
               <th>N.º SIGED</th>
-              <th>Código OSINERGMIN</th>
-              <th>Carta de Línea</th>
+              <th>Carta Línea</th>
               <th>Razón Social</th>
               <th>Contrato</th>
-              <th>Oficina Regional</th>
-              <th>Fecha de Asignación</th>
+              <th>Oficina</th>
+              <th>Fecha Asignación</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="8">No se encontraron resultados.</td></tr>
+            <tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>
           </tbody>
         </table>
       </div>
@@ -151,8 +184,8 @@
       </thead>
       <tbody>
         {% if expedientes %}
-          {% for e in expedientes|slice:":5" %}
-          <tr>
+          {% for e in expedientes %}
+          <tr data-siged="{{ e.siged }}">
             <td>{{ e.siged }}</td>
             <td>{{ e.codigo|default:"—" }}</td>
             <td>{{ e.codigo_actividad|default:"—" }}</td>
@@ -179,124 +212,132 @@
 <div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> Debe seleccionar un expediente y una fecha válida</div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const sigedInput = document.querySelector('input[name="siged"]');
-  const cartaInput = document.querySelector('input[name="carta_linea"]');
+document.addEventListener("DOMContentLoaded", function() {
+  const btnBuscar = document.getElementById("btnBuscar");
+  const sigedInput = document.getElementById("sigedInput");
+  const cartaInput = document.getElementById("cartaInput");
+  const tablaResultados = document.querySelector("#tablaResultados tbody");
   const fechaInput = document.getElementById("fecha_visita");
-  const btnGuardar = document.getElementById("btnGuardar") || document.querySelector('button[type="submit"]');
-  const tabla = document.querySelector("#tablaExpedientes tbody");
+  const btnGuardar = document.getElementById("btnGuardar");
   const toastSuccess = document.getElementById("toastSuccess");
   const toastError = document.getElementById("toastError");
+  const tablaExpedientes = document.querySelector("#tablaExpedientes tbody");
 
-  // ===== Toasts =====
-  const showToast = (el) => {
+  // === Obtener token CSRF ===
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie("csrftoken");
+
+  // === Toasts ===
+  function showToast(el) {
     el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), 3000);
-  };
-  const shakeToast = (el) => {
-    el.classList.add("shake");
-    setTimeout(() => el.classList.remove("shake"), 500);
-  };
-
-  // ===== Autocompletado AJAX =====
-  function setupAutocomplete(input, field) {
-    const datalist = document.createElement("datalist");
-    datalist.id = `${field}-list`;
-    input.setAttribute("list", datalist.id);
-    document.body.appendChild(datalist);
-
-    input.addEventListener("input", async (e) => {
-      const value = e.target.value.trim();
-      if (value.length < 2) return;
-      try {
-        const response = await fetch(`/ajax/autocomplete/?field=${field}&q=${encodeURIComponent(value)}`);
-        const data = await response.json();
-        datalist.innerHTML = "";
-        data.results.forEach((item) => {
-          const option = document.createElement("option");
-          option.value = item;
-          datalist.appendChild(option);
-        });
-      } catch (err) {
-        console.error("Error en autocompletado:", err);
-      }
-    });
   }
 
-  setupAutocomplete(sigedInput, "siged");
-  setupAutocomplete(cartaInput, "carta_linea");
-
-  // ===== Guardar Fecha de Visita =====
-  btnGuardar.addEventListener("click", async (e) => {
+  // === Buscar expediente ===
+  btnBuscar.addEventListener("click", function(e) {
     e.preventDefault();
+    let tipo = "";
+    let query = "";
 
-    const siged = sigedInput.value.trim();
-    const carta = cartaInput.value.trim();
+    if (sigedInput.value.trim() !== "") {
+      tipo = "siged";
+      query = sigedInput.value.trim();
+    } else if (cartaInput.value.trim() !== "") {
+      tipo = "carta_linea";
+      query = cartaInput.value.trim();
+    } else {
+      showToast(toastError);
+      return;
+    }
+
+    fetch(`/ajax/autocomplete/?tipo=${tipo}&q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        tablaResultados.innerHTML = "";
+        const resultados = data.results || [];
+
+        if (resultados.length === 0) {
+          tablaResultados.innerHTML = `<tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>`;
+          return;
+        }
+
+        resultados.forEach(exp => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><input type="radio" name="expediente_id" value="${exp.id}"></td>
+            <td>${exp.siged}</td>
+            <td>${exp.carta_linea}</td>
+            <td>${exp.razon_social}</td>
+            <td>${exp.contrato}</td>
+            <td>${exp.oficina}</td>
+            <td>${exp.fecha_asignacion}</td>
+          `;
+          tablaResultados.appendChild(row);
+        });
+      })
+      .catch(err => {
+        console.error("Error al buscar:", err);
+        showToast(toastError);
+      });
+  });
+
+  // === Registrar visita ===
+  btnGuardar.addEventListener("click", async () => {
+    const seleccionado = document.querySelector("input[name='expediente_id']:checked");
     const fecha = fechaInput.value;
 
-    if (!siged && !carta) {
+    if (!seleccionado || !fecha) {
       showToast(toastError);
-      shakeToast(toastError);
       return;
     }
-    if (!fecha) {
-      showToast(toastError);
-      shakeToast(toastError);
-      return;
-    }
+
+    const formData = new FormData();
+    formData.append("expediente_id", seleccionado.value);
+    formData.append("fecha_visita", fecha);
 
     try {
-      const formData = new FormData();
-      formData.append("siged", siged);
-      formData.append("carta_linea", carta);
-      formData.append("fecha_visita", fecha);
-
-      const response = await fetch("{% url 'asignaciones:supervisor_registrar' %}", {
+      const res = await fetch("{% url 'asignaciones:supervisor_registrar' %}", {
         method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": csrftoken
+        },
         body: formData,
       });
 
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.status === "success") {
         showToast(toastSuccess);
 
-        // Actualizar tabla visualmente
-        const tbody = document.querySelector(".form-card table tbody");
-        const existingRow = Array.from(tbody.rows).find(
-          (r) => r.cells[0]?.textContent === siged
-        );
+        const siged = document.querySelector("input[name='expediente_id']:checked").closest("tr").children[1].textContent.trim();
+        const fila = tablaExpedientes.querySelector(`tr[data-siged="${siged}"]`);
 
-        if (existingRow) {
-          existingRow.cells[9].textContent = new Date(fecha).toLocaleDateString("es-PE");
-        } else {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${siged || "—"}</td>
-            <td>—</td>
-            <td>—</td>
-            <td>—</td>
-            <td>${carta || "—"}</td>
-            <td>—</td>
-            <td>—</td>
-            <td>—</td>
-            <td>${new Date().toLocaleDateString("es-PE")}</td>
-            <td>${new Date(fecha).toLocaleDateString("es-PE")}</td>
-          `;
-          tbody.prepend(row);
+        if (fila) {
+          fila.children[10].textContent = data.fecha_visita;
+          fila.classList.add("updated");
+          setTimeout(() => fila.classList.remove("updated"), 1500);
         }
 
-        // Limpiar formulario
-        document.getElementById("formRegistrar")?.reset();
+        fechaInput.value = "";
       } else {
         showToast(toastError);
-        shakeToast(toastError);
       }
     } catch (err) {
-      console.error("Error al guardar:", err);
+      console.error("Error al registrar visita:", err);
       showToast(toastError);
-      shakeToast(toastError);
     }
   });
 });

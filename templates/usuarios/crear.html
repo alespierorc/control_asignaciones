@@ -1,69 +1,181 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="user-container">
-  <h2>Gestión de Usuarios</h2>
-  <form method="post" class="user-form">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Crear usuario</button>
-  </form>
+{% extends 'base.html' %}
+{% load static %}
 
-  <hr>
-  <h3>Usuarios existentes</h3>
-  <table>
-    <tr>
-      <th>Usuario</th>
-      <th>Nombre</th>
-      <th>Email</th>
-      <th>Rol</th>
-    </tr>
-    {% for u in usuarios %}
-    <tr>
-      <td>{{ u.username }}</td>
-      <td>{{ u.get_full_name }}</td>
-      <td>{{ u.email }}</td>
-      <td>{% for g in u.groups.all %}{{ g.name }} {% empty %}-{% endfor %}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="4">No hay usuarios registrados.</td>
-    </tr>
+{% block title %}Crear Usuario - SERMINCO{% endblock %}
+
+{% block content %}
+<div class="user-create-wrapper">
+
+  <h2 class="text-center mb-4 fw-bold">👤 Crear Nuevo Usuario</h2>
+
+  <!-- Mensajes globales -->
+  {% if messages %}
+  <div class="messages-container mb-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} fade show shadow-sm" role="alert">
+        {{ message }}
+      </div>
     {% endfor %}
-  </table>
+  </div>
+  {% endif %}
+
+  <!-- Errores del formulario -->
+  {% if form.errors %}
+  <div class="alert alert-danger shadow-sm">
+    <strong>⚠️ Corrige los siguientes errores:</strong>
+    <ul class="mb-0">
+      {% for field, errors in form.errors.items %}
+        <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Formulario principal -->
+  <form method="post" novalidate class="dark-form mt-4 glass-card p-4 rounded-4">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label for="id_username" class="form-label">Nombre de usuario</label>
+      {{ form.username }}
+    </div>
+
+    <div class="mb-3">
+      <label for="id_first_name" class="form-label">Nombre</label>
+      {{ form.first_name }}
+    </div>
+
+    <div class="mb-3">
+      <label for="id_last_name" class="form-label">Apellidos</label>
+      {{ form.last_name }}
+    </div>
+
+    <div class="mb-3">
+      <label for="id_email" class="form-label">Correo electrónico</label>
+      {{ form.email }}
+    </div>
+
+    <hr class="text-muted my-4">
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="id_password" class="form-label">Contraseña</label>
+        {{ form.password }}
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <label for="id_confirmar_password" class="form-label">Confirmar contraseña</label>
+        {{ form.confirmar_password }}
+        <small id="passwordHelp" class="form-text text-muted"></small>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="id_grupo" class="form-label">Rol del usuario</label>
+      {{ form.grupo }}
+    </div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn btn-success px-4 py-2 rounded-3 shadow-sm">
+        <i class="bi bi-person-plus"></i> Crear Usuario
+      </button>
+      <a href="{% url 'asignaciones:lista_usuarios' %}" class="btn btn-outline-light ms-2">
+        <i class="bi bi-arrow-left"></i> Volver
+      </a>
+    </div>
+  </form>
 </div>
 
+<!-- Validación visual de contraseñas -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const pass1 = document.getElementById('id_password');
+    const pass2 = document.getElementById('id_confirmar_password');
+    const hint = document.getElementById('passwordHelp');
+
+    function checkPasswordMatch() {
+      if (!pass1.value || !pass2.value) {
+        hint.textContent = '';
+        hint.className = 'form-text text-muted';
+        return;
+      }
+      if (pass1.value === pass2.value) {
+        hint.textContent = '✅ Las contraseñas coinciden.';
+        hint.className = 'form-text text-success';
+      } else {
+        hint.textContent = '⚠️ Las contraseñas no coinciden.';
+        hint.className = 'form-text text-danger';
+      }
+    }
+
+    pass1.addEventListener('input', checkPasswordMatch);
+    pass2.addEventListener('input', checkPasswordMatch);
+  });
+</script>
+
 <style>
-.user-container {
-  margin: 40px auto;
-  background-color: #161d29;
-  padding: 30px;
-  border-radius: 10px;
-  max-width: 800px;
-  color: #d9e0ec;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-.user-form {
-  margin-bottom: 20px;
-}
-.btn-primary {
-  background-color: #3a4a63;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-}
-.btn-primary:hover {
-  background-color: #4b6283;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  color: #d9e0ec;
-}
-th, td {
-  border-bottom: 1px solid #3a4a63;
-  padding: 10px;
-  text-align: left;
-}
+  body {
+    background-color: #0d1117;
+    color: #e6edf3;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .user-create-wrapper {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 2rem;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #c9d1d9;
+  }
+
+  input, select {
+    background-color: #161b22 !important;
+    color: #e6edf3 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    border-color: #58a6ff !important;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+    outline: none;
+  }
+
+  .btn-success {
+    background-color: #238636;
+    border: none;
+    transition: all 0.3s ease;
+  }
+
+  .btn-success:hover {
+    background-color: #2ea043;
+    transform: scale(1.03);
+  }
+
+  .btn-outline-light {
+    border-color: #8b949e;
+    color: #c9d1d9;
+  }
+
+  .btn-outline-light:hover {
+    background-color: #21262d;
+  }
+
+  .alert {
+    border-radius: 10px;
+  }
 </style>
+
 {% endblock %}
