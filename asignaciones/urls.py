@@ -1,38 +1,49 @@
+# ============================================================
+#                      URLS.PY - SERMINCO
+# ============================================================
+# Sistema corporativo de control de asignaciones
+# Estructurado por roles:
+# - AdministradorLider
+# - Administrador
+# - Coordinador
+# - Supervisor
+# ============================================================
+
 from django.urls import path
 from . import views
 
 app_name = "asignaciones"
 
 urlpatterns = [
-    # Home / Login
-    path("", views.login_demo, name="login"),
-    path("home/", views.home_selector, name="home_selector"),
+    # ============================================================
+    # AUTENTICACIÓN
+    # ============================================================
+    path("login/", views.login_demo, name="login"),  # Página de login personalizada
+    path("logout/", views.logout_view, name="logout"),  # Logout con POST seguro
+    path("", views.home_router, name="home_router"),  # Redirección automática según rol
 
-    # Homes
+    # ============================================================
+    # DASHBOARDS / PANELES PRINCIPALES
+    # ============================================================
     path("home/supervisor/", views.home_supervisor, name="home_supervisor"),
-    path("home/coordinador/", views.home_coordinador, name="home_coordinador"),
-    path("home/admin/", views.home_admin, name="home_admin"),
+    path("home/coordinador/", views.coordinador_menu, name="home_coordinador"),
+    path("home/admin-lider/", views.admin_lider_menu, name="home_admin_lider"),
+    path("home/admin/", views.admin_menu, name="home_admin"),
 
-    # Chips topbar
+    # ============================================================
+    # MÓDULOS COMUNES
+    # ============================================================
     path("reportes/", views.reportes, name="reportes"),
-    path("anuncios/", views.anuncios, name="anuncios"),
     path("bandeja/", views.bandeja, name="bandeja"),
+    path("anuncios/", views.anuncios, name="anuncios"),
+    path("anuncios/crear/", views.crear_anuncio, name="crear_anuncio"),
 
     # ============================================================
     # SUPERVISOR
     # ============================================================
-
-    path("supervisor/panel/", views.supervisor_panel, name="supervisor_panel"),
-    path("supervisor/registrar/", views.supervisor_registrar, name="supervisor_registrar"),
-    path("supervisor/revisar/", views.supervisor_revisar, name="supervisor_revisar"),
-    path("supervisor/estado/", views.estado_expediente, name="supervisor_estado"),
     path("supervisor/", views.supervisor_panel, name="supervisor_panel"),
-
-    # ✅ Nueva ruta: concluir expediente manualmente
-    path("supervisor/concluir/<int:pk>/", views.concluir_expediente, name="supervisor_concluir"),
-
-    # ✅ Nueva ruta AJAX para autocompletado en N° SIGED y Carta Línea
-    path("ajax/autocomplete/", views.autocomplete_expediente, name="autocomplete_expediente"),
+    path("supervisor/registrar/", views.supervisor_registrar, name="supervisor_registrar"),
+    path("supervisor/estado/", views.estado_expediente, name="supervisor_estado"),
 
     # ============================================================
     # COORDINADOR
@@ -42,31 +53,31 @@ urlpatterns = [
     path("coordinador/revisar/", views.coordinador_revisar, name="coordinador_revisar"),
 
     # ============================================================
-    # ADMIN (sin chocar con /admin/ de Django)
+    # ADMINISTRADORES
     # ============================================================
-    path("panel-admin/general/", views.admin_general_menu, name="admin_general_menu"),
-    path("panel-admin/simple/", views.admin_simple_menu, name="admin_simple_menu"),
-    path("panel-admin/general/revisar/", views.admin_general_revisar, name="admin_general_revisar"),
-    path("panel-admin/general/descargar/", views.admin_general_descargar, name="admin_general_descargar"),
-    path("panel-admin/simple/revisar/", views.admin_simple_revisar, name="admin_simple_revisar"),
-    path("panel-admin/simple/descargar/", views.admin_simple_descargar, name="admin_simple_descargar"),
+    # 🔸 ADMINISTRADOR LÍDER
+    path("panel-admin/lider/", views.admin_lider_menu, name="admin_lider_menu"),
+    path("panel-admin/lider/revisar/", views.admin_lider_revisar, name="admin_lider_revisar"),
+    path("panel-admin/lider/descargar/", views.admin_lider_descargar, name="admin_lider_descargar"),
 
-    # AJAX
+    # 🔹 ADMINISTRADOR
+    path("panel-admin/", views.admin_menu, name="admin_menu"),
+    path("panel-admin/revisar/", views.admin_revisar, name="admin_revisar"),
+    path("panel-admin/descargar/", views.admin_descargar, name="admin_descargar"),
+
+    # ============================================================
+    # GESTIÓN DE USUARIOS
+    # ============================================================
+    path("usuarios/", views.lista_usuarios, name="lista_usuarios"),
+    path("usuarios/crear/", views.crear_usuario, name="crear_usuario"),
+    path("usuarios/editar/<int:user_id>/", views.editar_usuario, name="editar_usuario"),
+    path("usuarios/eliminar/<int:user_id>/", views.eliminar_usuario, name="eliminar_usuario"),
+
+    # ============================================================
+    # ENDPOINTS AJAX
+    # ============================================================
     path("ajax/autocomplete/", views.ajax_autocomplete, name="ajax_autocomplete"),
     path("ajax/registrar-visita/", views.ajax_registrar_visita, name="ajax_registrar_visita"),
     path("ajax/actualizar-estado/", views.ajax_actualizar_estado, name="ajax_actualizar_estado"),
-    
-    # Anuncios
-    path("anuncios/", views.anuncios, name="anuncios"),
-    path("anuncios/crear/", views.crear_anuncio, name="crear_anuncio"),
-
-    # Gestión de usuarios
-    path("usuarios/crear/", views.crear_usuario, name="crear_usuario"),
-    path('crear_usuario/', views.crear_usuario, name='crear_usuario'),
-    path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
-    path('usuarios/editar/<int:user_id>/', views.editar_usuario, name='editar_usuario'),
-    path('usuarios/eliminar/<int:user_id>/', views.eliminar_usuario, name='eliminar_usuario'),
-
-
 
 ]

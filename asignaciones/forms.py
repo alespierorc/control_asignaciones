@@ -1,23 +1,32 @@
-from django import forms
-from django.contrib.auth.models import User
-from .models import Expediente, OficinaRegional, Contrato
+# ============================================================
+#                      FORMS.PY - SERMINCO
+# ============================================================
+# Formularios oficiales del sistema corporativo SERMINCO
+# Incluye: Coordinador, Supervisor, y Creación de Usuarios
+# ============================================================
 
+from django import forms
+from django.contrib.auth.models import User, Group
+from .models import (
+    Expediente,
+    OficinaRegional,
+    Contrato,
+    TipoSupervision,
+    TipoDocumento,
+)
 
 # ============================================================
 #               FORMULARIO DEL COORDINADOR
 # ============================================================
+
 class CoordinadorRegistroForm(forms.ModelForm):
     """
     Formulario para registrar un nuevo expediente.
-    Incluye los 12 campos solicitados por orden.
+    Incluye los campos requeridos por orden, conectados a las FK reales.
     """
 
-    VISITA_CHOICES = [
-        ("SI", "Sí"),
-        ("NO", "No"),
-    ]
+    VISITA_CHOICES = [("SI", "Sí"), ("NO", "No")]
 
-    # Campo adicional tipo checkbox con opción sí/no
     visita_decision = forms.ChoiceField(
         choices=VISITA_CHOICES,
         label="¿Visita programada?",
@@ -25,7 +34,6 @@ class CoordinadorRegistroForm(forms.ModelForm):
         required=True,
     )
 
-    # Fecha editable
     fecha_asignacion = forms.DateField(
         label="Fecha de asignación",
         widget=forms.DateInput(attrs={"type": "date", "class": "i-date"}),
@@ -35,18 +43,18 @@ class CoordinadorRegistroForm(forms.ModelForm):
     class Meta:
         model = Expediente
         fields = [
-            "contrato",           # 1
-            "siged",              # 2
-            "carta_linea",        # 3
-            "codigo",             # 4 (Código OSINERGMIN)
-            "codigo_actividad",   # 5
-            "razon_social",       # 6
-            "tipo_supervision",   # 7
-            "tipo_documento",     # 8
-            "oficina",            # 9
-            "supervisor",         # 10
-            "visita_decision",    # 11
-            "fecha_asignacion",   # 12
+            "contrato",
+            "siged",
+            "carta_linea",
+            "codigo",
+            "codigo_actividad",
+            "razon_social",
+            "tipo_supervision",
+            "tipo_documento",
+            "oficina",
+            "supervisor",
+            "visita_decision",
+            "fecha_asignacion",
         ]
 
         widgets = {
@@ -64,66 +72,27 @@ class CoordinadorRegistroForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Ordenar selects y configurar queryset
-        self.fields["supervisor"].queryset = User.objects.all().order_by("username")
+
+        # Filtramos valores según catálogos existentes
+        self.fields["supervisor"].queryset = User.objects.filter(groups__name="Supervisor").order_by("username")
         self.fields["oficina"].queryset = OficinaRegional.objects.all().order_by("nombre")
         self.fields["contrato"].queryset = Contrato.objects.all().order_by("numero")
+        self.fields["tipo_supervision"].queryset = TipoSupervision.objects.all().order_by("nombre")
+        self.fields["tipo_documento"].queryset = TipoDocumento.objects.all().order_by("nombre")
 
-        # Hacer algunos campos obligatorios visualmente
+        # Campos obligatorios
         self.fields["siged"].required = True
         self.fields["carta_linea"].required = True
         self.fields["razon_social"].required = True
 
 
 # ============================================================
-#               FORMULARIOS ADICIONALES (Supervisor)
+#               FORMULARIOS DEL SUPERVISOR
 # ============================================================
-class ProgramarVisitaForm(forms.ModelForm):
-    class Meta:
-        model = Expediente
-        fields = ["fecha_visita"]
-        widgets = {
-            "fecha_visita": forms.DateInput(attrs={"type": "date", "class": "i-date"})
-        }
 
-    def clean_fecha_visita(self):
-        fv = self.cleaned_data.get("fecha_visita")
-        if not fv:
-            raise forms.ValidationError("Debes seleccionar una fecha de visita.")
-        return fv
-
-
-class ConcluirForm(forms.ModelForm):
-    class Meta:
-        model = Expediente
-        fields = ["fecha_derivacion", "observaciones"]
-        widgets = {
-            "fecha_derivacion": forms.DateInput(attrs={"type": "date", "class": "i-date"}),
-            "observaciones": forms.Textarea(attrs={"rows": 4, "placeholder": "Observaciones de la conclusión…"}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self._exp = kwargs.get("instance")
-        super().__init__(*args, **kwargs)
-
-    def clean(self):
-        cleaned = super().clean()
-        fd = cleaned.get("fecha_derivacion")
-        if not fd:
-            self.add_error("fecha_derivacion", "Debes indicar la fecha de derivación.")
-        if fd and self._exp and self._exp.fecha_visita and fd < self._exp.fecha_visita:
-            self.add_error("fecha_derivacion", "La fecha de derivación no puede ser anterior a la fecha de visita.")
-        return cleaned
-
-# ---------- Registrar datos de visita (Supervisor) ----------
-# ---------- Registro del Supervisor ----------
 class SupervisorVisitaForm(forms.ModelForm):
-    """
-    Formulario usado por el supervisor para registrar una visita:
-    - Selecciona el N° SIGED asignado.
-    - Indica si hay visita (Sí/No).
-    - Registra la fecha de visita.
-    """
+    """Formulario usado por el supervisor para registrar una visita."""
+
     class Meta:
         model = Expediente
         fields = ["visita_decision", "fecha_visita"]
@@ -145,39 +114,72 @@ class SupervisorVisitaForm(forms.ModelForm):
             label="N° SIGED",
         )
 
+
 class SupervisorEstadoForm(forms.ModelForm):
+    """Formulario usado por el supervisor para marcar expedientes como concluidos."""
+
     class Meta:
         model = Expediente
-        fields = ["fecha_derivacion", "concluido", "observaciones"]
+        fields = ["fecha_derivacion", "observaciones"]
         widgets = {
-            "fecha_derivacion": forms.DateInput(
-                attrs={"type": "date", "class": "blue-input"}
-            ),
+            "fecha_derivacion": forms.DateInput(attrs={"type": "date", "class": "blue-input"}),
             "observaciones": forms.Textarea(
-                attrs={
-                    "rows": 6,
-                    "class": "blue-textarea",
-                    "placeholder": "Escribe observaciones (opcional)"
-                }
+                attrs={"rows": 6, "class": "blue-textarea", "placeholder": "Escribe observaciones (opcional)"}
             ),
         }
+
+    def clean_fecha_derivacion(self):
+        fd = self.cleaned_data.get("fecha_derivacion")
+        if not fd:
+            raise forms.ValidationError("Debes indicar la fecha de derivación.")
+        return fd
+
+
+# ============================================================
+#              FORMULARIOS AUXILIARES (VISITA Y CONCLUSIÓN)
+# ============================================================
+
+class ProgramarVisitaForm(forms.ModelForm):
+    class Meta:
+        model = Expediente
+        fields = ["fecha_visita"]
+        widgets = {"fecha_visita": forms.DateInput(attrs={"type": "date", "class": "i-date"})}
+
+
+class ConcluirForm(forms.ModelForm):
+    class Meta:
+        model = Expediente
+        fields = ["fecha_derivacion", "observaciones"]
+        widgets = {
+            "fecha_derivacion": forms.DateInput(attrs={"type": "date", "class": "i-date"}),
+            "observaciones": forms.Textarea(attrs={"rows": 4, "placeholder": "Observaciones de la conclusión…"}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        fd = cleaned.get("fecha_derivacion")
+        if not fd:
+            self.add_error("fecha_derivacion", "Debes indicar la fecha de derivación.")
+        return cleaned
+
 
 # ============================================================
 #             FORMULARIO: CREAR USUARIO + ASIGNAR ROL
 # ============================================================
-from django.contrib.auth.models import Group
 
 class CrearUsuarioForm(forms.ModelForm):
+    """Formulario para crear usuarios y asignarles un grupo."""
+
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Contraseña"}),
+        widget=forms.PasswordInput(attrs={"placeholder": "Contraseña", "class": "i-input"}),
         label="Contraseña"
     )
     confirmar_password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Confirmar contraseña"}),
+        widget=forms.PasswordInput(attrs={"placeholder": "Confirmar contraseña", "class": "i-input"}),
         label="Confirmar contraseña"
     )
     grupo = forms.ModelChoiceField(
-        queryset=Group.objects.all(),
+        queryset=Group.objects.filter(name__in=["AdministradorLider", "Administrador", "Coordinador", "Supervisor"]),
         required=True,
         label="Rol del usuario",
         widget=forms.Select(attrs={"class": "i-select"})
@@ -186,30 +188,25 @@ class CrearUsuarioForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email"]
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "i-input", "placeholder": "Nombre de usuario"}),
+            "first_name": forms.TextInput(attrs={"class": "i-input", "placeholder": "Nombre"}),
+            "last_name": forms.TextInput(attrs={"class": "i-input", "placeholder": "Apellidos"}),
+            "email": forms.EmailInput(attrs={"class": "i-input", "placeholder": "Correo electrónico"}),
+        }
 
     def clean(self):
         cleaned = super().clean()
         pw1 = cleaned.get("password")
         pw2 = cleaned.get("confirmar_password")
         if pw1 != pw2:
-            raise forms.ValidationError("Las contraseñas no coinciden.")
+            raise forms.ValidationError("⚠️ Las contraseñas no coinciden.")
         return cleaned
 
-from django import forms
-from django.contrib.auth.models import User, Group
-
-class UsuarioForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
-    group = forms.ModelChoiceField(queryset=Group.objects.all(), label="Rol")
-
-    class Meta:
-        model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password', 'group']
-        labels = {
-            'username': 'Nombre de usuario',
-            'first_name': 'Nombre',
-            'last_name': 'Apellido',
-            'email': 'Correo electrónico',
-            'password': 'Contraseña',
-            'group': 'Rol',
-        }
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data["password"]
+        user.set_password(password)
+        if commit:
+            user.save()
+        return user

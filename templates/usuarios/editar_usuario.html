@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Editar Usuario - SERMINCO{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px; margin: auto; background: #161b22; padding: 30px; border-radius: 15px; box-shadow: 0 0 15px rgba(0,0,0,0.3);">
+    
+    <h1 style="text-align:center; font-size:1.8rem; margin-bottom: 25px; color: #3b82f6;">
+        <i class="bi bi-pencil-square"></i> Editar Usuario
+    </h1>
+
+    <form method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+        {% csrf_token %}
+        
+        <!-- Usuario -->
+        <div>
+            <label for="id_username" style="color: #9ca3af;">Nombre de usuario</label>
+            <input type="text" name="username" id="id_username" value="{{ usuario.username }}" required
+                   style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+        </div>
+
+        <!-- Nombre -->
+        <div>
+            <label for="id_first_name" style="color: #9ca3af;">Nombre</label>
+            <input type="text" name="first_name" id="id_first_name" value="{{ usuario.first_name }}"
+                   style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+        </div>
+
+        <!-- Apellido -->
+        <div>
+            <label for="id_last_name" style="color: #9ca3af;">Apellido</label>
+            <input type="text" name="last_name" id="id_last_name" value="{{ usuario.last_name }}"
+                   style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+        </div>
+
+        <!-- Correo -->
+        <div>
+            <label for="id_email" style="color: #9ca3af;">Correo electrónico</label>
+            <input type="email" name="email" id="id_email" value="{{ usuario.email }}"
+                   style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+        </div>
+
+        <!-- Contraseña (opcional) -->
+        <div>
+            <label for="id_password" style="color: #9ca3af;">Nueva contraseña <span style="color:#6b7280;">(opcional)</span></label>
+            <input type="password" name="password" id="id_password"
+                   placeholder="Dejar vacío para mantener la actual"
+                   style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+        </div>
+
+        <!-- Rol -->
+        <div>
+            <label for="id_grupo" style="color: #9ca3af;">Rol de usuario</label>
+            <select name="grupo" id="id_grupo" required
+                    style="width: 100%; padding: 10px; border-radius: 8px; background: #0d1117; color: white; border: 1px solid #1f2937;">
+                <option value="">-- Seleccionar Rol --</option>
+                {% for grupo in form.fields.grupo.queryset %}
+                    <option value="{{ grupo.id }}" {% if usuario.groups.first == grupo %}selected{% endif %}>
+                        {{ grupo.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- BOTONES -->
+        <div style="text-align:center; margin-top: 15px;">
+            <button type="submit" class="chip" style="background: #3b82f6; color: white; border: none;">
+                <i class="bi bi-save"></i> Guardar Cambios
+            </button>
+            <a href="{% url 'asignaciones:lista_usuarios' %}" class="chip" style="background: #1e293b;">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

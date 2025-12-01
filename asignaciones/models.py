@@ -1,14 +1,45 @@
+# ============================================================
+#                      MODELS.PY - SERMINCO
+# ============================================================
+# Modelos oficiales del sistema de control de asignaciones
+# Roles: AdministradorLider, Administrador, Coordinador, Supervisor
+# ============================================================
+
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 
 # ============================================================
-#                  MODELOS PRINCIPALES
+#                  MODELOS AUXILIARES
 # ============================================================
 
 class OficinaRegional(models.Model):
-    """Representa una oficina regional."""
+    """Representa una oficina regional de SERMINCO."""
     nombre = models.CharField(max_length=120, unique=True)
+
+    def __str__(self):
+        return self.nombre
+
+
+class TipoSupervision(models.Model):
+    """Tipos de supervisión (ORDINARIA, INOPINADA, etc.)"""
+    nombre = models.CharField(max_length=120, unique=True)
+
+    class Meta:
+        verbose_name = "Tipo de Supervisión"
+        verbose_name_plural = "Tipos de Supervisión"
+
+    def __str__(self):
+        return self.nombre
+
+
+class TipoDocumento(models.Model):
+    """Tipos de documentos (OFICIO, INFORME, etc.)"""
+    nombre = models.CharField(max_length=120, unique=True)
+
+    class Meta:
+        verbose_name = "Tipo de Documento"
+        verbose_name_plural = "Tipos de Documento"
 
     def __str__(self):
         return self.nombre
@@ -22,57 +53,59 @@ class Contrato(models.Model):
 
     class Meta:
         unique_together = ("numero", "oficina")
+        verbose_name = "Contrato"
+        verbose_name_plural = "Contratos"
 
     def __str__(self):
-        return f"{self.numero} – {self.oficina.nombre}"
+        return f"{self.numero} — {self.oficina.nombre}"
 
+
+# ============================================================
+#                  MODELO PRINCIPAL: EXPEDIENTE
+# ============================================================
 
 class Expediente(models.Model):
-    """Registro de cada expediente (asignado por el coordinador)."""
+    """Registro detallado de expedientes asignados a supervisores."""
 
-    # ---- Opciones ----
     ESTADOS = [
         ("EN_PROCESO", "En proceso"),
         ("PENDIENTE", "Pendiente"),
         ("CONCLUIDO", "Concluido"),
     ]
 
-    TIPO_SUPERVISION = [
-        ("ORDINARIA", "Supervisión ordinaria"),
-        ("INOPINADA", "Inspección inopinada"),
-        ("ESPECIAL", "Supervisión especial"),
-        ("OTRO", "Otro"),
-    ]
-
-    TIPO_DOCUMENTO = [
-        ("OFICIO", "Oficio múltiple"),
-        ("FICHA", "Ficha de registro de hidrocarburos"),
-        ("INFORME", "Informe técnico"),
-        ("OTRO", "Otro"),
-    ]
-
-    # ---- Campos principales ----
-    siged = models.CharField(max_length=50, unique=True)
+    siged = models.CharField(max_length=50, unique=True, verbose_name="N° SIGED")
     codigo = models.CharField(max_length=50, blank=True)
     codigo_actividad = models.CharField(max_length=50, blank=True)
     razon_social = models.CharField(max_length=200, blank=True)
-    oficina = models.ForeignKey(OficinaRegional, on_delete=models.PROTECT)
-    contrato = models.ForeignKey(Contrato, on_delete=models.PROTECT)
-    supervisor = models.ForeignKey(User, on_delete=models.PROTECT)
-    tipo_supervision = models.CharField(max_length=20, choices=TIPO_SUPERVISION)
-    tipo_documento = models.CharField(max_length=20, choices=TIPO_DOCUMENTO)
     carta_linea = models.CharField(max_length=100, blank=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS, default="EN_PROCESO")
-    visita_decision = models.CharField(max_length=2, blank=True)
-    fecha_asignacion = models.DateField(null=False, blank=False)  # ← Obligatoria y manual
+    visita_decision = models.CharField(max_length=2, choices=[("SI", "Sí"), ("NO", "No")], default="NO")
+
+    fecha_asignacion = models.DateField(null=False, blank=False)
     fecha_visita = models.DateField(null=True, blank=True)
     fecha_derivacion = models.DateField(null=True, blank=True)
     observaciones = models.TextField(blank=True)
-    concluido = models.BooleanField(default=False)  # ← nuevo campo
 
-    # ---- Auditoría ----
-    created_at = models.DateTimeField(auto_now_add=True)   # ← Fecha de creación
-    updated_at = models.DateTimeField(auto_now=True)       # ← Última actualización
+    estado = models.CharField(max_length=20, choices=ESTADOS, default="EN_PROCESO")
+    concluido = models.BooleanField(default=False)
+
+    # 🔗 Relaciones
+    contrato = models.ForeignKey(Contrato, on_delete=models.PROTECT)
+    oficina = models.ForeignKey(OficinaRegional, on_delete=models.PROTECT)
+    supervisor = models.ForeignKey(
+        User, on_delete=models.PROTECT,
+        limit_choices_to={"groups__name": "Supervisor"}
+    )
+    tipo_supervision = models.ForeignKey(TipoSupervision, on_delete=models.SET_NULL, null=True, blank=True)
+    tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Auditoría
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Expediente"
+        verbose_name_plural = "Expedientes"
 
     def __str__(self):
         return f"{self.siged} ({self.get_estado_display()})"
@@ -83,52 +116,34 @@ class Expediente(models.Model):
 # ============================================================
 
 class Mensaje(models.Model):
-    """Mensajes internos entre usuarios (coordinador/supervisor)."""
-    remitente = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="mensajes_enviados"
-    )
-    destinatario = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="mensajes_recibidos"
-    )
+    remitente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="mensajes_enviados")
+    destinatario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="mensajes_recibidos")
     asunto = models.CharField(max_length=200)
     cuerpo = models.TextField()
     creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado_en"]
+        verbose_name = "Mensaje"
+        verbose_name_plural = "Mensajes"
 
     def __str__(self):
         return f"{self.asunto} ({self.remitente} → {self.destinatario})"
 
 
-from django.db import models
-from django.utils import timezone
-from django.contrib.auth.models import User, Group
+# ============================================================
+#                        ANUNCIOS
+# ============================================================
 
 class Anuncio(models.Model):
-    TIPOS = [
-        ("general", "General"),
-        ("asignacion", "Asignación"),
-        ("alerta", "Alerta"),
-        ("recordatorio", "Recordatorio"),
-    ]
-
     titulo = models.CharField(max_length=200)
     contenido = models.TextField()
-    tipo = models.CharField(max_length=20, choices=TIPOS, default="general")
-    remitente = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="anuncios_enviados"
-    )
-    destinatario = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="anuncios_recibidos"
-    )
-    grupo_destino = models.ForeignKey(
-        Group, on_delete=models.SET_NULL, null=True, blank=True, related_name="anuncios_grupo"
-    )
-    fecha_creacion = models.DateTimeField(default=timezone.now)
+    tipo = models.CharField(max_length=50, choices=[("INFO", "Informativo"), ("URGENTE", "Urgente")])
+    remitente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="anuncios_enviados")
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="anuncios_recibidos")
+    grupo_destino = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    leido = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.titulo} ({self.tipo})"
-
-    class Meta:
-        ordering = ["-fecha_creacion"]
-        verbose_name = "Anuncio"
-        verbose_name_plural = "Anuncios"
-

@@ -12,12 +12,10 @@
     gap: 22px;
     margin-top: 24px;
   }
-
   @media (max-width: 960px) {
     .estado-wrap { grid-template-columns: 1fr; }
   }
 
-  /* ======= PANEL IZQUIERDO ======= */
   .panel-left {
     background: #374151;
     color: #f3f4f6;
@@ -63,7 +61,6 @@
 
   .info-text li { margin-bottom: 4px; }
 
-  /* ======= CONTENEDOR PRINCIPAL ======= */
   .estado-main {
     background: #1f2937; border-radius: 18px; color: #f9fafb;
     padding: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -71,7 +68,6 @@
 
   .estado-main h4 { font-weight: 700; font-size: 18px; margin-bottom: 18px; }
 
-  /* ======= FILTROS ======= */
   .filtros {
     display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 18px;
   }
@@ -88,7 +84,6 @@
 
   .filtros button:hover { background: #2563eb; }
 
-  /* ======= TABLA PRINCIPAL ======= */
   .tabla-container {
     background: #2d3748; border-radius: 12px; overflow-x: auto;
     padding: 10px; margin-bottom: 20px;
@@ -105,7 +100,6 @@
 
   tr:nth-child(even) { background: rgba(255,255,255,0.04); }
 
-  /* ======= FORMULARIO ======= */
   .estado-form {
     background: #2d3748; border-radius: 12px; padding: 20px;
   }
@@ -121,7 +115,6 @@
 
   .estado-form textarea { resize: none; height: 90px; }
 
-  /* Toggle Switch */
   .toggle-wrapper {
     display: flex; align-items: center; justify-content: flex-end;
     gap: 10px; margin-bottom: 12px;
@@ -145,7 +138,6 @@
 
   .toggle-wrapper span { font-weight: 600; color: #f3f4f6; }
 
-  /* ======= BOTÓN GUARDAR ======= */
   .btn-guardar {
     background: #2563eb; border: none; color: white; font-weight: 600;
     border-radius: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.3s;
@@ -154,7 +146,6 @@
   .btn-guardar.active { background: #10b981; }
   .btn-guardar.active:hover { background: #059669; }
 
-  /* ======= TABLA FINAL ======= */
   .tabla-final {
     background: #1f2937; border-radius: 14px; padding: 18px; margin-top: 28px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -166,7 +157,6 @@
     border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
   }
 
-  /* ======= TOAST ======= */
   .toast {
     position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff;
     padding: 14px 20px; border-radius: 10px; font-weight: 600;
@@ -177,7 +167,6 @@
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 </style>
-
 <div class="estado-wrap">
   <div class="panel-left">
     <div class="info-card">
@@ -187,14 +176,13 @@
         <p>Busca el expediente por <b>N.º SIGED</b> o <b>Carta de línea</b>, asigna <b>fecha de derivación</b> y márcalo como <b>concluido</b> cuando corresponda.</p>
       </div>
     </div>
-
     <div class="info-card">
       <div class="icon-circle warning"><i class="fas fa-exclamation-circle"></i></div>
       <div class="info-text">
         <h5>Recomendaciones</h5>
         <ul>
           <li>Verifica los datos antes de guardar.</li>
-          <li>Si no marcas “Concluido”, no se permitirá guardar.</li>
+          <li>Si no marcas “Concluido”, quedará EN PROCESO.</li>
         </ul>
       </div>
     </div>
@@ -207,12 +195,12 @@
     <form method="get" class="filtros">
       <div>
         <label>N.º SIGED</label>
-        <input type="text" id="sigedInput" name="siged" list="sigedList" placeholder="Ej. 2025-0001">
+        <input type="text" id="sigedInput" list="sigedList" placeholder="Ej. 2025-0001">
         <datalist id="sigedList"></datalist>
       </div>
       <div>
         <label>Carta de línea</label>
-        <input type="text" id="cartaInput" name="carta_linea" list="cartaList" placeholder="Ej. CARTA 045-2025-OSIN">
+        <input type="text" id="cartaInput" list="cartaList" placeholder="Ej. CARTA 045-2025-OSIN">
         <datalist id="cartaList"></datalist>
       </div>
       <button type="button" id="btnBuscar">Buscar</button>
@@ -238,6 +226,8 @@
     <!-- Formulario -->
     <form method="post" id="formEstado" class="estado-form">
       {% csrf_token %}
+      <input type="hidden" id="expedienteSeleccionado">
+
       <label>Fecha de derivación</label>
       <input type="date" name="fecha_derivacion" id="fechaDerivacion">
 
@@ -267,30 +257,39 @@
       <thead>
         <tr>
           <th>N.º SIGED</th>
-          <th>Código OSINERGMIN</th>
           <th>Código Actividad</th>
           <th>Razón social</th>
           <th>Carta línea</th>
           <th>Tipo supervisión</th>
-          <th>Tipo documento</th>
-          <th>Contrato</th>
           <th>Fecha asignación</th>
-          <th>Fecha visita</th>
           <th>Fecha derivación</th>
           <th>Estado</th>
           <th>Observaciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td colspan="13">No hay expedientes asignados.</td></tr>
+        {% for e in expedientes %}
+        <tr data-id="{{ e.id }}">
+          <td>{{ e.siged }}</td>
+          <td>{{ e.codigo_actividad }}</td>
+          <td>{{ e.razon_social }}</td>
+          <td>{{ e.carta_linea }}</td>
+          <td>{{ e.tipo_supervision.nombre }}</td>
+          <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+          <td>{{ e.fecha_derivacion|default:"—" }}</td>
+          <td>{{ e.estado }}</td>
+          <td>{{ e.observaciones|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9">No hay expedientes asignados.</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Toasts -->
-<div class="toast success" id="toastSuccess"><i class="fas fa-check-circle"></i> Cambios guardados correctamente</div>
-<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> No puedes guardar sin marcar como concluido</div>
+<div class="toast success" id="toastSuccess">✅ Cambios guardados correctamente</div>
+<div class="toast error" id="toastError">⚠️ Error o datos incompletos</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -300,103 +299,109 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("estadoToggle");
   const observaciones = document.getElementById("observaciones");
   const btnGuardar = document.getElementById("btnGuardar");
-  const tabla = document.querySelector("#tablaExpedientes tbody");
+  const expedienteSeleccionado = document.getElementById("expedienteSeleccionado");
+  const tablaBusqueda = document.querySelector("#tablaBusqueda tbody");
+  const tablaFinal = document.querySelector("#tablaExpedientes tbody");
   const toastSuccess = document.getElementById("toastSuccess");
   const toastError = document.getElementById("toastError");
 
-  // ===== Toasts =====
-  const showToast = el => { el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 3000); };
-  const shakeToast = el => { el.classList.add("shake"); setTimeout(() => el.classList.remove("shake"), 500); };
+  const showToast = (el, msg=null) => {
+    if (msg) el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3000);
+  };
 
-  // ===== Autocompletado =====
-  function setupAutocomplete(input, field) {
+  async function setupAutocomplete(input, field) {
     input.addEventListener("input", async e => {
       const value = e.target.value.trim();
       if (value.length < 2) return;
-      try {
-        const response = await fetch(`/ajax/autocomplete/?field=${field}&q=${encodeURIComponent(value)}`);
-        const data = await response.json();
-        const datalist = document.getElementById(`${field}List`);
-        datalist.innerHTML = "";
-        data.results.forEach(item => {
-          const option = document.createElement("option");
-          option.value = item;
-          datalist.appendChild(option);
-        });
-      } catch (err) {
-        console.error("Error en autocompletado:", err);
-      }
+      const res = await fetch(`/ajax/autocomplete/?tipo=${field}&q=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      const datalist = document.getElementById(`${field}List`);
+      datalist.innerHTML = "";
+      data.results.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item[field];
+        datalist.appendChild(option);
+      });
     });
   }
 
   setupAutocomplete(sigedInput, "siged");
   setupAutocomplete(cartaInput, "carta_linea");
 
-  // ===== Guardar con AJAX =====
-  btnGuardar.addEventListener("click", async e => {
-    e.preventDefault();
-
-    if (!toggle.checked) {
-      showToast(toastError);
-      shakeToast(toastError);
-      return;
-    }
-
+  document.getElementById("btnBuscar").addEventListener("click", async () => {
     const siged = sigedInput.value.trim();
     const carta = cartaInput.value.trim();
+    if (!siged && !carta) return showToast(toastError, "Ingrese SIGED o Carta Línea.");
+    const res = await fetch(`/supervisor/estado/?siged=${siged}&carta_linea=${carta}`, { headers: {"X-Requested-With": "XMLHttpRequest"} });
+    const data = await res.json();
+    tablaBusqueda.innerHTML = "";
+    if (!data.results?.length) {
+      tablaBusqueda.innerHTML = `<tr><td colspan="6">No se encontraron resultados.</td></tr>`;
+      return;
+    }
+    data.results.forEach(exp => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="radio" name="expSelect" value="${exp.id}"></td>
+        <td>${exp.siged}</td>
+        <td>${exp.carta_linea}</td>
+        <td>${exp.codigo_actividad}</td>
+        <td>${exp.tipo_supervision}</td>
+        <td>${exp.fecha_asignacion}</td>`;
+      tablaBusqueda.appendChild(tr);
+    });
+    document.querySelectorAll('input[name="expSelect"]').forEach(radio => {
+      radio.addEventListener("change", e => expedienteSeleccionado.value = e.target.value);
+    });
+  });
+
+  btnGuardar.addEventListener("click", async e => {
+    e.preventDefault();
+    const id = expedienteSeleccionado.value;
     const fecha = fechaDeriv.value;
     const obs = observaciones.value.trim();
-
-    if (!siged && !carta) {
-      showToast(toastError);
-      shakeToast(toastError);
-      return;
-    }
-    if (!fecha) {
-      showToast(toastError);
-      shakeToast(toastError);
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("siged", siged);
-      formData.append("carta_linea", carta);
-      formData.append("fecha_derivacion", fecha);
-      formData.append("estado", "CONCLUIDO");
-      formData.append("observaciones", obs);
-
-      const response = await fetch("{% url 'asignaciones:supervisor_estado' %}", {
-        method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        showToast(toastSuccess);
-
-        // Actualizar tabla
-        const existingRow = Array.from(tabla.rows).find(r => r.cells[0]?.textContent === siged);
-        if (existingRow) {
-          existingRow.cells[10].textContent = new Date(fecha).toLocaleDateString("es-PE");
-          existingRow.cells[11].textContent = "CONCLUIDO";
-          existingRow.cells[12].textContent = obs || "—";
-        }
-
-        document.getElementById("formEstado").reset();
-        toggle.checked = false;
-        btnGuardar.classList.remove("active");
+    const estado = toggle.checked ? "CONCLUIDO" : "";
+    if (!id || !fecha) return showToast(toastError, "Selecciona expediente y fecha.");
+    const fd = new FormData();
+    fd.append("expediente", id);
+    fd.append("fecha_derivacion", fecha);
+    fd.append("estado", estado);
+    fd.append("observaciones", obs);
+    fd.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+    const res = await fetch("{% url 'asignaciones:supervisor_estado' %}", {
+      method: "POST",
+      headers: {"X-Requested-With": "XMLHttpRequest"},
+      body: fd
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showToast(toastSuccess, "Cambios guardados correctamente");
+      const fila = tablaFinal.querySelector(`tr[data-id="${id}"]`);
+      if (fila) {
+        fila.children[6].textContent = data.expediente.fecha_derivacion;
+        fila.children[7].textContent = data.expediente.estado;
+        fila.children[8].textContent = data.expediente.observaciones;
       } else {
-        showToast(toastError);
-        shakeToast(toastError);
+        const tr = document.createElement("tr");
+        tr.dataset.id = id;
+        tr.innerHTML = `
+          <td>${sigedInput.value}</td>
+          <td>—</td>
+          <td>—</td>
+          <td>${cartaInput.value}</td>
+          <td>—</td>
+          <td>—</td>
+          <td>${data.expediente.fecha_derivacion}</td>
+          <td>${data.expediente.estado}</td>
+          <td>${data.expediente.observaciones}</td>`;
+        tablaFinal.appendChild(tr);
       }
-    } catch (err) {
-      console.error("Error al guardar:", err);
-      showToast(toastError);
-      shakeToast(toastError);
-    }
+      document.getElementById("formEstado").reset();
+      expedienteSeleccionado.value = "";
+      toggle.checked = false;
+    } else showToast(toastError, "Error al guardar.");
   });
 });
 </script>

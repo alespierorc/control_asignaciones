@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Panel Administrador Líder - SERMINCO{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: auto; padding: 30px;">
+    <h1 style="text-align: center; color: #3b82f6; font-size: 1.8rem; margin-bottom: 30px;">
+        <i class="bi bi-person-gear"></i> Panel del Administrador Líder
+    </h1>
+
+    <p style="text-align: center; color: #9ca3af; margin-bottom: 40px;">
+        Bienvenido <strong>{{ request.user.first_name|default:request.user.username }}</strong>.
+        Desde este panel puedes administrar usuarios, revisar expedientes, generar reportes y más.
+    </p>
+
+    <!-- TARJETAS PRINCIPALES -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+
+        <!-- Gestión de usuarios -->
+        <a href="{% url 'asignaciones:lista_usuarios' %}" 
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px; 
+                  display: flex; flex-direction: column; align-items: center; 
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-people-fill" style="font-size: 2.2rem; color: #22c55e; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Gestión de Usuarios</h3>
+            <p style="color: #9ca3af; text-align: center;">Crea, edita o elimina cuentas del sistema.</p>
+        </a>
+
+        <!-- Revisar expedientes -->
+        <a href="{% url 'asignaciones:admin_lider_revisar' %}" 
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px;
+                  display: flex; flex-direction: column; align-items: center;
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-folder2-open" style="font-size: 2.2rem; color: #3b82f6; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Revisar Expedientes</h3>
+            <p style="color: #9ca3af; text-align: center;">Consulta y gestiona todos los expedientes asignados.</p>
+        </a>
+
+        <!-- Descargar reportes -->
+        <a href="{% url 'asignaciones:admin_lider_descargar' %}"
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px;
+                  display: flex; flex-direction: column; align-items: center;
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-download" style="font-size: 2.2rem; color: #facc15; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Descargar Reportes</h3>
+            <p style="color: #9ca3af; text-align: center;">Genera y descarga informes institucionales.</p>
+        </a>
+
+        <!-- Bandeja de mensajes -->
+        <a href="{% url 'asignaciones:bandeja' %}" 
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px;
+                  display: flex; flex-direction: column; align-items: center;
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-envelope-paper" style="font-size: 2.2rem; color: #f97316; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Bandeja de Entrada</h3>
+            <p style="color: #9ca3af; text-align: center;">Lee y envía comunicaciones internas.</p>
+        </a>
+
+        <!-- Anuncios -->
+        <a href="{% url 'asignaciones:anuncios' %}"
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px;
+                  display: flex; flex-direction: column; align-items: center;
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-megaphone" style="font-size: 2.2rem; color: #38bdf8; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Anuncios</h3>
+            <p style="color: #9ca3af; text-align: center;">Publica y gestiona anuncios informativos.</p>
+        </a>
+    </div>
+
+    <!-- SALIR -->
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="{% url 'asignaciones:logout' %}" class="chip" 
+           style="background: #ef4444; color: white;">
+            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+/* ============================================================
+   LOGIN CORPORATIVO - SERMINCO
+   ============================================================ */
+
+body.login-bg {
+    background-color: #121212;
+    color: #f1f1f1;
+    font-family: "Segoe UI", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.login-box {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    padding: 30px;
+    text-align: center;
+}
+
+.login-title {
+    margin-bottom: 20px;
+    color: #ffcc00;
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.i-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 6px;
+    background-color: #2c2c2c;
+    color: #fff;
+    font-size: 14px;
+}
+
+.i-input:focus {
+    outline: none;
+    border: 1px solid #ffcc00;
+}
+
+.btn-login {
+    background-color: #ffcc00;
+    border: none;
+    padding: 10px 0;
+    width: 100%;
+    border-radius: 6px;
+    color: #1e1e1e;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.btn-login:hover {
+    background-color: #e6b800;
+}
+
+.messages {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 15px;
+}
+
+.messages li {
+    background: #2e2e2e;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.messages li.error {
+    color: #ff8080;
+}
+
+.messages li.success {
+    color: #aaffaa;
+}
+
+.footer-text {
+    font-size: 12px;
+    margin-top: 15px;
+    opacity: 0.6;
+}
