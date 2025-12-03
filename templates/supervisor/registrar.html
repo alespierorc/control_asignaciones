@@ -1,45 +1,84 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Registrar visita del expediente{% endblock %}
+{% block title %}Registrar Visita del Expediente{% endblock %}
 
 {% block content %}
 <style>
+  /* === LAYOUT GENERAL === */
   .sup-wrap {
     display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 22px;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
     align-items: start;
-    margin-top: 30px;
+    margin: 40px auto;
+    max-width: 95%;
+    color: #f3f4f6;
   }
 
   @media (max-width: 960px) {
     .sup-wrap { grid-template-columns: 1fr; }
   }
 
+  /* === PANEL IZQUIERDO === */
   .side-card {
-    background: #374151;
-    color: #f3f4f6;
+    background: #1f2937;
+    color: #e5e7eb;
     border-radius: 16px;
-    padding: 20px 18px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+    padding: 22px 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-left: 4px solid #0ea5e9;
   }
 
-  .side-card h4 { font-size: 15px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .side-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
 
+  .side-card p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #d1d5db;
+  }
+
+  /* === PANEL DERECHO === */
   .form-card {
-    background: #1f2937;
+    background: #2d3643;
     border-radius: 18px;
     padding: 28px;
     color: #f3f4f6;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
   }
 
-  .form-card h2 { font-size: 20px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
-  .separator { border: none; height: 2px; background: #4b5563; margin: 16px 0 22px; }
+  .form-card h2 {
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f1f5f9;
+  }
+
+  .separator {
+    border: none;
+    height: 2px;
+    background: #4b5563;
+    margin: 16px 0 22px;
+  }
+
+  /* === INPUTS Y BOTONES === */
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    color: #d1d5db;
+  }
 
   .blue-input {
     width: 100%;
@@ -52,7 +91,7 @@
   }
 
   .btn-primary {
-    background: #2563eb;
+    background: #0ea5e9;
     color: #fff;
     border: 0;
     border-radius: 10px;
@@ -60,20 +99,82 @@
     font-weight: 600;
     cursor: pointer;
     transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  .btn-primary:hover { background: #3b82f6; transform: translateY(-1px); }
+  .btn-primary:hover { background: #0284c7; transform: translateY(-1px); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 14px; color: #e5e7eb; }
-  th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
-  th { text-transform: uppercase; font-size: 12px; opacity: 0.8; }
-  tbody tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+  /* === TABLAS === */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    color: #e5e7eb;
+    min-width: 1000px;
+  }
 
+  th, td {
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+  }
+
+  th {
+    text-transform: uppercase;
+    font-size: 12px;
+    color: #cbd5e1;
+    background: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  tbody tr:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  /* === CONTENEDORES CON SCROLL INTERNO === */
+  .table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 300px;
+    border-radius: 10px;
+    background: #1f2937;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    margin-top: 10px;
+  }
+
+  .table-scroll::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 14px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .table-scroll.scrolled::after {
+    opacity: 1;
+  }
+
+  /* === ESTADOS === */
   tr.updated {
-    background: rgba(16,185,129,0.2);
+    background: rgba(16, 185, 129, 0.2);
     transition: background-color 1.5s ease;
   }
 
+  /* === TOASTS === */
   .toast {
     position: fixed;
     top: 25px;
@@ -90,30 +191,33 @@
     transition: all 0.4s ease;
     display: flex;
     align-items: center;
+    gap: 8px;
     z-index: 9999;
   }
 
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  .toast i { margin-right: 8px; }
 </style>
 
 <div class="sup-wrap">
+  <!-- PANEL IZQUIERDO -->
   <section class="side-card">
     <div>
-      <h4>Indicación</h4>
+      <h4><i class="bi bi-lightbulb"></i> Indicación</h4>
       <p>Busca un expediente (N.º SIGED o Carta Línea), selecciónalo y registra la fecha real de la visita.</p>
     </div>
     <div>
-      <h4>Recomendación</h4>
+      <h4><i class="bi bi-info-circle"></i> Recomendación</h4>
       <p>Revisa los expedientes activos antes de registrar una nueva fecha para evitar duplicados o errores.</p>
     </div>
   </section>
 
+  <!-- PANEL DERECHO -->
   <section class="form-card">
-    <h2>Buscar y registrar visita del expediente</h2>
+    <h2><i class="bi bi-calendar-check"></i> Buscar y Registrar Visita</h2>
     <hr class="separator" />
 
+    <!-- FORMULARIO DE BÚSQUEDA -->
     <form class="search-form" id="formBusqueda">
       <div class="field">
         <label>N.º SIGED</label>
@@ -124,13 +228,14 @@
         <input type="text" id="cartaInput" name="carta_linea" class="blue-input" placeholder="Ej. Carta N° 045-2025-OSINERGMIN">
       </div>
       <div style="text-align:right;margin-top:12px">
-        <button type="button" class="btn-primary" id="btnBuscar">Buscar</button>
+        <button type="button" class="btn-primary" id="btnBuscar"><i class="bi bi-search"></i> Buscar</button>
       </div>
     </form>
 
+    <!-- RESULTADOS DE BÚSQUEDA -->
     <div class="recent-card" style="margin-top:25px">
-      <h3>Resultados de búsqueda</h3>
-      <div class="table-container">
+      <h3 style="font-size:16px;font-weight:700;text-transform:uppercase;"><i class="bi bi-list-task"></i> Resultados de búsqueda</h3>
+      <div class="table-scroll" id="scrollBusqueda">
         <table id="tablaResultados">
           <thead>
             <tr>
@@ -150,6 +255,7 @@
       </div>
     </div>
 
+    <!-- FORMULARIO DE REGISTRO -->
     <form method="post" id="formRegistrar" novalidate style="margin-top:25px">
       {% csrf_token %}
       <div class="field">
@@ -157,15 +263,16 @@
         <input type="date" id="fecha_visita" name="fecha_visita" class="blue-input" required>
       </div>
       <div style="text-align:right;margin-top:18px">
-        <button class="btn-primary" type="button" id="btnGuardar">Registrar visita</button>
+        <button class="btn-primary" type="button" id="btnGuardar"><i class="bi bi-check-circle"></i> Registrar visita</button>
       </div>
     </form>
   </section>
 </div>
 
+<!-- === TABLA DE EXPEDIENTES ASIGNADOS === -->
 <div class="form-card" style="margin-top:35px">
-  <h2>Expedientes asignados</h2>
-  <div class="table-container">
+  <h2><i class="bi bi-folder2-open"></i> Expedientes Asignados</h2>
+  <div class="table-scroll" id="scrollAsignados">
     <table id="tablaExpedientes">
       <thead>
         <tr>
@@ -173,13 +280,13 @@
           <th>Código OSINERGMIN</th>
           <th>Código Actividad</th>
           <th>Razón Social</th>
-          <th>Carta de Línea</th>
+          <th>Carta Línea</th>
           <th>Tipo Supervisión</th>
           <th>Tipo Documento</th>
           <th>Contrato</th>
           <th>Oficina Regional</th>
-          <th>Fecha de Asignación</th>
-          <th>Fecha de Visita</th>
+          <th>Fecha Asignación</th>
+          <th>Fecha Visita</th>
         </tr>
       </thead>
       <tbody>
@@ -200,7 +307,7 @@
           </tr>
           {% endfor %}
         {% else %}
-          <tr><td colspan="11">No hay expedientes registrados aún.</td></tr>
+          <tr><td colspan="11" style="text-align:center;">No hay expedientes registrados aún.</td></tr>
         {% endif %}
       </tbody>
     </table>
@@ -208,11 +315,19 @@
 </div>
 
 <!-- TOASTS -->
-<div class="toast success" id="toastSuccess"><i class="fas fa-check-circle"></i> Visita registrada correctamente</div>
-<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> Debe seleccionar un expediente y una fecha válida</div>
+<div class="toast success" id="toastSuccess"><i class="bi bi-check-circle-fill"></i> Visita registrada correctamente</div>
+<div class="toast error" id="toastError"><i class="bi bi-exclamation-triangle-fill"></i> Debe seleccionar un expediente y una fecha válida</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+  const scrolls = [document.getElementById("scrollBusqueda"), document.getElementById("scrollAsignados")];
+  scrolls.forEach(el => {
+    el.addEventListener("scroll", () => {
+      if (el.scrollTop > 0) el.classList.add("scrolled");
+      else el.classList.remove("scrolled");
+    });
+  });
+
   const btnBuscar = document.getElementById("btnBuscar");
   const sigedInput = document.getElementById("sigedInput");
   const cartaInput = document.getElementById("cartaInput");
@@ -223,7 +338,6 @@ document.addEventListener("DOMContentLoaded", function() {
   const toastError = document.getElementById("toastError");
   const tablaExpedientes = document.querySelector("#tablaExpedientes tbody");
 
-  // === Obtener token CSRF ===
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -240,40 +354,27 @@ document.addEventListener("DOMContentLoaded", function() {
   }
   const csrftoken = getCookie("csrftoken");
 
-  // === Toasts ===
   function showToast(el) {
     el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), 3000);
   }
 
-  // === Buscar expediente ===
   btnBuscar.addEventListener("click", function(e) {
     e.preventDefault();
-    let tipo = "";
-    let query = "";
-
-    if (sigedInput.value.trim() !== "") {
-      tipo = "siged";
-      query = sigedInput.value.trim();
-    } else if (cartaInput.value.trim() !== "") {
-      tipo = "carta_linea";
-      query = cartaInput.value.trim();
-    } else {
-      showToast(toastError);
-      return;
-    }
+    let tipo = "", query = "";
+    if (sigedInput.value.trim()) { tipo = "siged"; query = sigedInput.value.trim(); }
+    else if (cartaInput.value.trim()) { tipo = "carta_linea"; query = cartaInput.value.trim(); }
+    else return showToast(toastError);
 
     fetch(`/ajax/autocomplete/?tipo=${tipo}&q=${encodeURIComponent(query)}`)
       .then(res => res.json())
       .then(data => {
         tablaResultados.innerHTML = "";
         const resultados = data.results || [];
-
-        if (resultados.length === 0) {
+        if (!resultados.length) {
           tablaResultados.innerHTML = `<tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>`;
           return;
         }
-
         resultados.forEach(exp => {
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -283,26 +384,17 @@ document.addEventListener("DOMContentLoaded", function() {
             <td>${exp.razon_social}</td>
             <td>${exp.contrato}</td>
             <td>${exp.oficina}</td>
-            <td>${exp.fecha_asignacion}</td>
-          `;
+            <td>${exp.fecha_asignacion}</td>`;
           tablaResultados.appendChild(row);
         });
       })
-      .catch(err => {
-        console.error("Error al buscar:", err);
-        showToast(toastError);
-      });
+      .catch(() => showToast(toastError));
   });
 
-  // === Registrar visita ===
   btnGuardar.addEventListener("click", async () => {
     const seleccionado = document.querySelector("input[name='expediente_id']:checked");
     const fecha = fechaInput.value;
-
-    if (!seleccionado || !fecha) {
-      showToast(toastError);
-      return;
-    }
+    if (!seleccionado || !fecha) return showToast(toastError);
 
     const formData = new FormData();
     formData.append("expediente_id", seleccionado.value);
@@ -311,34 +403,22 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
       const res = await fetch("{% url 'asignaciones:supervisor_registrar' %}", {
         method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "X-CSRFToken": csrftoken
-        },
-        body: formData,
+        headers: { "X-CSRFToken": csrftoken, "X-Requested-With": "XMLHttpRequest" },
+        body: formData
       });
-
       const data = await res.json();
       if (data.status === "success") {
         showToast(toastSuccess);
-
-        const siged = document.querySelector("input[name='expediente_id']:checked").closest("tr").children[1].textContent.trim();
+        const siged = seleccionado.closest("tr").children[1].textContent.trim();
         const fila = tablaExpedientes.querySelector(`tr[data-siged="${siged}"]`);
-
         if (fila) {
           fila.children[10].textContent = data.fecha_visita;
           fila.classList.add("updated");
           setTimeout(() => fila.classList.remove("updated"), 1500);
         }
-
         fechaInput.value = "";
-      } else {
-        showToast(toastError);
-      }
-    } catch (err) {
-      console.error("Error al registrar visita:", err);
-      showToast(toastError);
-    }
+      } else showToast(toastError);
+    } catch { showToast(toastError); }
   });
 });
 </script>

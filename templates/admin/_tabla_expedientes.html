@@ -1,0 +1,156 @@
+{% load static %}
+
+<div class="rev-table-inner">
+  <div class="rev-table-header">
+    <i class="bi bi-bar-chart-line"></i>
+    <span>
+      {% if page_obj.paginator.count > 0 %}
+        Mostrando <strong>{{ page_obj.start_index }}</strong> – <strong>{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> expediente{{ page_obj.paginator.count|pluralize }}
+      {% else %}
+        No se encontraron expedientes.
+      {% endif %}
+    </span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>N° SIGED</th>
+        <th>Carta Línea</th>
+        <th>Código OSINERGMIN</th>
+        <th>Código Actividad</th>
+        <th>Razón Social</th>
+        <th>Tipo Supervisión</th>
+        <th>Tipo Documento</th>
+        <th>Oficina Regional</th>
+        <th>Supervisor</th>
+        <th>Fecha Asignación</th>
+        <th>Fecha Derivación</th>
+        <th>Fecha Visita</th>
+        <th>Estado</th>
+        <th>Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if page_obj.object_list %}
+        {% for e in page_obj.object_list %}
+          <tr>
+            <td>{{ e.siged }}</td>
+            <td>{{ e.carta_linea }}</td>
+            <td>{{ e.codigo }}</td>
+            <td>{{ e.codigo_actividad }}</td>
+            <td>{{ e.razon_social }}</td>
+            <td>{{ e.tipo_supervision }}</td>
+            <td>{{ e.tipo_documento }}</td>
+            <td>{{ e.oficina.nombre }}</td>
+            <td>{{ e.supervisor.get_full_name }}</td>
+            <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_derivacion|default:"—" }}</td>
+            <td>{{ e.fecha_visita|default:"—" }}</td>
+            <td>
+              {% if e.estado == "CONCLUIDO" %}
+                <span class="estado-concluido"><i class="bi bi-check-circle-fill"></i> Concluido</span>
+              {% else %}
+                <span class="estado-proceso"><i class="bi bi-hourglass-split"></i> En proceso</span>
+              {% endif %}
+            </td>
+            <td>{{ e.observaciones|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="14" class="no-results">No hay registros disponibles.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination-wrapper">
+    {% if page_obj.has_previous %}
+      <a href="#" class="page-link" data-page="{{ page_obj.previous_page_number }}"><i class="bi bi-chevron-double-left"></i></a>
+    {% else %}
+      <span class="disabled"><i class="bi bi-chevron-double-left"></i></span>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <span class="active">{{ num }}</span>
+      {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+        <a href="#" class="page-link" data-page="{{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <a href="#" class="page-link" data-page="{{ page_obj.next_page_number }}"><i class="bi bi-chevron-double-right"></i></a>
+    {% else %}
+      <span class="disabled"><i class="bi bi-chevron-double-right"></i></span>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .rev-table-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #2d3748;
+    padding: 10px 14px;
+    border-radius: 8px 8px 0 0;
+    font-size: 14px;
+    color: #d8dee9;
+    margin-bottom: 6px;
+  }
+
+  .rev-table-header i {
+    color: #81a1c1;
+    font-size: 18px;
+  }
+
+  .estado-proceso i {
+    color: #fbbf24;
+    margin-right: 4px;
+  }
+
+  .estado-concluido i {
+    color: #10b981;
+    margin-right: 4px;
+  }
+
+  .pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    background: #2d3748;
+    padding: 8px;
+    border-radius: 0 0 8px 8px;
+    font-size: 13px;
+  }
+
+  .pagination-wrapper a, .pagination-wrapper span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    color: #e5e7eb;
+    text-decoration: none;
+  }
+
+  .pagination-wrapper a:hover {
+    background: #5e81ac;
+  }
+
+  .pagination-wrapper .active {
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .pagination-wrapper .disabled {
+    opacity: 0.3;
+  }
+</style>

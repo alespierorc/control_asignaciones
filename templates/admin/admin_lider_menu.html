@@ -9,7 +9,7 @@
 
     <p style="text-align: center; color: #9ca3af; margin-bottom: 40px;">
         Bienvenido <strong>{{ request.user.first_name|default:request.user.username }}</strong>.
-        Desde este panel puedes administrar usuarios, revisar expedientes, generar reportes y más.
+        Desde este panel puedes administrar usuarios, revisar expedientes, gestionar catálogos, generar reportes y más.
     </p>
 
     <!-- TARJETAS PRINCIPALES -->
@@ -63,6 +63,16 @@
             <i class="bi bi-megaphone" style="font-size: 2.2rem; color: #38bdf8; margin-bottom: 10px;"></i>
             <h3 style="color: #e5e7eb;">Anuncios</h3>
             <p style="color: #9ca3af; text-align: center;">Publica y gestiona anuncios informativos.</p>
+        </a>
+
+        <!-- 🆕 Gestión de catálogos -->
+        <a href="{% url 'asignaciones:admin_lider_catalogos' %}"
+           style="text-decoration: none; background: #161b22; border-radius: 15px; padding: 25px;
+                  display: flex; flex-direction: column; align-items: center;
+                  transition: all 0.3s ease; border: 1px solid #1f2937;">
+            <i class="bi bi-collection" style="font-size: 2.2rem; color: #22d3ee; margin-bottom: 10px;"></i>
+            <h3 style="color: #e5e7eb;">Gestión de Catálogos</h3>
+            <p style="color: #9ca3af; text-align: center;">Administra contratos, tipos de supervisión y documentos.</p>
         </a>
     </div>
 

@@ -1,0 +1,293 @@
+<style>
+  /* ======== NAVIGATION TABS ======== */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 25px 0;
+  }
+
+  .tab-btn {
+    background-color: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tab-btn i {
+    font-size: 1.1rem;
+    color: #d1d5db;
+  }
+
+  .tab-btn:hover {
+    background-color: #374151;
+    transform: translateY(-2px);
+  }
+
+  .tab-btn.active {
+    background-color: #0ea5e9;
+    color: #f9fafb;
+    border-color: #0ea5e9;
+  }
+
+  .tab-btn.active i {
+    color: #f9fafb;
+  }
+
+  /* ======== TAB CONTENTS ======== */
+  .tab-content {
+    display: none;
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .tab-content.active {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* ======== TABLE STYLING ======== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #111827;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+  }
+
+  thead {
+    background: #1f2937;
+    color: #f3f4f6;
+    font-weight: 600;
+  }
+
+  tr:nth-child(even) {
+    background-color: #0f172a;
+  }
+
+  tr:hover {
+    background-color: #1e293b;
+  }
+
+  td.editable {
+    background-color: transparent;
+    outline: none;
+    border: none;
+    color: #f3f4f6;
+  }
+
+  /* ======== BUTTONS ======== */
+  button {
+    border: none;
+    border-radius: 5px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .guardar {
+    background: #16a34a;
+    color: white;
+  }
+
+  .guardar:hover {
+    background: #15803d;
+  }
+
+  .eliminar {
+    background: #dc2626;
+    color: white;
+  }
+
+  .eliminar:hover {
+    background: #b91c1c;
+  }
+
+  .agregar {
+    background: #0284c7;
+    color: white;
+  }
+
+  .agregar:hover {
+    background: #0369a1;
+  }
+
+  /* ======== INPUTS & SELECTS ======== */
+  input, select {
+    background: #1f2937;
+    color: #f9fafb;
+    border-radius: 6px;
+    padding: 6px 8px;
+    border: 1px solid #374151;
+  }
+
+  input:focus, select:focus {
+    background: #273549;
+    outline: none;
+    border-color: #0ea5e9;
+  }
+</style>
+
+<!-- ======== NAV TABS ======== -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="contratos">
+    <i class="bi bi-file-earmark-text"></i> Contratos
+  </button>
+  <button class="tab-btn" data-tab="supervision">
+    <i class="bi bi-diagram-3"></i> Supervisión
+  </button>
+  <button class="tab-btn" data-tab="documentos">
+    <i class="bi bi-folder2"></i> Documentos
+  </button>
+  <button class="tab-btn" data-tab="oficinas">
+    <i class="bi bi-building"></i> Oficinas
+  </button>
+</div>
+
+<!-- ======== TAB: CONTRATOS ======== -->
+<div id="tab-contratos" class="tab-content active">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Número</th><th>Oficina</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      {% for c in contratos %}
+      <tr data-id="{{ c.id }}" data-tipo="contratos">
+        <td>{{ c.id }}</td>
+        <td contenteditable="true" class="editable" data-campo="numero">{{ c.numero }}</td>
+        <td>
+          <select class="oficina-select">
+            {% for o in oficinas %}
+              <option value="{{ o.id }}" {% if o.id == c.oficina.id %}selected{% endif %}>{{ o.nombre }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          <button class="guardar"><i class="bi bi-save"></i></button>
+          <button class="eliminar"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;">No hay contratos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:15px; text-align:right;">
+    <input type="text" id="nuevo-contratos" placeholder="Nuevo contrato">
+    <select id="oficina-contratos">
+      {% for o in oficinas %}
+        <option value="{{ o.id }}">{{ o.nombre }}</option>
+      {% endfor %}
+    </select>
+    <button class="agregar" data-tipo="contratos"><i class="bi bi-plus-lg"></i> Agregar</button>
+  </div>
+</div>
+
+<!-- ======== TAB: SUPERVISIÓN ======== -->
+<div id="tab-supervision" class="tab-content">
+  <table>
+    <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for s in tipos_supervision %}
+      <tr data-id="{{ s.id }}" data-tipo="supervision">
+        <td>{{ s.id }}</td>
+        <td contenteditable="true" class="editable">{{ s.nombre }}</td>
+        <td>
+          <button class="guardar"><i class="bi bi-save"></i></button>
+          <button class="eliminar"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="text-align:center;">No hay tipos de supervisión registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:15px; text-align:right;">
+    <input type="text" id="nuevo-supervision" placeholder="Nuevo tipo de supervisión">
+    <button class="agregar" data-tipo="supervision"><i class="bi bi-plus-lg"></i> Agregar</button>
+  </div>
+</div>
+
+<!-- ======== TAB: DOCUMENTOS ======== -->
+<div id="tab-documentos" class="tab-content">
+  <table>
+    <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for d in tipos_documento %}
+      <tr data-id="{{ d.id }}" data-tipo="documentos">
+        <td>{{ d.id }}</td>
+        <td contenteditable="true" class="editable">{{ d.nombre }}</td>
+        <td>
+          <button class="guardar"><i class="bi bi-save"></i></button>
+          <button class="eliminar"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="text-align:center;">No hay tipos de documento registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:15px; text-align:right;">
+    <input type="text" id="nuevo-documentos" placeholder="Nuevo tipo de documento">
+    <button class="agregar" data-tipo="documentos"><i class="bi bi-plus-lg"></i> Agregar</button>
+  </div>
+</div>
+
+<!-- ======== TAB: OFICINAS ======== -->
+<div id="tab-oficinas" class="tab-content">
+  <table>
+    <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for o in oficinas %}
+      <tr data-id="{{ o.id }}" data-tipo="oficinas">
+        <td>{{ o.id }}</td>
+        <td contenteditable="true" class="editable">{{ o.nombre }}</td>
+        <td>
+          <button class="guardar"><i class="bi bi-save"></i></button>
+          <button class="eliminar"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="text-align:center;">No hay oficinas registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:15px; text-align:right;">
+    <input type="text" id="nuevo-oficinas" placeholder="Nueva oficina regional">
+    <button class="agregar" data-tipo="oficinas"><i class="bi bi-plus-lg"></i> Agregar</button>
+  </div>
+</div>
+
+<!-- ======== SCRIPT TABS ======== -->
+<script>
+  document.querySelectorAll(".tab-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      const tabId = button.dataset.tab;
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      button.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(tab => {
+        tab.classList.toggle("active", tab.id === `tab-${tabId}`);
+      });
+    });
+  });
+</script>

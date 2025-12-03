@@ -5,36 +5,38 @@
 <div class="main-wrapper">
 
   <h2 class="titulo-seccion">
-    📂 Registrar Expediente
+    <i class="bi bi-folder-plus"></i> Registrar Expediente
   </h2>
 
   <div class="panel-flex">
-    <!-- Panel Izquierdo: Indicaciones -->
+    <!-- Panel Izquierdo -->
     <aside class="panel-info">
-      <h3>Indicaciones</h3>
+      <h3><i class="bi bi-info-circle"></i> Indicaciones</h3>
       <p>
         Completa todos los campos requeridos para registrar un nuevo expediente.
-        Verifica cuidadosamente el <b>N.º SIGED</b>, la <b>carta de línea</b> y la <b>fecha de asignación</b>.
+        Verifica cuidadosamente el <b>N.º SIGED</b>, la <b>Carta de línea</b> y la <b>Fecha de asignación</b>.
       </p>
-      <h4>Recomendación</h4>
+
+      <div class="divider"></div>
+
+      <h4><i class="bi bi-lightbulb"></i> Recomendación</h4>
       <p>
         Prioriza expedientes con supervisores activos y revisa las fechas asignadas
         para evitar conflictos en el cronograma de trabajo.
       </p>
     </aside>
 
-    <!-- Panel Derecho: Formulario -->
+    <!-- Panel Derecho -->
     <section class="panel-form">
-      <form method="post" class="formulario-expediente">
+      <form method="post" id="expedienteForm" class="formulario-expediente">
         {% csrf_token %}
-
         <p class="subtext">Completa los campos requeridos para crear un nuevo expediente.</p>
 
         <div class="grid-form">
 
           <div>
             <label>Contrato</label>
-            <select name="contrato" class="i-select dark">
+            <select name="contrato" class="i-select dark" required>
               <option value="">— Selecciona contrato —</option>
               {% for c in contratos %}
               <option value="{{ c.id }}" {% if data.contrato == c.id|stringformat:"s" %}selected{% endif %}>
@@ -46,12 +48,12 @@
 
           <div>
             <label>N.º SIGED <span class="req">*</span></label>
-            <input type="text" name="siged" value="{{ data.siged }}" placeholder="Ej. 2025-XXXX" class="i-text dark" />
+            <input type="text" name="siged" value="{{ data.siged }}" placeholder="Ej. 2025-XXXX" class="i-text dark" required />
           </div>
 
           <div>
             <label>Carta de línea <span class="req">*</span></label>
-            <input type="text" name="carta_linea" value="{{ data.carta_linea }}" placeholder="Ej. Carta Nº 045-2025-OSINERGMIN" class="i-text dark" />
+            <input type="text" name="carta_linea" value="{{ data.carta_linea }}" placeholder="Ej. Carta Nº 045-2025-OSINERGMIN" class="i-text dark" required />
           </div>
 
           <div>
@@ -121,32 +123,105 @@
 
           <div>
             <label>Fecha de asignación</label>
-            <input type="date" name="fecha_asignacion" value="{{ data.fecha_asignacion }}" class="i-date dark" />
+            <input type="date" name="fecha_asignacion" value="{{ data.fecha_asignacion }}" class="i-date dark" required />
           </div>
 
         </div>
 
         <div class="actions">
-          <button type="submit" class="btn-registrar">Registrar expediente</button>
+          <button type="submit" class="btn-registrar">
+            <i class="bi bi-check-circle"></i> Registrar expediente
+          </button>
         </div>
       </form>
     </section>
   </div>
 </div>
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("expedienteForm");
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    Swal.fire({
+      title: "Confirmar registro",
+      text: "¿Deseas registrar este expediente?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#0ea5e9",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Registrar",
+      cancelButtonText: "Cancelar"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+        Swal.fire({
+          title: "Procesando...",
+          text: "Guardando expediente...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+      }
+    });
+  });
+
+  {% if messages %}
+    {% for message in messages %}
+      Swal.fire({
+        icon: "{{ message.tags|default:'info' }}",
+        title: "{{ message }}",
+        timer: 2000,
+        showConfirmButton: false,
+        background: "#0f172a",
+        color: "#ffffff",
+        iconColor: "{% if message.tags == 'success' %}#22c55e{% elif message.tags == 'error' %}#ef4444{% else %}#0ea5e9{% endif %}"
+      }).then(() => {
+        {% if message.tags == 'success' %}
+          const form = document.getElementById('expedienteForm');
+          if (form) {
+            form.reset();
+            // Mostrar toast discreto en esquina inferior
+            const Toast = Swal.mixin({
+              toast: true,
+              position: 'bottom-end',
+              showConfirmButton: false,
+              timer: 2000,
+              background: "#0f172a",
+              color: "#e2e8f0",
+              iconColor: "#0ea5e9"
+            });
+            Toast.fire({
+              icon: 'info',
+              title: 'Formulario listo para un nuevo registro'
+            });
+          }
+        {% endif %}
+      });
+    {% endfor %}
+  {% endif %}
+});
+</script>
+
 <style>
-/* === Estructura general === */
+/* === Layout general === */
 .main-wrapper {
-  width: 95%;
+  width: 94%;
   margin: 0 auto;
   padding-top: 10px;
 }
 
 .titulo-seccion {
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   font-weight: 600;
-  margin-bottom: 20px;
-  color: #1c1f23;
+  margin-bottom: 25px;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .panel-flex {
@@ -155,93 +230,116 @@
   align-items: flex-start;
 }
 
-/* === Panel Izquierdo === */
+/* === Panel izquierdo === */
 .panel-info {
-  flex: 1;
-  background: #434a54;
-  color: #fff;
-  padding: 20px;
+  flex: 1.2;
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 20px 25px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border-left: 4px solid #0ea5e9;
 }
 
-.panel-info h3 {
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-  color: #ffc107;
+.panel-info h3, .panel-info h4 {
+  color: #facc15;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.panel-info h4 {
-  margin-top: 15px;
-  color: #ffc107;
+.panel-info p {
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-/* === Panel Derecho === */
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+  margin: 15px 0;
+}
+
+/* === Panel derecho === */
 .panel-form {
   flex: 3;
-  background: #5b6069;
+  background: #273549;
   color: #fff;
-  padding: 25px;
+  padding: 25px 30px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 .subtext {
   font-size: 0.9rem;
-  margin-bottom: 15px;
-  color: #dcdcdc;
+  margin-bottom: 20px;
+  color: #cbd5e1;
 }
 
-/* === Campos === */
+/* === Grid === */
 .grid-form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px 25px;
+  gap: 16px 24px;
 }
 
+label {
+  display: block;
+  font-weight: 500;
+  color: #e2e8f0;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+/* === Inputs === */
 .i-text.dark,
 .i-select.dark,
 .i-date.dark {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #777;
-  border-radius: 6px;
-  background-color: #3e434a;
+  padding: 10px 12px;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  background-color: #1e293b;
   color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.i-text.dark:focus,
+.i-select.dark:focus,
+.i-date.dark:focus {
+  border-color: #0ea5e9;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.2);
 }
 
 .i-text.dark::placeholder {
-  color: #bfbfbf;
-}
-
-.i-select.dark option {
-  background-color: #3e434a;
-  color: #fff;
-}
-
-.req {
-  color: #ff6666;
+  color: #94a3b8;
 }
 
 /* === Botón === */
 .actions {
   text-align: right;
-  margin-top: 20px;
+  margin-top: 25px;
 }
 
 .btn-registrar {
-  background: #222831;
+  background: linear-gradient(90deg, #0ea5e9, #2563eb);
   color: #fff;
-  padding: 10px 18px;
+  padding: 10px 22px;
   border: none;
   border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .btn-registrar:hover {
-  background: #393e46;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(14,165,233,0.3);
+}
+
+.req {
+  color: #f87171;
 }
 </style>
-
 {% endblock %}

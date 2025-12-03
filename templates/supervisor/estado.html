@@ -1,229 +1,362 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Gestión de estado del expediente{% endblock %}
+{% block title %}Gestión de Estado del Expediente{% endblock %}
 
 {% block content %}
 <style>
-  /* ======= ESTRUCTURA PRINCIPAL ======= */
+  /* === ESTRUCTURA PRINCIPAL === */
   .estado-wrap {
     display: grid;
     grid-template-columns: 280px 1fr;
-    gap: 22px;
-    margin-top: 24px;
+    gap: 24px;
+    margin: 40px auto;
+    max-width: 95%;
+    color: #f3f4f6;
   }
+
   @media (max-width: 960px) {
     .estado-wrap { grid-template-columns: 1fr; }
   }
 
+  /* === PANEL IZQUIERDO === */
   .panel-left {
-    background: #374151;
-    color: #f3f4f6;
+    background: #1f2937;
     border-radius: 16px;
     padding: 22px 18px;
+    color: #e5e7eb;
+    border-left: 4px solid #0ea5e9;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    gap: 16px;
   }
 
   .info-card {
-    background: #1f2937;
-    border-radius: 14px;
-    padding: 16px;
+    background: #374151;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .info-card h5 {
+    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #f9fafb;
+  }
+
+  .info-card p, .info-card ul {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #d1d5db;
+  }
+
+  /* === PANEL RESUMEN === */
+  .resumen-card {
+    background: #111827;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: auto;
+    border: 1px solid #374151;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+  }
+
+  .resumen-card h5 {
+    font-size: 15px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
     display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
+    align-items: center;
+    gap: 8px;
   }
 
-  .info-card:hover {
-    background: #2d3748;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  .resumen-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
   }
 
-  .icon-circle {
-    width: 40px; height: 40px; min-width: 40px;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    background: #3b82f6; color: #fff; font-size: 16px;
+  .resumen-item:last-child {
+    border-bottom: none;
   }
 
-  .icon-circle.warning { background: #9ca3af; }
-
-  .info-text h5 { margin-bottom: 6px; font-size: 15px; font-weight: 700; }
-  .info-text p { font-size: 13.5px; opacity: .9; margin-bottom: 6px; }
-
-  .info-text ul {
-    margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; opacity: .95;
+  .resumen-item span {
+    font-weight: 600;
   }
 
-  .info-text li { margin-bottom: 4px; }
-
+  /* === PANEL PRINCIPAL === */
   .estado-main {
-    background: #1f2937; border-radius: 18px; color: #f9fafb;
-    padding: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    background: #2d3643;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
   }
 
-  .estado-main h4 { font-weight: 700; font-size: 18px; margin-bottom: 18px; }
+  .estado-main h4 {
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f1f5f9;
+  }
 
+  /* === FORMULARIO Y TABLAS === */
   .filtros {
-    display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+    background: #1f2937;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+
+  .filtros label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #d1d5db;
+    margin-bottom: 6px;
   }
 
   .filtros input {
-    background: #111827; border: 1px solid #374151; border-radius: 10px;
-    padding: 10px; color: #e5e7eb; width: 240px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    padding: 10px;
+    color: #e5e7eb;
+    width: 240px;
   }
 
   .filtros button {
-    background: #3b82f6; border: none; color: #fff; font-weight: 600;
-    border-radius: 10px; padding: 10px 20px; cursor: pointer; transition: background 0.3s;
+    background: #0ea5e9;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
   }
 
-  .filtros button:hover { background: #2563eb; }
+  .filtros button:hover { background: #0284c7; }
 
   .tabla-container {
-    background: #2d3748; border-radius: 12px; overflow-x: auto;
-    padding: 10px; margin-bottom: 20px;
+    background: #1f2937;
+    border-radius: 12px;
+    overflow: auto;
+    max-height: 250px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+    margin-bottom: 24px;
   }
 
-  table { width: 100%; border-collapse: collapse; color: #e5e7eb; font-size: 14px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #e5e7eb;
+    font-size: 14px;
+    min-width: 800px;
+  }
 
-  th, td { padding: 10px 8px; white-space: nowrap; }
+  th, td {
+    padding: 10px 8px;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
 
   th {
-    text-transform: uppercase; font-size: 12px; letter-spacing: 0.3px;
-    opacity: 0.8; border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-transform: uppercase;
+    font-size: 12px;
+    background: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    color: #cbd5e1;
   }
 
-  tr:nth-child(even) { background: rgba(255,255,255,0.04); }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+  tbody tr:hover { background: rgba(59,130,246,0.1); }
 
   .estado-form {
-    background: #2d3748; border-radius: 12px; padding: 20px;
+    background: #1f2937;
+    border-radius: 12px;
+    padding: 20px;
   }
 
   .estado-form label {
-    display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px;
+    font-weight: 600;
+    color: #d1d5db;
+    display: block;
+    margin-bottom: 6px;
   }
 
   .estado-form input, .estado-form textarea {
-    background: #111827; border: 1px solid #374151; border-radius: 10px;
-    color: #f9fafb; padding: 10px; width: 100%; margin-bottom: 14px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    color: #f9fafb;
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 14px;
+    font-size: 14px;
   }
 
   .estado-form textarea { resize: none; height: 90px; }
 
   .toggle-wrapper {
-    display: flex; align-items: center; justify-content: flex-end;
-    gap: 10px; margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-bottom: 14px;
   }
 
   .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
   .switch input { opacity: 0; width: 0; height: 0; }
-
   .slider {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
     background-color: #4b5563; transition: .3s; border-radius: 20px;
   }
-
   .slider:before {
     position: absolute; content: ""; height: 18px; width: 18px;
     left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%;
   }
-
   input:checked + .slider { background-color: #10b981; }
   input:checked + .slider:before { transform: translateX(20px); }
 
-  .toggle-wrapper span { font-weight: 600; color: #f3f4f6; }
-
   .btn-guardar {
-    background: #2563eb; border: none; color: white; font-weight: 600;
-    border-radius: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.3s;
+    background: #0ea5e9;
+    border: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  .btn-guardar.active { background: #10b981; }
-  .btn-guardar.active:hover { background: #059669; }
+  .btn-guardar:hover { background: #0284c7; }
 
   .tabla-final {
-    background: #1f2937; border-radius: 14px; padding: 18px; margin-top: 28px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    background: #2d3643;
+    border-radius: 18px;
+    padding: 24px;
+    margin-top: 35px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
   }
 
   .tabla-final h5 {
-    font-weight: 700; font-size: 18px; text-align: center;
-    margin-bottom: 14px; color: #f9fafb;
-    border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
+    font-size: 18px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
+  .tabla-scroll {
+    overflow: auto;
+    max-height: 320px;
+    background: #1f2937;
+    border-radius: 12px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+  }
+
+  .estado-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+
+  .highlight { background-color: rgba(16, 185, 129, 0.35) !important; transition: background 1.2s ease; }
+
   .toast {
-    position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff;
+    position: fixed; top: 25px; right: 25px;
+    background: #10b981; color: #fff;
     padding: 14px 20px; border-radius: 10px; font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
-    transform: translateY(-15px); transition: all 0.4s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0; pointer-events: none;
+    transform: translateY(-15px);
+    transition: all 0.4s ease;
+    display: flex; align-items: center; gap: 8px;
+    z-index: 9999;
   }
 
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 </style>
+
 <div class="estado-wrap">
   <div class="panel-left">
     <div class="info-card">
-      <div class="icon-circle"><i class="fas fa-info"></i></div>
-      <div class="info-text">
-        <h5>Indicaciones</h5>
-        <p>Busca el expediente por <b>N.º SIGED</b> o <b>Carta de línea</b>, asigna <b>fecha de derivación</b> y márcalo como <b>concluido</b> cuando corresponda.</p>
-      </div>
+      <h5><i class="bi bi-info-circle"></i> Indicaciones</h5>
+      <p>Busca el expediente por <b>N.º SIGED</b> o <b>Carta de línea</b>, asigna la fecha de derivación y márcalo como concluido cuando corresponda.</p>
     </div>
     <div class="info-card">
-      <div class="icon-circle warning"><i class="fas fa-exclamation-circle"></i></div>
-      <div class="info-text">
-        <h5>Recomendaciones</h5>
-        <ul>
-          <li>Verifica los datos antes de guardar.</li>
-          <li>Si no marcas “Concluido”, quedará EN PROCESO.</li>
-        </ul>
-      </div>
+      <h5><i class="bi bi-exclamation-circle"></i> Recomendaciones</h5>
+      <ul>
+        <li>Verifica los datos antes de guardar.</li>
+        <li>Si no marcas “Concluido”, quedará <b>En proceso</b>.</li>
+      </ul>
+    </div>
+
+    <!-- NUEVO: PANEL RESUMEN -->
+    <div class="resumen-card" id="panelResumen">
+      <h5><i class="bi bi-bar-chart"></i> Resumen</h5>
+      <div class="resumen-item"><span>Total de expedientes:</span> <span id="r-total">0</span></div>
+      <div class="resumen-item"><span>En proceso:</span> <span id="r-proceso">0</span></div>
+      <div class="resumen-item"><span>Concluidos:</span> <span id="r-concluido">0</span></div>
     </div>
   </div>
 
   <div class="estado-main">
-    <h4>Gestión de estado del expediente</h4>
+    <h4><i class="bi bi-clipboard-check"></i> Gestión de Estado del Expediente</h4>
 
-    <!-- Filtros -->
+    <!-- FILTROS -->
     <form method="get" class="filtros">
       <div>
         <label>N.º SIGED</label>
-        <input type="text" id="sigedInput" list="sigedList" placeholder="Ej. 2025-0001">
-        <datalist id="sigedList"></datalist>
+        <input type="text" id="sigedInput" placeholder="Ej. 2025-0001">
       </div>
       <div>
         <label>Carta de línea</label>
-        <input type="text" id="cartaInput" list="cartaList" placeholder="Ej. CARTA 045-2025-OSIN">
-        <datalist id="cartaList"></datalist>
+        <input type="text" id="cartaInput" placeholder="Ej. CARTA 045-2025-OSIN">
       </div>
-      <button type="button" id="btnBuscar">Buscar</button>
+      <button type="button" id="btnBuscar"><i class="bi bi-search"></i> Buscar</button>
     </form>
 
-    <!-- Tabla principal -->
+    <!-- TABLA RESULTADOS -->
     <div class="tabla-container">
       <table id="tablaBusqueda">
         <thead>
           <tr>
             <th>Seleccionar</th>
             <th>N.º SIGED</th>
-            <th>Carta línea</th>
-            <th>Código actividad</th>
-            <th>Tipo supervisión</th>
-            <th>Fecha asignación</th>
+            <th>Carta Línea</th>
+            <th>Código Actividad</th>
+            <th>Tipo Supervisión</th>
+            <th>Fecha Asignación</th>
           </tr>
         </thead>
-        <tbody><tr><td colspan="6">Sin resultados.</td></tr></tbody>
+        <tbody><tr><td colspan="6" style="text-align:center;">Sin resultados.</td></tr></tbody>
       </table>
     </div>
 
-    <!-- Formulario -->
+    <!-- FORMULARIO DE ESTADO -->
     <form method="post" id="formEstado" class="estado-form">
       {% csrf_token %}
       <input type="hidden" id="expedienteSeleccionado">
@@ -232,37 +365,40 @@
       <input type="date" name="fecha_derivacion" id="fechaDerivacion">
 
       <div class="toggle-wrapper">
+        <span>Marcar como Concluido</span>
         <label class="switch">
           <input type="checkbox" id="estadoToggle" name="estado" value="CONCLUIDO">
           <span class="slider"></span>
         </label>
-        <span>Marcar como Concluido</span>
       </div>
 
       <label>Observaciones</label>
       <textarea name="observaciones" id="observaciones" placeholder="Escribe observaciones (opcional)"></textarea>
 
       <div style="text-align:right;">
-        <button type="button" id="btnGuardar" class="btn-guardar">Guardar cambios</button>
+        <button type="button" id="btnGuardar" class="btn-guardar"><i class="bi bi-save"></i> Guardar cambios</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Tabla inferior -->
+<!-- TABLA FINAL -->
 <div class="tabla-final">
-  <h5><i class="fas fa-folder-open"></i> Expedientes asignados</h5>
-  <div style="overflow-x:auto;">
+  <h5><i class="bi bi-folder2-open"></i> Expedientes Asignados</h5>
+  <div class="tabla-scroll">
     <table id="tablaExpedientes">
       <thead>
         <tr>
           <th>N.º SIGED</th>
+          <th>Código OSINERGMIN</th>
           <th>Código Actividad</th>
-          <th>Razón social</th>
-          <th>Carta línea</th>
-          <th>Tipo supervisión</th>
-          <th>Fecha asignación</th>
-          <th>Fecha derivación</th>
+          <th>Razón Social</th>
+          <th>Carta Línea</th>
+          <th>Tipo Supervisión</th>
+          <th>Tipo Documento</th>
+          <th>Fecha Asignación</th>
+          <th>Fecha Visita</th>
+          <th>Fecha Derivación</th>
           <th>Estado</th>
           <th>Observaciones</th>
         </tr>
@@ -271,91 +407,73 @@
         {% for e in expedientes %}
         <tr data-id="{{ e.id }}">
           <td>{{ e.siged }}</td>
+          <td>{{ e.codigo }}</td>
           <td>{{ e.codigo_actividad }}</td>
           <td>{{ e.razon_social }}</td>
           <td>{{ e.carta_linea }}</td>
           <td>{{ e.tipo_supervision.nombre }}</td>
+          <td>{{ e.tipo_documento.nombre }}</td>
           <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+          <td>{{ e.fecha_visita|default:"—" }}</td>
           <td>{{ e.fecha_derivacion|default:"—" }}</td>
-          <td>{{ e.estado }}</td>
+          <td>
+            {% if e.estado == "CONCLUIDO" %}
+              <span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>
+            {% else %}
+              <span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>
+            {% endif %}
+          </td>
           <td>{{ e.observaciones|default:"—" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="9">No hay expedientes asignados.</td></tr>
+        <tr><td colspan="12" style="text-align:center;">No hay expedientes asignados.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<div class="toast success" id="toastSuccess">✅ Cambios guardados correctamente</div>
-<div class="toast error" id="toastError">⚠️ Error o datos incompletos</div>
+<!-- TOASTS -->
+<div class="toast" id="toastSuccess"><i class="bi bi-check-circle-fill"></i> Cambios guardados correctamente</div>
+<div class="toast error" id="toastError"><i class="bi bi-exclamation-triangle-fill"></i> Error o datos incompletos</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const sigedInput = document.getElementById("sigedInput");
-  const cartaInput = document.getElementById("cartaInput");
+  const resumen = {
+    total: document.getElementById("r-total"),
+    proceso: document.getElementById("r-proceso"),
+    concluido: document.getElementById("r-concluido")
+  };
+
+  function actualizarResumen() {
+    const filas = document.querySelectorAll("#tablaExpedientes tbody tr[data-id]");
+    let total = 0, proceso = 0, concluido = 0;
+    filas.forEach(f => {
+      const estado = f.querySelector("td:nth-child(11)").innerText.trim();
+      if (estado !== "—") total++;
+      if (estado.includes("Concluido")) concluido++;
+      else proceso++;
+    });
+    resumen.total.textContent = total;
+    resumen.proceso.textContent = proceso;
+    resumen.concluido.textContent = concluido;
+  }
+
+  actualizarResumen();
+
   const fechaDeriv = document.getElementById("fechaDerivacion");
   const toggle = document.getElementById("estadoToggle");
   const observaciones = document.getElementById("observaciones");
   const btnGuardar = document.getElementById("btnGuardar");
   const expedienteSeleccionado = document.getElementById("expedienteSeleccionado");
-  const tablaBusqueda = document.querySelector("#tablaBusqueda tbody");
   const tablaFinal = document.querySelector("#tablaExpedientes tbody");
   const toastSuccess = document.getElementById("toastSuccess");
   const toastError = document.getElementById("toastError");
 
-  const showToast = (el, msg=null) => {
-    if (msg) el.textContent = msg;
+  const showToast = (el) => {
     el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), 3000);
   };
-
-  async function setupAutocomplete(input, field) {
-    input.addEventListener("input", async e => {
-      const value = e.target.value.trim();
-      if (value.length < 2) return;
-      const res = await fetch(`/ajax/autocomplete/?tipo=${field}&q=${encodeURIComponent(value)}`);
-      const data = await res.json();
-      const datalist = document.getElementById(`${field}List`);
-      datalist.innerHTML = "";
-      data.results.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item[field];
-        datalist.appendChild(option);
-      });
-    });
-  }
-
-  setupAutocomplete(sigedInput, "siged");
-  setupAutocomplete(cartaInput, "carta_linea");
-
-  document.getElementById("btnBuscar").addEventListener("click", async () => {
-    const siged = sigedInput.value.trim();
-    const carta = cartaInput.value.trim();
-    if (!siged && !carta) return showToast(toastError, "Ingrese SIGED o Carta Línea.");
-    const res = await fetch(`/supervisor/estado/?siged=${siged}&carta_linea=${carta}`, { headers: {"X-Requested-With": "XMLHttpRequest"} });
-    const data = await res.json();
-    tablaBusqueda.innerHTML = "";
-    if (!data.results?.length) {
-      tablaBusqueda.innerHTML = `<tr><td colspan="6">No se encontraron resultados.</td></tr>`;
-      return;
-    }
-    data.results.forEach(exp => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input type="radio" name="expSelect" value="${exp.id}"></td>
-        <td>${exp.siged}</td>
-        <td>${exp.carta_linea}</td>
-        <td>${exp.codigo_actividad}</td>
-        <td>${exp.tipo_supervision}</td>
-        <td>${exp.fecha_asignacion}</td>`;
-      tablaBusqueda.appendChild(tr);
-    });
-    document.querySelectorAll('input[name="expSelect"]').forEach(radio => {
-      radio.addEventListener("change", e => expedienteSeleccionado.value = e.target.value);
-    });
-  });
 
   btnGuardar.addEventListener("click", async e => {
     e.preventDefault();
@@ -363,45 +481,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const fecha = fechaDeriv.value;
     const obs = observaciones.value.trim();
     const estado = toggle.checked ? "CONCLUIDO" : "";
-    if (!id || !fecha) return showToast(toastError, "Selecciona expediente y fecha.");
+    if (!id || !fecha) return showToast(toastError);
+
     const fd = new FormData();
     fd.append("expediente", id);
     fd.append("fecha_derivacion", fecha);
     fd.append("estado", estado);
     fd.append("observaciones", obs);
     fd.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
     const res = await fetch("{% url 'asignaciones:supervisor_estado' %}", {
       method: "POST",
       headers: {"X-Requested-With": "XMLHttpRequest"},
       body: fd
     });
+
     const data = await res.json();
     if (data.status === "success") {
-      showToast(toastSuccess, "Cambios guardados correctamente");
-      const fila = tablaFinal.querySelector(`tr[data-id="${id}"]`);
+      showToast(toastSuccess);
+      const fila = tablaFinal.querySelector(`tr[data-id='${id}']`);
       if (fila) {
-        fila.children[6].textContent = data.expediente.fecha_derivacion;
-        fila.children[7].textContent = data.expediente.estado;
-        fila.children[8].textContent = data.expediente.observaciones;
-      } else {
-        const tr = document.createElement("tr");
-        tr.dataset.id = id;
-        tr.innerHTML = `
-          <td>${sigedInput.value}</td>
-          <td>—</td>
-          <td>—</td>
-          <td>${cartaInput.value}</td>
-          <td>—</td>
-          <td>—</td>
-          <td>${data.expediente.fecha_derivacion}</td>
-          <td>${data.expediente.estado}</td>
-          <td>${data.expediente.observaciones}</td>`;
-        tablaFinal.appendChild(tr);
+        fila.children[9].textContent = data.expediente.fecha_derivacion;
+        fila.children[10].innerHTML = estado
+          ? '<span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>'
+          : '<span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>';
+        fila.children[11].textContent = data.expediente.observaciones;
+        fila.classList.add("highlight");
+        setTimeout(() => fila.classList.remove("highlight"), 2000);
       }
+      actualizarResumen();
       document.getElementById("formEstado").reset();
       expedienteSeleccionado.value = "";
       toggle.checked = false;
-    } else showToast(toastError, "Error al guardar.");
+    } else {
+      showToast(toastError);
+    }
   });
 });
 </script>
