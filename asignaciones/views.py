@@ -20,11 +20,18 @@ from .models import Expediente, Contrato, OficinaRegional, Mensaje, Anuncio
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_protect
 from django.contrib import messages
+from django.core.paginator import Paginator
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from datetime import datetime
+from django.utils.dateparse import parse_date
+import pandas as pd
+
+
 
 from .forms import (
-    ProgramarVisitaForm,
-    ConcluirForm,
-    CoordinadorRegistroForm,
     CrearUsuarioForm,
 )
 
@@ -220,102 +227,100 @@ def supervisor_registrar(request):
 @role_required(["Supervisor", "AdministradorLider"])
 def estado_expediente(request):
     """
-    Vista para gestión de estado de expedientes:
-    - GET AJAX: búsqueda de expedientes por SIGED o carta de línea
-    - POST AJAX: actualización de estado, fecha derivación y observaciones
+    Vista unificada para:
+    - Buscar expedientes (GET con AJAX)
+    - Actualizar estado y fecha de derivación (POST con AJAX)
     """
-    # ==== BÚSQUEDA (AJAX GET) ====
+
+    # === MODO BÚSQUEDA (AJAX GET) ===
     if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "GET":
         siged = request.GET.get("siged", "").strip()
         carta = request.GET.get("carta_linea", "").strip()
-        query = siged or carta
-        if not query:
+
+        if not siged and not carta:
             return JsonResponse({"status": "error", "message": "Sin parámetros de búsqueda.", "results": []})
 
         expedientes = Expediente.objects.all()
+
+        # Supervisores solo ven sus expedientes
         if request.user.groups.filter(name="Supervisor").exists():
             expedientes = expedientes.filter(supervisor=request.user)
 
+        # Filtro dinámico
         filtro = Q()
         if siged:
             filtro |= Q(siged__icontains=siged)
         if carta:
             filtro |= Q(carta_linea__icontains=carta)
 
-        expedientes = expedientes.filter(filtro).select_related(
-            "contrato", "oficina", "tipo_supervision"
-        )[:20]
+        expedientes = (
+            expedientes.filter(filtro)
+            .select_related("tipo_supervision", "tipo_documento", "oficina")
+            .order_by("-fecha_asignacion")[:10]
+        )
 
         resultados = [
             {
                 "id": e.id,
-                "siged": e.siged,
+                "siged": e.siged or "",
                 "carta_linea": e.carta_linea or "",
-                "razon_social": e.razon_social or "",
-                "contrato": e.contrato.numero if e.contrato else "",
-                "oficina": e.oficina.nombre if e.oficina else "",
                 "codigo_actividad": e.codigo_actividad or "",
-                "tipo_supervision": e.tipo_supervision.nombre if e.tipo_supervision else "—",
-                "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "—",
-                "estado": e.estado or "EN PROCESO",
-                "fecha_derivacion": e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "—",
-                "observaciones": e.observaciones or "—",
+                "tipo_supervision": e.tipo_supervision.nombre if e.tipo_supervision else "",
+                "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
             }
             for e in expedientes
         ]
-
         return JsonResponse({"status": "success", "results": resultados})
 
-    # ==== ACTUALIZACIÓN (AJAX POST) ====
+    # === MODO ACTUALIZACIÓN (AJAX POST) ===
     if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "POST":
         try:
-            exp_id = request.POST.get("expediente", "").strip()
+            exp_id = request.POST.get("expediente")
             fecha_deriv = request.POST.get("fecha_derivacion", "").strip()
             observaciones = request.POST.get("observaciones", "").strip()
-            estado = request.POST.get("estado", "").strip()
+            estado = request.POST.get("estado", "").strip() or "EN PROCESO"
 
-            if not exp_id:
-                return JsonResponse({"status": "error", "message": "No se identificó el expediente."})
-            if not fecha_deriv:
-                return JsonResponse({"status": "error", "message": "Debe ingresar la fecha de derivación."})
+            if not exp_id or not fecha_deriv:
+                return JsonResponse({"status": "error", "message": "Datos incompletos."})
 
             exp = Expediente.objects.filter(id=exp_id).first()
-            if request.user.groups.filter(name="Supervisor").exists():
-                exp = Expediente.objects.filter(id=exp.id, supervisor=request.user).first()
-
             if not exp:
-                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado."})
+                return JsonResponse({"status": "error", "message": "Expediente no encontrado."})
 
-            # Convertir string a date
-            try:
-                fecha_convertida = datetime.strptime(fecha_deriv, "%Y-%m-%d").date()
-            except ValueError:
-                return JsonResponse({"status": "error", "message": "Formato de fecha no válido."})
+            # Supervisores solo actualizan sus propios expedientes
+            if request.user.groups.filter(name="Supervisor").exists():
+                if exp.supervisor != request.user:
+                    return JsonResponse({"status": "error", "message": "No autorizado para este expediente."})
 
-            exp.fecha_derivacion = fecha_convertida
+            # Guardar cambios
+            exp.fecha_derivacion = fecha_deriv
             exp.observaciones = observaciones or "-"
-            exp.estado = "CONCLUIDO" if estado == "CONCLUIDO" else "EN PROCESO"
+            exp.estado = estado
             exp.save()
 
             return JsonResponse({
                 "status": "success",
-                "message": "Expediente actualizado correctamente.",
+                "message": f"Expediente {exp.siged} actualizado correctamente.",
                 "expediente": {
                     "id": exp.id,
                     "siged": exp.siged,
+                    "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y") if hasattr(exp.fecha_derivacion, "strftime") else exp.fecha_derivacion,
                     "estado": exp.estado,
-                    "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y"),
                     "observaciones": exp.observaciones,
                 }
             })
+
         except Exception as e:
             print("❌ Error en estado_expediente:", e)
             return JsonResponse({"status": "error", "message": f"Error interno: {e}"})
 
-    # ==== RENDER NORMAL ====
-    expedientes = Expediente.objects.filter(supervisor=request.user).select_related(
-        "contrato", "oficina", "tipo_supervision", "tipo_documento"
+    # === RENDER NORMAL (no AJAX) ===
+    expedientes = (
+        Expediente.objects.filter(supervisor=request.user)
+        .select_related("tipo_supervision", "tipo_documento", "oficina")
+        .order_by("-fecha_asignacion")
     )
+
     return render(request, "supervisor/estado.html", {"expedientes": expedientes})
 
 # ============================================================
@@ -351,22 +356,42 @@ def coordinador_registrar(request):
     """
     Permite al coordinador registrar un nuevo expediente.
     Incluye selección de contrato, oficina, tipo de supervisión y documento.
+    Filtra las listas desplegables con solo los valores válidos definidos.
     """
 
-    # Cargar datos base para los selects
+    # ==== Listas válidas predefinidas ====
+    contratos_validos = ["SUP2500192", "SUP2500203", "SUP2500217", "SUP2500235"]
+    oficinas_validas = ["Piura", "Lima", "Arequipa", "Moquegua"]
+    tipos_documento_validos = ["Informe de Supervisión", "Informe Técnico", "Ficha de Registro", "Resolución"]
+    tipos_supervision_validos = [
+        "Actos Inseguros", "Atención de Denuncias", "Atención de Solicitud de ITF",
+        "Atención de Solicitudes de AVC-AVP", "Comprobación de operaciones",
+        "Condiciones de seguridad", "Condiciones de seguridad con observaciones",
+        "Control Metrológico CL especial", "Control Volumétrico",
+        "Criticidad de Cilindros de GLP", "Denuncia - Actos Inseguros",
+        "Denuncia - PRICE", "Denuncias-Informal", "Ejecución/Levantamiento de Med. Seg.",
+        "Envasado, Pintado y Canje de cilindros", "Etiquetados de cilindros de GLP",
+        "Informalidad", "PRICE", "Por Operaciones",
+        "RHO - Inscripción, Modificación",
+        "RHO - Modificación de datos, suspensión, cancelación y habilitación",
+        "SPIC", "Supervisión Operativa de Seguridad de CD y RD de GLP",
+        "Supervisión Operativa de Seguridad de LV GLP",
+        "Supervisión Operativa de Seguridad de LVGLP", "Verificación Póliza"
+    ]
+
+    # ==== Datos base (para selects) ====
     supervisores = User.objects.filter(groups__name="Supervisor").order_by("first_name")
-    contratos = Contrato.objects.all().order_by("numero")
-    oficinas = OficinaRegional.objects.all().order_by("nombre")
-    tipos_supervision = TipoSupervision.objects.all().order_by("nombre")
-    tipos_documento = TipoDocumento.objects.all().order_by("nombre")
+    contratos = Contrato.objects.filter(numero__in=contratos_validos).order_by("numero")
+    oficinas = OficinaRegional.objects.filter(nombre__in=oficinas_validas).order_by("nombre")
+    tipos_supervision = TipoSupervision.objects.filter(nombre__in=tipos_supervision_validos).order_by("nombre")
+    tipos_documento = TipoDocumento.objects.filter(nombre__in=tipos_documento_validos).order_by("nombre")
 
     data = {}
 
+    # ==== POST: Registrar expediente ====
     if request.method == "POST":
-        # Obtener datos del formulario
         data = {k: request.POST.get(k, "").strip() for k in request.POST.keys()}
 
-        # Validar campos obligatorios mínimos
         campos_obligatorios = ["siged", "carta_linea", "contrato", "oficina", "supervisor_id"]
         faltantes = [c for c in campos_obligatorios if not data.get(c)]
 
@@ -382,21 +407,19 @@ def coordinador_registrar(request):
             })
 
         try:
-            # Convertir IDs en objetos
-            contrato = Contrato.objects.get(id=data["contrato"])
-            oficina = OficinaRegional.objects.get(id=data["oficina"])
-            supervisor = User.objects.get(id=data["supervisor_id"])
+            contrato = get_object_or_404(Contrato, id=data["contrato"])
+            oficina = get_object_or_404(OficinaRegional, id=data["oficina"])
+            supervisor = get_object_or_404(User, id=data["supervisor_id"])
 
             tipo_supervision = (
-                TipoSupervision.objects.get(id=data["tipo_supervision"])
+                get_object_or_404(TipoSupervision, id=data["tipo_supervision"])
                 if data.get("tipo_supervision") else None
             )
             tipo_documento = (
-                TipoDocumento.objects.get(id=data["tipo_documento"])
+                get_object_or_404(TipoDocumento, id=data["tipo_documento"])
                 if data.get("tipo_documento") else None
             )
 
-            # Crear expediente
             expediente = Expediente.objects.create(
                 siged=data["siged"],
                 carta_linea=data["carta_linea"],
@@ -410,10 +433,10 @@ def coordinador_registrar(request):
                 supervisor=supervisor,
                 tipo_supervision=tipo_supervision,
                 tipo_documento=tipo_documento,
-                estado="EN_PROCESO",
+                estado="EN PROCESO",
             )
 
-            # Crear anuncio para el supervisor
+            # Crear anuncio informativo
             Anuncio.objects.create(
                 titulo=f"Nuevo expediente asignado: {expediente.siged}",
                 contenido=f"Has recibido un nuevo expediente asignado por {request.user.get_full_name()}.",
@@ -428,7 +451,7 @@ def coordinador_registrar(request):
         except Exception as e:
             messages.error(request, f"❌ Error al guardar el expediente: {e}")
 
-    # Render inicial o reintento fallido
+    # ==== Render inicial o reintento ====
     return render(request, "coordinador/registrar.html", {
         "data": data,
         "supervisores": supervisores,
@@ -438,15 +461,41 @@ def coordinador_registrar(request):
         "tipos_documento_choices": [(t.id, t.nombre) for t in tipos_documento],
     })
 
-
-
 @role_required(["Coordinador"])
 def coordinador_revisar(request):
-    qs = Expediente.objects.select_related("supervisor", "contrato", "oficina").order_by("-created_at")
+    """
+    Vista para que el Coordinador revise expedientes filtrados por contrato o carta línea.
+    Incluye tipo de supervisión y tipo de documento en el contexto para mostrarlos en la tabla.
+    """
+    # Consulta base optimizada
+    qs = (
+        Expediente.objects
+        .select_related("supervisor", "contrato", "oficina")
+        .order_by("-created_at")
+    )
+
+    # Filtros de búsqueda
+    contrato_id = request.GET.get("contrato")
+    carta_linea = request.GET.get("carta_linea", "").strip()
     siged = request.GET.get("siged", "").strip()
+
+    if contrato_id:
+        qs = qs.filter(contrato_id=contrato_id)
+    if carta_linea:
+        qs = qs.filter(carta_linea__icontains=carta_linea)
     if siged:
         qs = qs.filter(siged__icontains=siged)
-    return render(request, "coordinador/revisar.html", {"expedientes": qs})
+
+    # Traer los contratos activos (para el select del filtro)
+    contratos = Contrato.objects.select_related("oficina").order_by("numero")
+
+    context = {
+        "expedientes": qs,
+        "contratos": contratos,
+    }
+    return render(request, "coordinador/revisar.html", context)
+
+
 
 # ============================================================
 #                      ADMINISTRADORES
@@ -508,22 +557,327 @@ def admin_lider_revisar(request):
     }
     return render(request, "admin/admin_lider_revisar.html", context)
 
-
 @login_required
 @user_passes_test(es_admin_lider)
 def admin_lider_descargar(request):
     """
-    Vista del AdministradorLíder para descargar informes, reportes o expedientes.
+    Vista del Administrador Líder con filtro por contrato y fechas,
+    paginación y exportación a Excel con indicador de visita (Sí/No).
     """
     contratos = Contrato.objects.all().order_by("numero")
-    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
+    contrato_id = request.GET.get("contrato")
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+    exportar = request.GET.get("exportar")
+
+    # === QUERY BASE ===
+    expedientes = (
+        Expediente.objects.all()
+        .select_related("contrato", "oficina", "supervisor")
+        .order_by("-fecha_asignacion")
+    )
+
+    # === FILTROS ===
+    if contrato_id:
+        expedientes = expedientes.filter(contrato_id=contrato_id)
+
+    if fecha_inicio:
+        fecha_i = parse_date(fecha_inicio)
+        if fecha_i:
+            expedientes = expedientes.filter(fecha_asignacion__gte=fecha_i)
+
+    if fecha_fin:
+        fecha_f = parse_date(fecha_fin)
+        if fecha_f:
+            expedientes = expedientes.filter(fecha_asignacion__lte=fecha_f)
+
+    # === EXPORTAR A EXCEL (rápido sin formato) ===
+    if exportar == "1":
+        data = [
+            {
+                "N° SIGED": e.siged,
+                "Carta Línea": e.carta_linea,
+                "Código OSINERGMIN": e.codigo,
+                "Código Actividad": e.codigo_actividad,
+                "Razón Social": e.razon_social,
+                "Tipo Supervisión": e.tipo_supervision,
+                "Tipo Documento": e.tipo_documento,
+                "Oficina Regional": e.oficina.nombre if e.oficina else "",
+                "Supervisor": e.supervisor.get_full_name() if e.supervisor else "",
+                "Fecha Asignación": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+                "Fecha Derivación": e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "",
+                "Visita": "Sí" if e.fecha_visita else "No",
+                "Fecha Visita": e.fecha_visita.strftime("%d/%m/%Y") if e.fecha_visita else "",
+                "Estado": e.estado,
+                "Observaciones": e.observaciones or "",
+            }
+            for e in expedientes
+        ]
+
+        df = pd.DataFrame(data)
+        response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response["Content-Disposition"] = 'attachment; filename="Expedientes_Admin_Lider.xlsx"'
+        df.to_excel(response, index=False)
+        return response
+
+    # === PAGINACIÓN ===
+    paginator = Paginator(expedientes, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "contratos": contratos,
-        "expedientes": expedientes,
+        "page_obj": page_obj,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "contrato_id": contrato_id,
     }
+
     return render(request, "admin/admin_lider_descargar.html", context)
 
+@login_required
+@user_passes_test(es_admin_lider)
+def admin_lider_descargar_excel(request):
+    """
+    Exporta los expedientes filtrados a un archivo Excel (para Administrador Líder),
+    con manejo seguro de valores None, celdas fusionadas y objetos ForeignKey.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.cell.cell import MergedCell
+    from datetime import datetime
+    from django.http import HttpResponse
+
+    # === Obtener filtros desde la URL ===
+    contrato_id = request.GET.get("contrato")
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+
+    # === Base de datos ===
+    expedientes = Expediente.objects.all().select_related("contrato", "oficina", "supervisor")
+
+    # === Filtro por contrato ===
+    if contrato_id and contrato_id != "None":
+        try:
+            expedientes = expedientes.filter(contrato_id=int(contrato_id))
+        except ValueError:
+            pass  # ignora si contrato_id no es válido
+
+    # === Filtro por rango de fechas ===
+    if fecha_inicio and fecha_fin and fecha_inicio != "None" and fecha_fin != "None":
+        try:
+            fecha_i = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            fecha_f = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            expedientes = expedientes.filter(fecha_asignacion__range=(fecha_i, fecha_f))
+        except ValueError:
+            pass
+
+    # === Crear libro Excel ===
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Expedientes"
+
+    # === Estilos generales ===
+    title_font = Font(bold=True, size=14, color="FFFFFF")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="004AAD", end_color="004AAD", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center")
+    border_style = Border(
+        left=Side(style="thin", color="1E1E1E"),
+        right=Side(style="thin", color="1E1E1E"),
+        top=Side(style="thin", color="1E1E1E"),
+        bottom=Side(style="thin", color="1E1E1E"),
+    )
+
+    # === Título del reporte ===
+    ws.merge_cells("A1:O1")
+    ws["A1"] = "REPORTE DE EXPEDIENTES - ADMINISTRADOR LÍDER"
+    ws["A1"].font = title_font
+    ws["A1"].fill = PatternFill(start_color="0A2647", end_color="0A2647", fill_type="solid")
+    ws["A1"].alignment = center_align
+
+    ws.merge_cells("A2:O2")
+    ws["A2"] = f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+    ws["A2"].alignment = center_align
+
+   
+    headers = [
+        "N° SIGED",
+        "Carta Línea",
+        "Código OSINERGMIN",
+        "Código Actividad",
+        "Razón Social",
+        "Tipo Supervisión",
+        "Tipo Documento",
+        "Oficina Regional",
+        "Supervisor",
+        "Fecha Asignación",
+        "Fecha Derivación",
+        "Visita",
+        "Fecha Visita",
+        "Estado",
+        "Observaciones",
+    ]
+
+    ws.append(headers)
+
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = border_style
+
+  
+    row_num = 4
+    for e in expedientes:
+        visita = "Sí" if e.fecha_visita else "No"
+
+        row_data = [
+            e.siged or "",
+            e.carta_linea or "",
+            e.codigo or "",
+            e.codigo_actividad or "",
+            e.razon_social or "",
+            str(e.tipo_supervision) if e.tipo_supervision else "",
+            str(e.tipo_documento) if e.tipo_documento else "",
+            e.oficina.nombre if e.oficina else "",
+            e.supervisor.get_full_name() if e.supervisor else "",
+            e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+            e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "",
+            visita,
+            e.fecha_visita.strftime("%d/%m/%Y") if e.fecha_visita else "",
+            e.estado or "",
+            e.observaciones or "",
+        ]
+
+        ws.append(row_data)
+
+        for col_num in range(1, len(headers) + 1):
+            ws.cell(row=row_num, column=col_num).border = border_style
+        row_num += 1
+
+    
+    for col in ws.columns:
+        max_length = 0
+        column_letter = None
+
+        for cell in col:
+            if isinstance(cell, MergedCell):
+                continue  # saltar celdas fusionadas
+            if not column_letter:
+                column_letter = cell.column_letter
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+
+        if column_letter:
+            ws.column_dimensions[column_letter].width = max_length + 3
+
+
+    filename = f"Expedientes_Lider_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+
+@role_required(["AdministradorLider"])
+@login_required
+@transaction.atomic
+def admin_lider_catalogos(request):
+    """
+    Panel para que el Administrador Líder gestione los catálogos base:
+    - Contratos
+    - Tipos de Supervisión
+    - Tipos de Documento
+    - Oficinas Regionales
+    """
+
+    # --- Acciones POST (AJAX) ---
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        tipo = request.POST.get("tipo")
+
+        try:
+            # === AGREGAR ===
+            if accion == "agregar":
+                nombre = request.POST.get("nombre", "").strip()
+                if not nombre:
+                    return JsonResponse({"status": "error", "message": "El nombre no puede estar vacío."})
+
+                if tipo == "contrato":
+                    oficina_id = request.POST.get("oficina_id")
+                    oficina = get_object_or_404(OficinaRegional, id=oficina_id)
+                    Contrato.objects.create(numero=nombre, oficina=oficina)
+                    return JsonResponse({"status": "success", "message": f"Contrato '{nombre}' agregado correctamente."})
+
+                elif tipo == "supervision":
+                    TipoSupervision.objects.create(nombre=nombre)
+                    return JsonResponse({"status": "success", "message": f"Tipo de supervisión '{nombre}' agregado correctamente."})
+
+                elif tipo == "documento":
+                    TipoDocumento.objects.create(nombre=nombre)
+                    return JsonResponse({"status": "success", "message": f"Tipo de documento '{nombre}' agregado correctamente."})
+
+                elif tipo == "oficina":
+                    OficinaRegional.objects.create(nombre=nombre)
+                    return JsonResponse({"status": "success", "message": f"Oficina '{nombre}' agregada correctamente."})
+
+            # === ELIMINAR ===
+            elif accion == "eliminar":
+                item_id = request.POST.get("id")
+                if tipo == "contrato":
+                    Contrato.objects.filter(id=item_id).delete()
+                    return JsonResponse({"status": "success", "message": "Contrato eliminado correctamente."})
+                elif tipo == "supervision":
+                    TipoSupervision.objects.filter(id=item_id).delete()
+                    return JsonResponse({"status": "success", "message": "Tipo de supervisión eliminado correctamente."})
+                elif tipo == "documento":
+                    TipoDocumento.objects.filter(id=item_id).delete()
+                    return JsonResponse({"status": "success", "message": "Tipo de documento eliminado correctamente."})
+                elif tipo == "oficina":
+                    OficinaRegional.objects.filter(id=item_id).delete()
+                    return JsonResponse({"status": "success", "message": "Oficina eliminada correctamente."})
+
+            # === EDITAR (opcional, si luego agregamos edición en línea) ===
+            elif accion == "editar":
+                item_id = request.POST.get("id")
+                nuevo_nombre = request.POST.get("nombre", "").strip()
+                if not nuevo_nombre:
+                    return JsonResponse({"status": "error", "message": "El nombre no puede estar vacío."})
+
+                if tipo == "contrato":
+                    Contrato.objects.filter(id=item_id).update(numero=nuevo_nombre)
+                    return JsonResponse({"status": "success", "message": "Contrato actualizado correctamente."})
+                elif tipo == "supervision":
+                    TipoSupervision.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({"status": "success", "message": "Tipo de supervisión actualizado correctamente."})
+                elif tipo == "documento":
+                    TipoDocumento.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({"status": "success", "message": "Tipo de documento actualizado correctamente."})
+                elif tipo == "oficina":
+                    OficinaRegional.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({"status": "success", "message": "Oficina actualizada correctamente."})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": f"Ocurrió un error: {str(e)}"})
+
+    # --- GET: Render de la página ---
+    context = {
+        "contratos": Contrato.objects.select_related("oficina").all().order_by("numero"),
+        "tipos_supervision": TipoSupervision.objects.all().order_by("nombre"),
+        "tipos_documento": TipoDocumento.objects.all().order_by("nombre"),
+        "oficinas": OficinaRegional.objects.all().order_by("nombre"),
+    }
+
+    return render(request, "admin/admin_lider_catalogos.html", context)
 
 # ============================================================
 # ADMINISTRADOR (nivel intermedio, acceso restringido)
@@ -539,42 +893,244 @@ def admin_menu(request):
     """
     return render(request, "admin/admin_menu.html")
 
-
 @login_required
 @user_passes_test(es_admin)
 def admin_revisar(request):
     """
-    Vista de revisión simple de expedientes.
+    Vista de revisión de expedientes con filtro por contrato, número SIGED o carta de línea.
+    Solo muestra los expedientes asociados al contrato seleccionado.
     """
+    # Capturar los parámetros GET
     siged = request.GET.get("siged", "").strip()
+    carta_linea = request.GET.get("carta_linea", "").strip()
+    contrato_id = request.GET.get("contrato", "").strip()
+
+    # Lista de contratos disponibles
     contratos = Contrato.objects.all().order_by("numero")
-    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
+
+    # Query base
+    expedientes_qs = Expediente.objects.all().order_by("-fecha_asignacion")
+
+    # === FILTROS ===
+    if contrato_id:
+        expedientes_qs = expedientes_qs.filter(contrato_id=contrato_id)
 
     if siged:
-        expedientes = expedientes.filter(siged__icontains=siged)
+        expedientes_qs = expedientes_qs.filter(siged__icontains=siged)
+
+    if carta_linea:
+        expedientes_qs = expedientes_qs.filter(carta_linea__icontains=carta_linea)
+
+    # === PAGINACIÓN ===
+    paginator = Paginator(expedientes_qs, 15)  # 15 por página
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "siged": siged,
+        "carta_linea": carta_linea,
+        "contrato_id": contrato_id,
         "contratos": contratos,
-        "expedientes": expedientes,
+        "page_obj": page_obj,
     }
-    return render(request, "admin/admin_revisar.html", context)
 
+    # Detección AJAX para actualizar solo la tabla (y el contador)
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "admin/partials/admin_table.html", context)
+
+    return render(request, "admin/admin_revisar.html", context)
 
 @login_required
 @user_passes_test(es_admin)
 def admin_descargar(request):
     """
-    Permite descargar listados o reportes.
+    Vista del Administrador con filtros por contrato y rango de fechas,
+    paginación y opción para exportar a Excel con indicador de visita (Sí/No).
     """
     contratos = Contrato.objects.all().order_by("numero")
-    expedientes = Expediente.objects.all().order_by("-fecha_asignacion")
+    contrato_id = request.GET.get("contrato")
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+    exportar = request.GET.get("exportar")
+
+    # === QUERY BASE ===
+    expedientes = (
+        Expediente.objects.all()
+        .select_related("contrato", "oficina", "supervisor")
+        .order_by("-fecha_asignacion")
+    )
+
+    # === FILTROS ===
+    if contrato_id:
+        expedientes = expedientes.filter(contrato_id=contrato_id)
+
+    if fecha_inicio:
+        fecha_i = parse_date(fecha_inicio)
+        if fecha_i:
+            expedientes = expedientes.filter(fecha_asignacion__gte=fecha_i)
+
+    if fecha_fin:
+        fecha_f = parse_date(fecha_fin)
+        if fecha_f:
+            expedientes = expedientes.filter(fecha_asignacion__lte=fecha_f)
+
+    # === EXPORTAR A EXCEL SIMPLE ===
+    if exportar == "1":
+        data = [
+            {
+                "N° SIGED": e.siged,
+                "Carta Línea": e.carta_linea,
+                "Código OSINERGMIN": e.codigo,
+                "Código Actividad": e.codigo_actividad,
+                "Razón Social": e.razon_social,
+                "Tipo Supervisión": e.tipo_supervision,
+                "Tipo Documento": e.tipo_documento,
+                "Oficina Regional": e.oficina.nombre if e.oficina else "",
+                "Supervisor": e.supervisor.get_full_name() if e.supervisor else "",
+                "Fecha Asignación": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+                "Fecha Derivación": e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "",
+                "Visita": "Sí" if e.fecha_visita else "No",
+                "Fecha Visita": e.fecha_visita.strftime("%d/%m/%Y") if e.fecha_visita else "",
+                "Estado": e.estado,
+                "Observaciones": e.observaciones or "",
+            }
+            for e in expedientes
+        ]
+
+        df = pd.DataFrame(data)
+        response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response["Content-Disposition"] = 'attachment; filename="Expedientes_Admin.xlsx"'
+        df.to_excel(response, index=False)
+        return response
+
+    # === PAGINACIÓN ===
+    paginator = Paginator(expedientes, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "contratos": contratos,
-        "expedientes": expedientes,
+        "page_obj": page_obj,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "contrato_id": contrato_id,
     }
+
     return render(request, "admin/admin_descargar.html", context)
+
+@login_required
+@user_passes_test(es_admin)
+def admin_descargar_excel(request):
+    """
+    Exporta los expedientes filtrados a un archivo Excel con formato profesional.
+    """
+    contrato_id = request.GET.get("contrato")
+    fecha_inicio = request.GET.get("fecha_inicio")
+    fecha_fin = request.GET.get("fecha_fin")
+
+    expedientes = (
+        Expediente.objects.all()
+        .select_related("contrato", "oficina", "supervisor")
+        .order_by("-fecha_asignacion")
+    )
+
+    # === FILTROS ===
+    if contrato_id:
+        expedientes = expedientes.filter(contrato_id=contrato_id)
+
+    if fecha_inicio:
+        fecha_i = parse_date(fecha_inicio)
+        if fecha_i:
+            expedientes = expedientes.filter(fecha_asignacion__gte=fecha_i)
+
+    if fecha_fin:
+        fecha_f = parse_date(fecha_fin)
+        if fecha_f:
+            expedientes = expedientes.filter(fecha_asignacion__lte=fecha_f)
+
+    # === Crear workbook ===
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Expedientes"
+
+    # === Estilos ===
+    bold_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="2E4053", end_color="2E4053", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center")
+    thin_border = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+
+    # === Encabezado principal ===
+    ws.merge_cells("A1:O1")
+    ws["A1"] = "REPORTE DE EXPEDIENTES - SERMINCO"
+    ws["A1"].font = Font(bold=True, size=14, color="FFFFFF")
+    ws["A1"].fill = PatternFill(start_color="0A2647", end_color="0A2647", fill_type="solid")
+    ws["A1"].alignment = center_align
+
+    ws.merge_cells("A2:O2")
+    ws["A2"] = f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+    ws["A2"].alignment = center_align
+
+    # === Encabezado de tabla ===
+    headers = [
+        "N° SIGED", "Carta Línea", "Código OSINERGMIN", "Código Actividad",
+        "Razón Social", "Tipo Supervisión", "Tipo Documento", "Oficina Regional",
+        "Supervisor", "Fecha Asignación", "Fecha Derivación", "Visita", "Fecha Visita",
+        "Estado", "Observaciones"
+    ]
+
+    ws.append(headers)
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=3, column=col)
+        cell.value = header
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+
+    # === Cuerpo ===
+    for e in expedientes:
+        visita = "Sí" if e.fecha_visita else "No"
+        ws.append([
+            e.siged,
+            e.carta_linea,
+            e.codigo,
+            e.codigo_actividad,
+            e.razon_social,
+            e.tipo_supervision,
+            e.tipo_documento,
+            e.oficina.nombre if e.oficina else "",
+            e.supervisor.get_full_name() if e.supervisor else "",
+            e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+            e.fecha_derivacion.strftime("%d/%m/%Y") if e.fecha_derivacion else "",
+            visita,
+            e.fecha_visita.strftime("%d/%m/%Y") if e.fecha_visita else "",
+            e.estado,
+            e.observaciones or "",
+        ])
+
+    # === Borde y formato de cuerpo ===
+    for row in ws.iter_rows(min_row=4, max_row=ws.max_row, min_col=1, max_col=len(headers)):
+        for cell in row:
+            cell.border = thin_border
+
+    # === Ajuste automático de columnas ===
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        ws.column_dimensions[column].width = max_length + 3
+
+    # === Exportar archivo ===
+    filename = f"Reporte_Expedientes_Admin_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
+    wb.save(response)
+    return response
 
 
 # ============================================================

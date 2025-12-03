@@ -59,11 +59,16 @@ urlpatterns = [
     path("panel-admin/lider/", views.admin_lider_menu, name="admin_lider_menu"),
     path("panel-admin/lider/revisar/", views.admin_lider_revisar, name="admin_lider_revisar"),
     path("panel-admin/lider/descargar/", views.admin_lider_descargar, name="admin_lider_descargar"),
+    path("panel-admin/lider/descargar/excel/", views.admin_lider_descargar_excel, name="admin_lider_descargar_excel"),
+
 
     # 🔹 ADMINISTRADOR
     path("panel-admin/", views.admin_menu, name="admin_menu"),
     path("panel-admin/revisar/", views.admin_revisar, name="admin_revisar"),
     path("panel-admin/descargar/", views.admin_descargar, name="admin_descargar"),
+    path("panel-admin/lider/catalogos/", views.admin_lider_catalogos, name="admin_lider_catalogos"), 
+    path("panel-admin/descargar/excel/", views.admin_descargar_excel, name="admin_descargar_excel"),
+
 
     # ============================================================
     # GESTIÓN DE USUARIOS

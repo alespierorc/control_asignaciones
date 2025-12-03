@@ -19,145 +19,81 @@ def crear_y_migrar_roles_y_valores(sender, **kwargs):
     Crea los roles y valores iniciales del sistema SERMINCO
     después de ejecutar 'python manage.py migrate'.
     """
-
-    # Evitamos conflictos con apps no relacionadas
     if sender.name != "asignaciones":
         return
 
-    print("⚙️ Verificando configuración inicial de SERMINCO...")
+    print("⚙️ Configurando valores iniciales SERMINCO...")
 
-    # ============================================================
-    # 1️⃣ CREAR / MIGRAR ROLES (GRUPOS)
-    # ============================================================
+    # === 1️⃣ Roles ===
     roles = ["AdministradorLider", "Administrador", "Coordinador", "Supervisor"]
     for nombre in roles:
         Group.objects.get_or_create(name=nombre)
-    print("✅ Roles verificados o creados correctamente.")
+    print("✅ Roles verificados o creados.")
 
-    # ============================================================
-    # 2️⃣ CREAR OFICINAS REGIONALES
-    # ============================================================
-    oficinas = [
-        "Lima",
-        "Arequipa",
-        "Cusco",
-        "Trujillo",
-        "Chiclayo",
-        "Piura",
-        "Huancayo",
-        "Iquitos",
-        "Puno",
-    ]
-    for nombre in oficinas:
+    # === 2️⃣ Oficinas regionales ===
+    oficinas_validas = ["Piura", "Lima", "Arequipa", "Moquegua"]
+    OficinaRegional.objects.exclude(nombre__in=oficinas_validas).delete()
+    for nombre in oficinas_validas:
         OficinaRegional.objects.get_or_create(nombre=nombre)
-    print(f"🏢 Oficinas regionales creadas/verificadas. Oficina base: {oficinas[0]}")
+    print("🏢 Oficinas regionales ajustadas correctamente.")
 
-    # Obtenemos la oficina base "Lima" (necesaria para contratos)
+    # Oficina base para contratos
     oficina_base = OficinaRegional.objects.filter(nombre="Lima").first()
 
-    # ============================================================
-    # 3️⃣ CREAR CONTRATOS (ASOCIADOS A LA OFICINA BASE)
-    # ============================================================
-    contratos = [
-        "SUP2500192",
-        "SUP2500275",
-        "SUP2500300",
-        "SUP2500350",
-    ]
-
+    # === 3️⃣ Contratos ===
+    contratos_validos = ["SUP2500192", "SUP2500203", "SUP2500217", "SUP2500235"]
+    Contrato.objects.exclude(numero__in=contratos_validos).delete()
     if oficina_base:
-        for numero in contratos:
+        for numero in contratos_validos:
             Contrato.objects.get_or_create(numero=numero, oficina=oficina_base)
-        print("📑 Contratos creados/verificados correctamente.")
+        print("📑 Contratos ajustados correctamente.")
     else:
-        print("⚠️ No se encontró la oficina base 'Lima'. Contratos no creados.")
+        print("⚠️ No se encontró la oficina base 'Lima' para los contratos.")
 
-    # ============================================================
-    # 4️⃣ TIPOS DE SUPERVISIÓN
-    # ============================================================
-    tipos_supervision = [
-    "Actos Inseguros",
-    "Atención de Denuncias",
-    "Atención de Solicitud de ITF",
-    "Atención de Solicitudes de AVC-AVP",
-    "Comprobación de operaciones",
-    "Condiciones de seguridad",
-    "Condiciones de seguridad con observaciones",
-    "Control Metrológico CL especial",
-    "Control Volumétrico",
-    "Criticidad de Cilindros de GLP",
-    "Denuncia - Actos Inseguros",
-    "Denuncia - PRICE",
-    "Denuncias-Informal",
-    "Ejecución/Levantamiento de Med. Seg.",
-    "Envasado, Pintado y Canje de cilindros",
-    "Etiquetados de cilindros de GLP",
-    "Informalidad",
-    "PRICE",
-    "Por Operaciones",
-    "RHO - Inscripción, Modificación",
-    "RHO - Modificación de datos, suspensión, cancelación y habilitación",
-    "SPIC",
-    "Supervisión Operativa de Seguridad de CD y RD de GLP",
-    "Supervisión Operativa de Seguridad de LV GLP",
-    "Supervisión Operativa de Seguridad de LVGLP",
-    "Verificación Póliza",
-]
-
-    for nombre in tipos_supervision:
-        TipoSupervision.objects.get_or_create(nombre=nombre)
-    print("🧭 Tipos de supervisión creados/verificados correctamente.")
-
-    # ============================================================
-    # 5️⃣ TIPOS DE DOCUMENTO
-    # ============================================================
-    tipos_documento = [
-        "Oficio múltiple",
-        "Ficha de registro de hidrocarburos",
-        "Informe técnico",
-        "Resolución",
-        "Informe de resultados",
-        "Comunicación interna",
-        "Carta de observaciones",
-        "Informe de seguimiento",
-        "Informe de auditoría",
-        "Acta de verificación",
-        "Recomendación técnica",
-        "Acta de reunión",
-        "Documento de coordinación",
-        "Carta de respuesta",
-        "Memorando",
-        "Otro",
+    # === 4️⃣ Tipos de supervisión ===
+    tipos_supervision_validos = [
+        "Actos Inseguros",
+        "Atención de Denuncias",
+        "Atención de Solicitud de ITF",
+        "Atención de Solicitudes de AVC-AVP",
+        "Comprobación de operaciones",
+        "Condiciones de seguridad",
+        "Condiciones de seguridad con observaciones",
+        "Control Metrológico CL especial",
+        "Control Volumétrico",
+        "Criticidad de Cilindros de GLP",
+        "Denuncia - Actos Inseguros",
+        "Denuncia - PRICE",
+        "Denuncias-Informal",
+        "Ejecución/Levantamiento de Med. Seg.",
+        "Envasado, Pintado y Canje de cilindros",
+        "Etiquetados de cilindros de GLP",
+        "Informalidad",
+        "PRICE",
+        "Por Operaciones",
+        "RHO - Inscripción, Modificación",
+        "RHO - Modificación de datos, suspensión, cancelación y habilitación",
+        "SPIC",
+        "Supervisión Operativa de Seguridad de CD y RD de GLP",
+        "Supervisión Operativa de Seguridad de LV GLP",
+        "Supervisión Operativa de Seguridad de LVGLP",
+        "Verificación Póliza",
     ]
-    for nombre in tipos_documento:
+    TipoSupervision.objects.exclude(nombre__in=tipos_supervision_validos).delete()
+    for nombre in tipos_supervision_validos:
+        TipoSupervision.objects.get_or_create(nombre=nombre)
+    print("🧭 Tipos de supervisión ajustados correctamente.")
+
+    # === 5️⃣ Tipos de documento ===
+    tipos_documento_validos = [
+        "Informe de Supervisión",
+        "Informe Técnico",
+        "Ficha de Registro",
+        "Resolución",
+    ]
+    TipoDocumento.objects.exclude(nombre__in=tipos_documento_validos).delete()
+    for nombre in tipos_documento_validos:
         TipoDocumento.objects.get_or_create(nombre=nombre)
-    print("📄 Tipos de documento creados/verificados correctamente.")
+    print("📄 Tipos de documento ajustados correctamente.")
 
-    # ============================================================
-    # 6️⃣ MIGRAR USUARIOS EXISTENTES A NUEVOS ROLES (si aplica)
-    # ============================================================
-    try:
-        admin_general = Group.objects.get(name="AdministradorLider")
-        admin_simple = Group.objects.get(name="Administrador")
-
-        # Usuarios antiguos con roles antiguos
-        users_general = User.objects.filter(groups__name="AdminGeneral")
-        users_simple = User.objects.filter(groups__name="AdminSimple")
-
-        with transaction.atomic():
-            for user in users_general:
-                user.groups.clear()
-                user.groups.add(admin_general)
-
-            for user in users_simple:
-                user.groups.clear()
-                user.groups.add(admin_simple)
-
-        if users_general.exists() or users_simple.exists():
-            print("🔁 Migración de roles antiguos completada.")
-        else:
-            print("✅ Roles actualizados, sin migraciones pendientes.")
-    except Exception as e:
-        print(f"⚠️ Error al migrar usuarios antiguos: {e}")
-
-    print("✅ Configuración inicial completada con éxito.")
+    print("✅ Configuración inicial SERMINCO completada.")

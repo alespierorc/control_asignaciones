@@ -1,0 +1,68 @@
+<table>
+  <thead>
+    <tr>
+      <th>N° SIGED</th>
+      <th>Carta Línea</th>
+      <th>Código OSINERGMIN</th>
+      <th>Código Actividad</th>
+      <th>Razón Social</th>
+      <th>Tipo Supervisión</th>
+      <th>Tipo Documento</th>
+      <th>Oficina Regional</th>
+      <th>Supervisor</th>
+      <th>Fecha Asignación</th>
+      <th>Fecha Derivación</th>
+      <th>Fecha Visita</th>
+      <th>Estado</th>
+      <th>Observaciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if page_obj.object_list %}
+      {% for e in page_obj.object_list %}
+        <tr>
+          <td>{{ e.siged }}</td>
+          <td>{{ e.carta_linea }}</td>
+          <td>{{ e.codigo }}</td>
+          <td>{{ e.codigo_actividad }}</td>
+          <td>{{ e.razon_social }}</td>
+          <td>{{ e.tipo_supervision }}</td>
+          <td>{{ e.tipo_documento }}</td>
+          <td>{{ e.oficina.nombre }}</td>
+          <td>{{ e.supervisor.get_full_name }}</td>
+          <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+          <td>{{ e.fecha_derivacion|default:"—" }}</td>
+          <td>{{ e.fecha_visita|default:"—" }}</td>
+          <td>
+            <span class="estado-badge {% if e.estado == 'Pendiente' %}pendiente{% elif e.estado == 'En proceso' %}proceso{% elif e.estado == 'Concluido' %}concluido{% endif %}">
+              {{ e.estado }}
+            </span>
+          </td>
+          <td>{{ e.observaciones|default:"Sin observaciones" }}</td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="14" class="no-results">No se encontraron expedientes registrados.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+  <div class="pagination-wrapper">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-double-left"></i></a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <span class="active">{{ num }}</span>
+      {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+        <a href="?page={{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-double-right"></i></a>
+    {% endif %}
+  </div>
+{% endif %}
