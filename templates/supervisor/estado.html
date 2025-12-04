@@ -461,11 +461,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   actualizarResumen();
 
+  const sigedInput = document.getElementById("sigedInput");
+  const cartaInput = document.getElementById("cartaInput");
+  const btnBuscar = document.getElementById("btnBuscar");
+  const tablaBusqueda = document.querySelector("#tablaBusqueda tbody");
+  const expedienteSeleccionado = document.getElementById("expedienteSeleccionado");
   const fechaDeriv = document.getElementById("fechaDerivacion");
   const toggle = document.getElementById("estadoToggle");
   const observaciones = document.getElementById("observaciones");
   const btnGuardar = document.getElementById("btnGuardar");
-  const expedienteSeleccionado = document.getElementById("expedienteSeleccionado");
   const tablaFinal = document.querySelector("#tablaExpedientes tbody");
   const toastSuccess = document.getElementById("toastSuccess");
   const toastError = document.getElementById("toastError");
@@ -475,13 +479,65 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => el.classList.remove("show"), 3000);
   };
 
+  btnBuscar.addEventListener("click", async () => {
+    const siged = sigedInput.value.trim();
+    const carta = cartaInput.value.trim();
+
+    if (!siged && !carta) {
+      tablaBusqueda.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Ingrese N.º SIGED o Carta de línea.</td></tr>";
+      return;
+    }
+
+    const url = `{% url 'asignaciones:supervisor_estado' %}?siged=${encodeURIComponent(siged)}&carta_linea=${encodeURIComponent(carta)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {"X-Requested-With": "XMLHttpRequest"}
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success" && data.results.length > 0) {
+      tablaBusqueda.innerHTML = "";
+      data.results.forEach(exp => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><button type="button" class="btn-select" data-id="${exp.id}"><i class="bi bi-check2-circle"></i></button></td>
+          <td>${exp.siged}</td>
+          <td>${exp.carta_linea}</td>
+          <td>${exp.codigo_actividad}</td>
+          <td>${exp.tipo_supervision}</td>
+          <td>${exp.fecha_asignacion}</td>
+        `;
+        tablaBusqueda.appendChild(tr);
+      });
+
+      document.querySelectorAll(".btn-select").forEach(btn => {
+        btn.addEventListener("click", () => {
+          expedienteSeleccionado.value = btn.dataset.id;
+          document.querySelectorAll(".btn-select").forEach(b => b.classList.remove("activo"));
+          btn.classList.add("activo");
+          showToast(toastSuccess);
+          toastSuccess.textContent = "Expediente seleccionado correctamente.";
+        });
+      });
+    } else {
+      tablaBusqueda.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Sin resultados.</td></tr>";
+    }
+  });
+
+ 
   btnGuardar.addEventListener("click", async e => {
     e.preventDefault();
     const id = expedienteSeleccionado.value;
     const fecha = fechaDeriv.value;
     const obs = observaciones.value.trim();
     const estado = toggle.checked ? "CONCLUIDO" : "";
-    if (!id || !fecha) return showToast(toastError);
+
+    if (!id || !fecha) {
+      showToast(toastError);
+      toastError.textContent = "Debes seleccionar un expediente y una fecha.";
+      return;
+    }
 
     const fd = new FormData();
     fd.append("expediente", id);
@@ -497,8 +553,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const data = await res.json();
+
     if (data.status === "success") {
       showToast(toastSuccess);
+      toastSuccess.textContent = "Cambios guardados correctamente.";
+
       const fila = tablaFinal.querySelector(`tr[data-id='${id}']`);
       if (fila) {
         fila.children[9].textContent = data.expediente.fecha_derivacion;
@@ -509,12 +568,14 @@ document.addEventListener("DOMContentLoaded", () => {
         fila.classList.add("highlight");
         setTimeout(() => fila.classList.remove("highlight"), 2000);
       }
+
       actualizarResumen();
       document.getElementById("formEstado").reset();
       expedienteSeleccionado.value = "";
       toggle.checked = false;
     } else {
       showToast(toastError);
+      toastError.textContent = data.message || "Error al guardar cambios.";
     }
   });
 });
