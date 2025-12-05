@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Reportes - SERMINCO{% endblock %}
+{% block content %}
+
+<h1><i class="bi bi-bar-chart"></i> Reportes Generales</h1>
+<p>Visualiza las estadísticas generales del sistema.</p>
+
+<div style="margin-top:30px;">
+    <h3>📘 Expedientes por Contrato</h3>
+    {{ grafico_bar|safe }}
+</div>
+
+<div style="margin-top:50px;">
+    <h3>🏢 Expedientes por Oficina Regional</h3>
+    {{ grafico_pie|safe }}
+</div>
+
+<div style="margin-top:50px;">
+    <h3>🧑‍💼 Expedientes por Supervisor</h3>
+    {{ grafico_line|safe }}
+</div>
+
+{% endblock %}

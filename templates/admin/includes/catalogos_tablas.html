@@ -1,3 +1,9 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+{% csrf_token %}
+
 <style>
   /* ======== NAVIGATION TABS ======== */
   .tabs {
@@ -22,11 +28,6 @@
     gap: 8px;
   }
 
-  .tab-btn i {
-    font-size: 1.1rem;
-    color: #d1d5db;
-  }
-
   .tab-btn:hover {
     background-color: #374151;
     transform: translateY(-2px);
@@ -36,24 +37,6 @@
     background-color: #0ea5e9;
     color: #f9fafb;
     border-color: #0ea5e9;
-  }
-
-  .tab-btn.active i {
-    color: #f9fafb;
-  }
-
-  /* ======== TAB CONTENTS ======== */
-  .tab-content {
-    display: none;
-    opacity: 0;
-    transform: scale(0.98);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
-
-  .tab-content.active {
-    display: block;
-    opacity: 1;
-    transform: scale(1);
   }
 
   /* ======== TABLE STYLING ======== */
@@ -99,36 +82,21 @@
     padding: 6px 10px;
     cursor: pointer;
     transition: all 0.25s ease;
-  }
-
-  .guardar {
-    background: #16a34a;
     color: white;
   }
 
-  .guardar:hover {
-    background: #15803d;
-  }
+  .editar { background: #3b82f6; }
+  .editar:hover { background: #2563eb; }
 
-  .eliminar {
-    background: #dc2626;
-    color: white;
-  }
+  .guardar { background: #16a34a; }
+  .guardar:hover { background: #15803d; }
 
-  .eliminar:hover {
-    background: #b91c1c;
-  }
+  .eliminar { background: #dc2626; }
+  .eliminar:hover { background: #b91c1c; }
 
-  .agregar {
-    background: #0284c7;
-    color: white;
-  }
+  .agregar { background: #0284c7; }
+  .agregar:hover { background: #0369a1; }
 
-  .agregar:hover {
-    background: #0369a1;
-  }
-
-  /* ======== INPUTS & SELECTS ======== */
   input, select {
     background: #1f2937;
     color: #f9fafb;
@@ -142,25 +110,31 @@
     outline: none;
     border-color: #0ea5e9;
   }
+
+  .tab-content {
+    display: none;
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .tab-content.active {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+  }
+
 </style>
 
-<!-- ======== NAV TABS ======== -->
+<!-- ======== NAVIGATION ======== -->
 <div class="tabs">
-  <button class="tab-btn active" data-tab="contratos">
-    <i class="bi bi-file-earmark-text"></i> Contratos
-  </button>
-  <button class="tab-btn" data-tab="supervision">
-    <i class="bi bi-diagram-3"></i> Supervisión
-  </button>
-  <button class="tab-btn" data-tab="documentos">
-    <i class="bi bi-folder2"></i> Documentos
-  </button>
-  <button class="tab-btn" data-tab="oficinas">
-    <i class="bi bi-building"></i> Oficinas
-  </button>
+  <button class="tab-btn active" data-tab="contratos">Contratos</button>
+  <button class="tab-btn" data-tab="supervision">Supervisión</button>
+  <button class="tab-btn" data-tab="documentos">Documentos</button>
+  <button class="tab-btn" data-tab="oficinas">Oficinas</button>
 </div>
 
-<!-- ======== TAB: CONTRATOS ======== -->
+<!-- ======== CONTRATOS ======== -->
 <div id="tab-contratos" class="tab-content active">
   <table>
     <thead>
@@ -170,7 +144,7 @@
       {% for c in contratos %}
       <tr data-id="{{ c.id }}" data-tipo="contratos">
         <td>{{ c.id }}</td>
-        <td contenteditable="true" class="editable" data-campo="numero">{{ c.numero }}</td>
+        <td data-campo="numero" class="editable">{{ c.numero }}</td>
         <td>
           <select class="oficina-select">
             {% for o in oficinas %}
@@ -179,6 +153,7 @@
           </select>
         </td>
         <td>
+          <button class="editar"><i class="bi bi-pencil-square"></i></button>
           <button class="guardar"><i class="bi bi-save"></i></button>
           <button class="eliminar"><i class="bi bi-trash"></i></button>
         </td>
@@ -188,7 +163,6 @@
       {% endfor %}
     </tbody>
   </table>
-
   <div style="margin-top:15px; text-align:right;">
     <input type="text" id="nuevo-contratos" placeholder="Nuevo contrato">
     <select id="oficina-contratos">
@@ -200,7 +174,7 @@
   </div>
 </div>
 
-<!-- ======== TAB: SUPERVISIÓN ======== -->
+<!-- ======== SUPERVISIÓN ======== -->
 <div id="tab-supervision" class="tab-content">
   <table>
     <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -208,8 +182,9 @@
       {% for s in tipos_supervision %}
       <tr data-id="{{ s.id }}" data-tipo="supervision">
         <td>{{ s.id }}</td>
-        <td contenteditable="true" class="editable">{{ s.nombre }}</td>
+        <td data-campo="nombre" class="editable">{{ s.nombre }}</td>
         <td>
+          <button class="editar"><i class="bi bi-pencil-square"></i></button>
           <button class="guardar"><i class="bi bi-save"></i></button>
           <button class="eliminar"><i class="bi bi-trash"></i></button>
         </td>
@@ -219,14 +194,13 @@
       {% endfor %}
     </tbody>
   </table>
-
   <div style="margin-top:15px; text-align:right;">
     <input type="text" id="nuevo-supervision" placeholder="Nuevo tipo de supervisión">
     <button class="agregar" data-tipo="supervision"><i class="bi bi-plus-lg"></i> Agregar</button>
   </div>
 </div>
 
-<!-- ======== TAB: DOCUMENTOS ======== -->
+<!-- ======== DOCUMENTOS ======== -->
 <div id="tab-documentos" class="tab-content">
   <table>
     <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -234,8 +208,9 @@
       {% for d in tipos_documento %}
       <tr data-id="{{ d.id }}" data-tipo="documentos">
         <td>{{ d.id }}</td>
-        <td contenteditable="true" class="editable">{{ d.nombre }}</td>
+        <td data-campo="nombre" class="editable">{{ d.nombre }}</td>
         <td>
+          <button class="editar"><i class="bi bi-pencil-square"></i></button>
           <button class="guardar"><i class="bi bi-save"></i></button>
           <button class="eliminar"><i class="bi bi-trash"></i></button>
         </td>
@@ -245,14 +220,13 @@
       {% endfor %}
     </tbody>
   </table>
-
   <div style="margin-top:15px; text-align:right;">
     <input type="text" id="nuevo-documentos" placeholder="Nuevo tipo de documento">
     <button class="agregar" data-tipo="documentos"><i class="bi bi-plus-lg"></i> Agregar</button>
   </div>
 </div>
 
-<!-- ======== TAB: OFICINAS ======== -->
+<!-- ======== OFICINAS ======== -->
 <div id="tab-oficinas" class="tab-content">
   <table>
     <thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -260,8 +234,9 @@
       {% for o in oficinas %}
       <tr data-id="{{ o.id }}" data-tipo="oficinas">
         <td>{{ o.id }}</td>
-        <td contenteditable="true" class="editable">{{ o.nombre }}</td>
+        <td data-campo="nombre" class="editable">{{ o.nombre }}</td>
         <td>
+          <button class="editar"><i class="bi bi-pencil-square"></i></button>
           <button class="guardar"><i class="bi bi-save"></i></button>
           <button class="eliminar"><i class="bi bi-trash"></i></button>
         </td>
@@ -271,15 +246,33 @@
       {% endfor %}
     </tbody>
   </table>
-
   <div style="margin-top:15px; text-align:right;">
     <input type="text" id="nuevo-oficinas" placeholder="Nueva oficina regional">
     <button class="agregar" data-tipo="oficinas"><i class="bi bi-plus-lg"></i> Agregar</button>
   </div>
 </div>
 
-<!-- ======== SCRIPT TABS ======== -->
+<!-- ======== SWEETALERT LIBRARY ======== -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ======== MAIN SCRIPT ======== -->
 <script>
+  function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  const successAlert = msg => Swal.fire({ icon: 'success', title: 'Éxito', text: msg, showConfirmButton: false, timer: 1800 });
+  const errorAlert = msg => Swal.fire({ icon: 'error', title: 'Error', text: msg });
+  const confirmAction = async (title, text, icon = 'question') => {
+    return await Swal.fire({
+      title, text, icon,
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar'
+    });
+  };
+
+  // TAB switching
   document.querySelectorAll(".tab-btn").forEach(button => {
     button.addEventListener("click", () => {
       const tabId = button.dataset.tab;
@@ -290,4 +283,89 @@
       });
     });
   });
+
+  // Edit
+  document.querySelectorAll(".editar").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest("tr");
+      const campo = row.querySelector(".editable");
+      campo.setAttribute("contenteditable", "true");
+      campo.focus();
+    });
+  });
+
+  // Save
+  document.querySelectorAll(".guardar").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const tipo = row.dataset.tipo;
+      const id = row.dataset.id;
+      const campoEditable = row.querySelector(".editable");
+      const nuevo_nombre = campoEditable.textContent.trim();
+      if (!nuevo_nombre) return errorAlert("El campo no puede estar vacío.");
+
+      const confirm = await confirmAction("¿Guardar cambios?", "Se actualizará el registro seleccionado.");
+      if (!confirm.isConfirmed) return;
+
+      const formData = new FormData();
+      formData.append("accion", "editar");
+      formData.append("tipo", tipo.slice(0, -1));
+      formData.append("id", id);
+      formData.append("nombre", nuevo_nombre);
+
+      const res = await fetch("", { method: "POST", headers: { "X-CSRFToken": getCSRFToken() }, body: formData });
+      const data = await res.json();
+      if (data.status === "success") successAlert(data.message);
+      else errorAlert(data.message);
+      campoEditable.removeAttribute("contenteditable");
+    });
+  });
+
+  // Delete
+  document.querySelectorAll(".eliminar").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const tipo = row.dataset.tipo;
+      const id = row.dataset.id;
+
+      const confirm = await confirmAction("¿Eliminar este elemento?", "Esta acción no se puede deshacer.", "warning");
+      if (!confirm.isConfirmed) return;
+
+      const formData = new FormData();
+      formData.append("accion", "eliminar");
+      formData.append("tipo", tipo.slice(0, -1));
+      formData.append("id", id);
+
+      const res = await fetch("", { method: "POST", headers: { "X-CSRFToken": getCSRFToken() }, body: formData });
+      const data = await res.json();
+      if (data.status === "success") { successAlert(data.message); setTimeout(() => location.reload(), 1000); }
+      else errorAlert(data.message);
+    });
+  });
+
+  // Add
+  document.querySelectorAll(".agregar").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const tipo = btn.dataset.tipo;
+      const nombreInput = document.getElementById(`nuevo-${tipo}`);
+      const nombre = nombreInput?.value.trim();
+      const oficinaSelect = document.getElementById(`oficina-${tipo}`);
+      const oficina_id = oficinaSelect ? oficinaSelect.value : "";
+
+      if (!nombre) return errorAlert("Debes ingresar un nombre o número válido.");
+
+      const formData = new FormData();
+      formData.append("accion", "agregar");
+      formData.append("tipo", tipo.slice(0, -1));
+      formData.append("nombre", nombre);
+      if (oficina_id) formData.append("oficina_id", oficina_id);
+
+      const res = await fetch("", { method: "POST", headers: { "X-CSRFToken": getCSRFToken() }, body: formData });
+      const data = await res.json();
+      if (data.status === "success") { successAlert(data.message); setTimeout(() => location.reload(), 1000); }
+      else errorAlert(data.message);
+    });
+  });
 </script>
+
+{% endblock %}

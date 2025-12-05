@@ -28,6 +28,14 @@ from django.http import HttpResponse
 from datetime import datetime
 from django.utils.dateparse import parse_date
 import pandas as pd
+import pandas as pd
+import plotly.express as px
+from datetime import date
+from django.http import HttpResponse
+from django.db.models import Count
+from django.shortcuts import render
+from .models import Expediente
+
 
 
 
@@ -791,14 +799,14 @@ def admin_lider_descargar_excel(request):
 @transaction.atomic
 def admin_lider_catalogos(request):
     """
-    Panel para que el Administrador Líder gestione los catálogos base:
-    - Contratos
-    - Tipos de Supervisión
-    - Tipos de Documento
-    - Oficinas Regionales
+    Panel de administración de catálogos para el Administrador Líder.
+    Permite CRUD de:
+      - Contratos
+      - Tipos de Supervisión
+      - Tipos de Documento
+      - Oficinas Regionales
     """
 
-    # --- Acciones POST (AJAX) ---
     if request.method == "POST":
         accion = request.POST.get("accion")
         tipo = request.POST.get("tipo")
@@ -844,7 +852,7 @@ def admin_lider_catalogos(request):
                     OficinaRegional.objects.filter(id=item_id).delete()
                     return JsonResponse({"status": "success", "message": "Oficina eliminada correctamente."})
 
-            # === EDITAR (opcional, si luego agregamos edición en línea) ===
+            # === EDITAR ===
             elif accion == "editar":
                 item_id = request.POST.get("id")
                 nuevo_nombre = request.POST.get("nombre", "").strip()
@@ -864,10 +872,13 @@ def admin_lider_catalogos(request):
                     OficinaRegional.objects.filter(id=item_id).update(nombre=nuevo_nombre)
                     return JsonResponse({"status": "success", "message": "Oficina actualizada correctamente."})
 
+            # Acción desconocida
+            return JsonResponse({"status": "error", "message": "Acción no reconocida."})
+
         except Exception as e:
             return JsonResponse({"status": "error", "message": f"Ocurrió un error: {str(e)}"})
 
-    # --- GET: Render de la página ---
+    # --- GET (renderiza la plantilla principal) ---
     context = {
         "contratos": Contrato.objects.select_related("oficina").all().order_by("numero"),
         "tipos_supervision": TipoSupervision.objects.all().order_by("nombre"),
@@ -1320,10 +1331,111 @@ def crear_anuncio(request):
 #                       REPORTES
 # ============================================================
 
-@login_required
 def reportes(request):
-    role = user_role(request.user)
-    return render(request, "misc/reportes.html", {"role": role})
+    # === Reporte 1: Expedientes por Contrato ===
+    data_contratos = (
+        Expediente.objects
+        .values('contrato__numero')
+        .annotate(total=models.Count('id'))
+        .order_by('contrato__numero')
+    )
+
+    df_contratos = pd.DataFrame(list(data_contratos))
+    if not df_contratos.empty:
+        df_contratos.rename(columns={'contrato__numero': 'Contrato', 'total': 'Total'}, inplace=True)
+        fig_bar = px.bar(
+            df_contratos,
+            x='Contrato',
+            y='Total',
+            title='Expedientes por Contrato',
+            color='Total',
+            color_continuous_scale='Blues',
+            text='Total'
+        )
+        fig_bar.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        grafico_bar = fig_bar.to_html(full_html=False)
+    else:
+        grafico_bar = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Reporte 2: Expedientes por Oficina ===
+    data_oficinas = (
+        Expediente.objects
+        .values('oficina__nombre')
+        .annotate(total=models.Count('id'))
+        .order_by('oficina__nombre')
+    )
+
+    df_oficinas = pd.DataFrame(list(data_oficinas))
+    if not df_oficinas.empty:
+        df_oficinas.rename(columns={'oficina__nombre': 'Oficina', 'total': 'Total'}, inplace=True)
+        fig_pie = px.pie(
+            df_oficinas,
+            names='Oficina',
+            values='Total',
+            title='Distribución de Expedientes por Oficina'
+        )
+        fig_pie.update_traces(textinfo='percent+label')
+        grafico_pie = fig_pie.to_html(full_html=False)
+    else:
+        grafico_pie = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Reporte 3: Expedientes por Supervisor ===
+    data_supervisores = (
+        Expediente.objects
+        .values('supervisor__username')
+        .annotate(total=models.Count('id'))
+        .order_by('supervisor__username')
+    )
+
+    df_supervisores = pd.DataFrame(list(data_supervisores))
+    if not df_supervisores.empty:
+        df_supervisores.rename(columns={'supervisor__username': 'Supervisor', 'total': 'Total'}, inplace=True)
+        fig_line = px.line(
+            df_supervisores,
+            x='Supervisor',
+            y='Total',
+            title='Expedientes por Supervisor',
+            markers=True
+        )
+        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        grafico_line = fig_line.to_html(full_html=False)
+    else:
+        grafico_line = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Render final ===
+    return render(request, "admin/reportes_dashboard.html", {
+        "grafico_bar": grafico_bar,
+        "grafico_pie": grafico_pie,
+        "grafico_line": grafico_line,
+    })
+
+# ============================================================
+#                 EXPORTAR REPORTE A EXCEL
+# ============================================================
+def exportar_excel(request):
+    fecha_inicio = request.GET.get("fecha_inicio", "2025-01-01")
+    fecha_fin = request.GET.get("fecha_fin", str(date.today()))
+
+    queryset = Expediente.objects.filter(fecha_asignacion__range=[fecha_inicio, fecha_fin]).values(
+        "siged", "contrato__numero", "oficina__nombre", "supervisor__username",
+        "fecha_asignacion", "estado"
+    )
+    df = pd.DataFrame(list(queryset))
+    df.rename(columns={
+        "siged": "N° SIGED",
+        "contrato__numero": "Contrato",
+        "oficina__nombre": "Oficina",
+        "supervisor__username": "Supervisor",
+        "fecha_asignacion": "Fecha de Asignación",
+        "estado": "Estado"
+    }, inplace=True)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="reporte_expedientes_{fecha_inicio}_a_{fecha_fin}.xlsx"'
+    df.to_excel(response, index=False)
+    return response
 
 # ============================================================
 #                ENDPOINT AJAX - AUTOCOMPLETADO (MEJORADO)
