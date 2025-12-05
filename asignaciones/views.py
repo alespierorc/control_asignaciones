@@ -28,6 +28,14 @@ from django.http import HttpResponse
 from datetime import datetime
 from django.utils.dateparse import parse_date
 import pandas as pd
+import pandas as pd
+import plotly.express as px
+from datetime import date
+from django.http import HttpResponse
+from django.db.models import Count
+from django.shortcuts import render
+from .models import Expediente
+
 
 
 
@@ -166,46 +174,43 @@ from .models import Expediente, Anuncio
 from .decorators import role_required
 from django.contrib.auth.models import User
 
-
 @role_required(["Supervisor"])
 def supervisor_registrar(request):
     """
     Permite al supervisor registrar la fecha de visita de un expediente.
-    Retorna JSON si la solicitud es AJAX, o renderiza la vista normal.
+    No cambia el estado automáticamente a CONCLUIDO — 
+    eso solo ocurre en la vista de 'estado_expediente'.
     """
     supervisor = request.user
     expedientes = Expediente.objects.filter(supervisor=supervisor).select_related("contrato", "oficina")
 
-    # === Si el usuario envía el formulario vía AJAX ===
-    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+    # === AJAX: Registro de visita ===
+    if request.method == "POST" and request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest":
         try:
             expediente_id = request.POST.get("expediente_id")
             fecha_visita_str = request.POST.get("fecha_visita")
 
             if not expediente_id or not fecha_visita_str:
-                return JsonResponse({"status": "error", "message": "Datos incompletos"})
+                return JsonResponse({"status": "error", "message": "Datos incompletos."})
 
-            # ✅ Convertir la fecha desde string a objeto date
+            # Convertir la fecha de string a objeto date
             try:
                 fecha_visita = datetime.strptime(fecha_visita_str, "%Y-%m-%d").date()
             except ValueError:
-                return JsonResponse({"status": "error", "message": "Formato de fecha inválido"})
+                return JsonResponse({"status": "error", "message": "Formato de fecha inválido."})
 
             expediente = Expediente.objects.filter(id=expediente_id, supervisor=supervisor).first()
             if not expediente:
-                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado"})
+                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado."})
 
-            # ✅ Guardar la fecha de visita y actualizar estado
             expediente.fecha_visita = fecha_visita
-            expediente.estado = "CONCLUIDO"
-            expediente.save()
+            expediente.save(update_fields=["fecha_visita"])
 
-            # ✅ Crear anuncio para el Coordinador
             coordinadores = User.objects.filter(groups__name="Coordinador")
             for coord in coordinadores:
                 Anuncio.objects.create(
                     titulo=f"Visita registrada - {expediente.siged}",
-                    contenido=f"El supervisor {supervisor.get_full_name()} registró la visita el {fecha_visita.strftime('%d/%m/%Y')}",
+                    contenido=f"El supervisor {supervisor.get_full_name()} registró la visita el {fecha_visita.strftime('%d/%m/%Y')}.",
                     tipo="INFO",
                     remitente=supervisor,
                     destinatario=coord,
@@ -213,40 +218,39 @@ def supervisor_registrar(request):
 
             return JsonResponse({
                 "status": "success",
-                "message": "Visita registrada correctamente",
+                "message": "Visita registrada correctamente.",
                 "fecha_visita": fecha_visita.strftime("%d/%m/%Y"),
             })
 
         except Exception as e:
             print(f"❌ Error al guardar visita: {e}")
-            return JsonResponse({"status": "error", "message": str(e)})
+            return JsonResponse({"status": "error", "message": f"Error interno: {str(e)}"})
 
-    # === Renderizado normal (GET) ===
+    # === Render normal ===
     return render(request, "supervisor/registrar.html", {"expedientes": expedientes})
 
 @role_required(["Supervisor", "AdministradorLider"])
 def estado_expediente(request):
     """
     Vista unificada para:
-    - Buscar expedientes (GET con AJAX)
-    - Actualizar estado y fecha de derivación (POST con AJAX)
+    - Buscar expedientes (GET AJAX)
+    - Actualizar estado (POST AJAX)
     """
 
-    # === MODO BÚSQUEDA (AJAX GET) ===
-    if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "GET":
+    if request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest" and request.method == "GET":
         siged = request.GET.get("siged", "").strip()
         carta = request.GET.get("carta_linea", "").strip()
 
         if not siged and not carta:
-            return JsonResponse({"status": "error", "message": "Sin parámetros de búsqueda.", "results": []})
+            return JsonResponse({"status": "error", "message": "Debe ingresar N° SIGED o Carta de línea.", "results": []})
 
         expedientes = Expediente.objects.all()
 
-        # Supervisores solo ven sus expedientes
+        # Supervisores solo ven sus propios expedientes
         if request.user.groups.filter(name="Supervisor").exists():
             expedientes = expedientes.filter(supervisor=request.user)
 
-        # Filtro dinámico
+        # Filtros dinámicos
         filtro = Q()
         if siged:
             filtro |= Q(siged__icontains=siged)
@@ -270,43 +274,44 @@ def estado_expediente(request):
             }
             for e in expedientes
         ]
+
         return JsonResponse({"status": "success", "results": resultados})
 
-    # === MODO ACTUALIZACIÓN (AJAX POST) ===
-    if request.headers.get("x-requested-with") == "XMLHttpRequest" and request.method == "POST":
+    # === MODO ACTUALIZACIÓN (POST) ===
+    if request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest" and request.method == "POST":
         try:
             exp_id = request.POST.get("expediente")
             fecha_deriv = request.POST.get("fecha_derivacion", "").strip()
             observaciones = request.POST.get("observaciones", "").strip()
-            estado = request.POST.get("estado", "").strip() or "EN PROCESO"
+            marcado_concluido = request.POST.get("estado", "").upper() == "CONCLUIDO"
 
             if not exp_id or not fecha_deriv:
                 return JsonResponse({"status": "error", "message": "Datos incompletos."})
 
-            exp = Expediente.objects.filter(id=exp_id).first()
-            if not exp:
+            expediente = Expediente.objects.filter(id=exp_id).first()
+            if not expediente:
                 return JsonResponse({"status": "error", "message": "Expediente no encontrado."})
 
-            # Supervisores solo actualizan sus propios expedientes
+            # Supervisores solo pueden editar los suyos
             if request.user.groups.filter(name="Supervisor").exists():
-                if exp.supervisor != request.user:
+                if expediente.supervisor != request.user:
                     return JsonResponse({"status": "error", "message": "No autorizado para este expediente."})
 
             # Guardar cambios
-            exp.fecha_derivacion = fecha_deriv
-            exp.observaciones = observaciones or "-"
-            exp.estado = estado
-            exp.save()
+            expediente.fecha_derivacion = fecha_deriv
+            expediente.observaciones = observaciones or "-"
+            expediente.estado = "CONCLUIDO" if marcado_concluido else "EN PROCESO"
+            expediente.save(update_fields=["fecha_derivacion", "observaciones", "estado"])
 
             return JsonResponse({
                 "status": "success",
-                "message": f"Expediente {exp.siged} actualizado correctamente.",
+                "message": f"Expediente {expediente.siged} actualizado correctamente.",
                 "expediente": {
-                    "id": exp.id,
-                    "siged": exp.siged,
-                    "fecha_derivacion": exp.fecha_derivacion.strftime("%d/%m/%Y") if hasattr(exp.fecha_derivacion, "strftime") else exp.fecha_derivacion,
-                    "estado": exp.estado,
-                    "observaciones": exp.observaciones,
+                    "id": expediente.id,
+                    "siged": expediente.siged,
+                    "fecha_derivacion": expediente.fecha_derivacion.strftime("%d/%m/%Y") if hasattr(expediente.fecha_derivacion, "strftime") else expediente.fecha_derivacion,
+                    "estado": expediente.estado,
+                    "observaciones": expediente.observaciones,
                 }
             })
 
@@ -314,7 +319,7 @@ def estado_expediente(request):
             print("❌ Error en estado_expediente:", e)
             return JsonResponse({"status": "error", "message": f"Error interno: {e}"})
 
-    # === RENDER NORMAL (no AJAX) ===
+    # === RENDER NORMAL ===
     expedientes = (
         Expediente.objects.filter(supervisor=request.user)
         .select_related("tipo_supervision", "tipo_documento", "oficina")
@@ -322,6 +327,7 @@ def estado_expediente(request):
     )
 
     return render(request, "supervisor/estado.html", {"expedientes": expedientes})
+
 
 # ============================================================
 #                         COORDINADOR
@@ -793,14 +799,14 @@ def admin_lider_descargar_excel(request):
 @transaction.atomic
 def admin_lider_catalogos(request):
     """
-    Panel para que el Administrador Líder gestione los catálogos base:
-    - Contratos
-    - Tipos de Supervisión
-    - Tipos de Documento
-    - Oficinas Regionales
+    Panel de administración de catálogos para el Administrador Líder.
+    Permite CRUD de:
+      - Contratos
+      - Tipos de Supervisión
+      - Tipos de Documento
+      - Oficinas Regionales
     """
 
-    # --- Acciones POST (AJAX) ---
     if request.method == "POST":
         accion = request.POST.get("accion")
         tipo = request.POST.get("tipo")
@@ -846,7 +852,7 @@ def admin_lider_catalogos(request):
                     OficinaRegional.objects.filter(id=item_id).delete()
                     return JsonResponse({"status": "success", "message": "Oficina eliminada correctamente."})
 
-            # === EDITAR (opcional, si luego agregamos edición en línea) ===
+            # === EDITAR ===
             elif accion == "editar":
                 item_id = request.POST.get("id")
                 nuevo_nombre = request.POST.get("nombre", "").strip()
@@ -866,10 +872,13 @@ def admin_lider_catalogos(request):
                     OficinaRegional.objects.filter(id=item_id).update(nombre=nuevo_nombre)
                     return JsonResponse({"status": "success", "message": "Oficina actualizada correctamente."})
 
+            # Acción desconocida
+            return JsonResponse({"status": "error", "message": "Acción no reconocida."})
+
         except Exception as e:
             return JsonResponse({"status": "error", "message": f"Ocurrió un error: {str(e)}"})
 
-    # --- GET: Render de la página ---
+    # --- GET (renderiza la plantilla principal) ---
     context = {
         "contratos": Contrato.objects.select_related("oficina").all().order_by("numero"),
         "tipos_supervision": TipoSupervision.objects.all().order_by("nombre"),
@@ -1322,10 +1331,111 @@ def crear_anuncio(request):
 #                       REPORTES
 # ============================================================
 
-@login_required
 def reportes(request):
-    role = user_role(request.user)
-    return render(request, "misc/reportes.html", {"role": role})
+    # === Reporte 1: Expedientes por Contrato ===
+    data_contratos = (
+        Expediente.objects
+        .values('contrato__numero')
+        .annotate(total=models.Count('id'))
+        .order_by('contrato__numero')
+    )
+
+    df_contratos = pd.DataFrame(list(data_contratos))
+    if not df_contratos.empty:
+        df_contratos.rename(columns={'contrato__numero': 'Contrato', 'total': 'Total'}, inplace=True)
+        fig_bar = px.bar(
+            df_contratos,
+            x='Contrato',
+            y='Total',
+            title='Expedientes por Contrato',
+            color='Total',
+            color_continuous_scale='Blues',
+            text='Total'
+        )
+        fig_bar.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        grafico_bar = fig_bar.to_html(full_html=False)
+    else:
+        grafico_bar = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Reporte 2: Expedientes por Oficina ===
+    data_oficinas = (
+        Expediente.objects
+        .values('oficina__nombre')
+        .annotate(total=models.Count('id'))
+        .order_by('oficina__nombre')
+    )
+
+    df_oficinas = pd.DataFrame(list(data_oficinas))
+    if not df_oficinas.empty:
+        df_oficinas.rename(columns={'oficina__nombre': 'Oficina', 'total': 'Total'}, inplace=True)
+        fig_pie = px.pie(
+            df_oficinas,
+            names='Oficina',
+            values='Total',
+            title='Distribución de Expedientes por Oficina'
+        )
+        fig_pie.update_traces(textinfo='percent+label')
+        grafico_pie = fig_pie.to_html(full_html=False)
+    else:
+        grafico_pie = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Reporte 3: Expedientes por Supervisor ===
+    data_supervisores = (
+        Expediente.objects
+        .values('supervisor__username')
+        .annotate(total=models.Count('id'))
+        .order_by('supervisor__username')
+    )
+
+    df_supervisores = pd.DataFrame(list(data_supervisores))
+    if not df_supervisores.empty:
+        df_supervisores.rename(columns={'supervisor__username': 'Supervisor', 'total': 'Total'}, inplace=True)
+        fig_line = px.line(
+            df_supervisores,
+            x='Supervisor',
+            y='Total',
+            title='Expedientes por Supervisor',
+            markers=True
+        )
+        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        grafico_line = fig_line.to_html(full_html=False)
+    else:
+        grafico_line = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Render final ===
+    return render(request, "admin/reportes_dashboard.html", {
+        "grafico_bar": grafico_bar,
+        "grafico_pie": grafico_pie,
+        "grafico_line": grafico_line,
+    })
+
+# ============================================================
+#                 EXPORTAR REPORTE A EXCEL
+# ============================================================
+def exportar_excel(request):
+    fecha_inicio = request.GET.get("fecha_inicio", "2025-01-01")
+    fecha_fin = request.GET.get("fecha_fin", str(date.today()))
+
+    queryset = Expediente.objects.filter(fecha_asignacion__range=[fecha_inicio, fecha_fin]).values(
+        "siged", "contrato__numero", "oficina__nombre", "supervisor__username",
+        "fecha_asignacion", "estado"
+    )
+    df = pd.DataFrame(list(queryset))
+    df.rename(columns={
+        "siged": "N° SIGED",
+        "contrato__numero": "Contrato",
+        "oficina__nombre": "Oficina",
+        "supervisor__username": "Supervisor",
+        "fecha_asignacion": "Fecha de Asignación",
+        "estado": "Estado"
+    }, inplace=True)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="reporte_expedientes_{fecha_inicio}_a_{fecha_fin}.xlsx"'
+    df.to_excel(response, index=False)
+    return response
 
 # ============================================================
 #                ENDPOINT AJAX - AUTOCOMPLETADO (MEJORADO)

@@ -33,7 +33,6 @@ urlpatterns = [
     # ============================================================
     # MÓDULOS COMUNES
     # ============================================================
-    path("reportes/", views.reportes, name="reportes"),
     path("bandeja/", views.bandeja, name="bandeja"),
     path("anuncios/", views.anuncios, name="anuncios"),
     path("anuncios/crear/", views.crear_anuncio, name="crear_anuncio"),
@@ -84,5 +83,9 @@ urlpatterns = [
     path("ajax/autocomplete/", views.ajax_autocomplete, name="ajax_autocomplete"),
     path("ajax/registrar-visita/", views.ajax_registrar_visita, name="ajax_registrar_visita"),
     path("ajax/actualizar-estado/", views.ajax_actualizar_estado, name="ajax_actualizar_estado"),
+
+    path("reportes/", views.reportes, name="reportes"),
+    path("reportes/exportar/", views.exportar_excel, name="exportar_excel"),
+
 
 ]
