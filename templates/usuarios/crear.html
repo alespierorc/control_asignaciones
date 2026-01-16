@@ -1,181 +1,139 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Crear Usuario - SERMINCO{% endblock %}
+{% block title %}{{ titulo }} - SERMINCO{% endblock %}
 
 {% block content %}
-<div class="user-create-wrapper">
+<div class="form-wrapper">
+  <h2 class="form-title">
+    {% if modo == "crear" %}
+      <i class="bi bi-person-plus"></i> Crear Nuevo Usuario
+    {% else %}
+      <i class="bi bi-pencil-square"></i> Editar Usuario
+    {% endif %}
+  </h2>
 
-  <h2 class="text-center mb-4 fw-bold">👤 Crear Nuevo Usuario</h2>
-
-  <!-- Mensajes globales -->
   {% if messages %}
-  <div class="messages-container mb-3">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} fade show shadow-sm" role="alert">
-        {{ message }}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="glass-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form.visible_fields %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <div class="error">{{ field.errors|join:", " }}</div>
+        {% endif %}
       </div>
     {% endfor %}
-  </div>
-  {% endif %}
 
-  <!-- Errores del formulario -->
-  {% if form.errors %}
-  <div class="alert alert-danger shadow-sm">
-    <strong>⚠️ Corrige los siguientes errores:</strong>
-    <ul class="mb-0">
-      {% for field, errors in form.errors.items %}
-        <li><strong>{{ field|capfirst }}:</strong> {{ errors|join:", " }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  <!-- Formulario principal -->
-  <form method="post" novalidate class="dark-form mt-4 glass-card p-4 rounded-4">
-    {% csrf_token %}
-
-    <div class="mb-3">
-      <label for="id_username" class="form-label">Nombre de usuario</label>
-      {{ form.username }}
-    </div>
-
-    <div class="mb-3">
-      <label for="id_first_name" class="form-label">Nombre</label>
-      {{ form.first_name }}
-    </div>
-
-    <div class="mb-3">
-      <label for="id_last_name" class="form-label">Apellidos</label>
-      {{ form.last_name }}
-    </div>
-
-    <div class="mb-3">
-      <label for="id_email" class="form-label">Correo electrónico</label>
-      {{ form.email }}
-    </div>
-
-    <hr class="text-muted my-4">
-
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="id_password" class="form-label">Contraseña</label>
-        {{ form.password }}
-      </div>
-
-      <div class="col-md-6 mb-3">
-        <label for="id_confirmar_password" class="form-label">Confirmar contraseña</label>
-        {{ form.confirmar_password }}
-        <small id="passwordHelp" class="form-text text-muted"></small>
-      </div>
-    </div>
-
-    <div class="mb-3">
-      <label for="id_grupo" class="form-label">Rol del usuario</label>
-      {{ form.grupo }}
-    </div>
-
-    <div class="text-center mt-4">
-      <button type="submit" class="btn btn-success px-4 py-2 rounded-3 shadow-sm">
-        <i class="bi bi-person-plus"></i> Crear Usuario
+    <div class="form-buttons">
+      <button type="submit" class="btn-success">
+        {% if modo == "crear" %}
+          <i class="bi bi-person-plus"></i> Crear Usuario
+        {% else %}
+          <i class="bi bi-save"></i> Guardar Cambios
+        {% endif %}
       </button>
-      <a href="{% url 'asignaciones:lista_usuarios' %}" class="btn btn-outline-light ms-2">
+      <a href="{% url 'asignaciones:lista_usuarios' %}" class="btn-outline">
         <i class="bi bi-arrow-left"></i> Volver
       </a>
     </div>
   </form>
 </div>
 
-<!-- Validación visual de contraseñas -->
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const pass1 = document.getElementById('id_password');
-    const pass2 = document.getElementById('id_confirmar_password');
-    const hint = document.getElementById('passwordHelp');
-
-    function checkPasswordMatch() {
-      if (!pass1.value || !pass2.value) {
-        hint.textContent = '';
-        hint.className = 'form-text text-muted';
-        return;
-      }
-      if (pass1.value === pass2.value) {
-        hint.textContent = '✅ Las contraseñas coinciden.';
-        hint.className = 'form-text text-success';
-      } else {
-        hint.textContent = '⚠️ Las contraseñas no coinciden.';
-        hint.className = 'form-text text-danger';
-      }
-    }
-
-    pass1.addEventListener('input', checkPasswordMatch);
-    pass2.addEventListener('input', checkPasswordMatch);
-  });
-</script>
-
 <style>
-  body {
-    background-color: #0d1117;
-    color: #e6edf3;
-    font-family: 'Inter', sans-serif;
-  }
-
-  .user-create-wrapper {
-    max-width: 700px;
-    margin: 0 auto;
-    padding-top: 2rem;
-  }
-
-  .glass-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-  }
-
-  .form-label {
-    font-weight: 600;
-    color: #c9d1d9;
-  }
-
-  input, select {
-    background-color: #161b22 !important;
-    color: #e6edf3 !important;
-    border: 1px solid #30363d !important;
-    border-radius: 8px !important;
-    padding: 8px 12px !important;
-    width: 100%;
-  }
-
-  input:focus, select:focus {
-    border-color: #58a6ff !important;
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
-    outline: none;
-  }
-
-  .btn-success {
-    background-color: #238636;
-    border: none;
-    transition: all 0.3s ease;
-  }
-
-  .btn-success:hover {
-    background-color: #2ea043;
-    transform: scale(1.03);
-  }
-
-  .btn-outline-light {
-    border-color: #8b949e;
-    color: #c9d1d9;
-  }
-
-  .btn-outline-light:hover {
-    background-color: #21262d;
-  }
-
-  .alert {
-    border-radius: 10px;
-  }
+body {
+  background-color: #0d1117;
+  color: #e6edf3;
+  font-family: 'Inter', sans-serif;
+}
+.form-wrapper {
+  max-width: 700px;
+  margin: 3rem auto;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+}
+.form-title {
+  text-align: center;
+  color: #58a6ff;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-group label {
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.i-input, .i-select {
+  width: 100%;
+  background: #161b22;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+.i-input:focus, .i-select:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.2);
+  outline: none;
+}
+.error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+.btn-success {
+  background-color: #238636;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.btn-success:hover {
+  background-color: #2ea043;
+  transform: scale(1.03);
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid #8b949e;
+  color: #c9d1d9;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.btn-outline:hover {
+  background: #21262d;
+}
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.alert {
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  padding: 10px;
+  margin-bottom: 10px;
+}
 </style>
-
 {% endblock %}

@@ -205,8 +205,20 @@ class CrearUsuarioForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        password = self.cleaned_data["password"]
-        user.set_password(password)
+        password = self.cleaned_data.get("password")
+
+        # ✅ Solo cambia la contraseña si se ingresó una nueva
+        if password:
+            user.set_password(password)
+
         if commit:
             user.save()
+
+            # ✅ Asignar grupo (rol)
+            grupo = self.cleaned_data.get("grupo")
+            if grupo:
+                user.groups.clear()
+                user.groups.add(grupo)
+
         return user
+

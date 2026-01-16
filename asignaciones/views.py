@@ -800,7 +800,7 @@ def admin_lider_descargar_excel(request):
 def admin_lider_catalogos(request):
     """
     Panel de administración de catálogos para el Administrador Líder.
-    Permite CRUD de:
+    CRUD de:
       - Contratos
       - Tipos de Supervisión
       - Tipos de Documento
@@ -808,85 +808,170 @@ def admin_lider_catalogos(request):
     """
 
     if request.method == "POST":
-        accion = request.POST.get("accion")
-        tipo = request.POST.get("tipo")
+        accion = (request.POST.get("accion") or "").strip().lower()
+        tipo = (request.POST.get("tipo") or "").strip().lower()
 
         try:
-            # === AGREGAR ===
+            # =======================
+            # VALIDACIONES BÁSICAS
+            # =======================
+            if accion not in {"agregar", "editar", "eliminar"}:
+                return JsonResponse({
+                    "status": "error",
+                    "message": f"Acción inválida: {accion}"
+                })
+
+            if tipo not in {"contrato", "supervision", "documento", "oficina"}:
+                return JsonResponse({
+                    "status": "error",
+                    "message": f"Tipo inválido: {tipo}"
+                })
+
+            # =======================
+            # AGREGAR
+            # =======================
             if accion == "agregar":
-                nombre = request.POST.get("nombre", "").strip()
+                nombre = (request.POST.get("nombre") or "").strip()
                 if not nombre:
-                    return JsonResponse({"status": "error", "message": "El nombre no puede estar vacío."})
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "El nombre no puede estar vacío."
+                    })
 
                 if tipo == "contrato":
                     oficina_id = request.POST.get("oficina_id")
+                    if not oficina_id:
+                        return JsonResponse({
+                            "status": "error",
+                            "message": "Debe seleccionar una oficina."
+                        })
                     oficina = get_object_or_404(OficinaRegional, id=oficina_id)
                     Contrato.objects.create(numero=nombre, oficina=oficina)
-                    return JsonResponse({"status": "success", "message": f"Contrato '{nombre}' agregado correctamente."})
 
-                elif tipo == "supervision":
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Contrato '{nombre}' agregado correctamente."
+                    })
+
+                if tipo == "supervision":
                     TipoSupervision.objects.create(nombre=nombre)
-                    return JsonResponse({"status": "success", "message": f"Tipo de supervisión '{nombre}' agregado correctamente."})
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Tipo de supervisión '{nombre}' agregado correctamente."
+                    })
 
-                elif tipo == "documento":
+                if tipo == "documento":
                     TipoDocumento.objects.create(nombre=nombre)
-                    return JsonResponse({"status": "success", "message": f"Tipo de documento '{nombre}' agregado correctamente."})
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Tipo de documento '{nombre}' agregado correctamente."
+                    })
 
-                elif tipo == "oficina":
+                if tipo == "oficina":
                     OficinaRegional.objects.create(nombre=nombre)
-                    return JsonResponse({"status": "success", "message": f"Oficina '{nombre}' agregada correctamente."})
+                    return JsonResponse({
+                        "status": "success",
+                        "message": f"Oficina '{nombre}' agregada correctamente."
+                    })
 
-            # === ELIMINAR ===
-            elif accion == "eliminar":
+            # =======================
+            # ELIMINAR
+            # =======================
+            if accion == "eliminar":
                 item_id = request.POST.get("id")
-                if tipo == "contrato":
-                    Contrato.objects.filter(id=item_id).delete()
-                    return JsonResponse({"status": "success", "message": "Contrato eliminado correctamente."})
-                elif tipo == "supervision":
-                    TipoSupervision.objects.filter(id=item_id).delete()
-                    return JsonResponse({"status": "success", "message": "Tipo de supervisión eliminado correctamente."})
-                elif tipo == "documento":
-                    TipoDocumento.objects.filter(id=item_id).delete()
-                    return JsonResponse({"status": "success", "message": "Tipo de documento eliminado correctamente."})
-                elif tipo == "oficina":
-                    OficinaRegional.objects.filter(id=item_id).delete()
-                    return JsonResponse({"status": "success", "message": "Oficina eliminada correctamente."})
+                if not item_id:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "ID no proporcionado."
+                    })
 
-            # === EDITAR ===
-            elif accion == "editar":
+                modelos = {
+                    "contrato": Contrato,
+                    "supervision": TipoSupervision,
+                    "documento": TipoDocumento,
+                    "oficina": OficinaRegional,
+                }
+
+                modelos[tipo].objects.filter(id=item_id).delete()
+
+                return JsonResponse({
+                    "status": "success",
+                    "message": "Registro eliminado correctamente."
+                })
+
+            # =======================
+            # EDITAR
+            # =======================
+            if accion == "editar":
                 item_id = request.POST.get("id")
-                nuevo_nombre = request.POST.get("nombre", "").strip()
+                nuevo_nombre = (request.POST.get("nombre") or "").strip()
+
+                if not item_id:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "ID no proporcionado."
+                    })
+
                 if not nuevo_nombre:
-                    return JsonResponse({"status": "error", "message": "El nombre no puede estar vacío."})
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "El nombre no puede estar vacío."
+                    })
 
                 if tipo == "contrato":
-                    Contrato.objects.filter(id=item_id).update(numero=nuevo_nombre)
-                    return JsonResponse({"status": "success", "message": "Contrato actualizado correctamente."})
-                elif tipo == "supervision":
-                    TipoSupervision.objects.filter(id=item_id).update(nombre=nuevo_nombre)
-                    return JsonResponse({"status": "success", "message": "Tipo de supervisión actualizado correctamente."})
-                elif tipo == "documento":
-                    TipoDocumento.objects.filter(id=item_id).update(nombre=nuevo_nombre)
-                    return JsonResponse({"status": "success", "message": "Tipo de documento actualizado correctamente."})
-                elif tipo == "oficina":
-                    OficinaRegional.objects.filter(id=item_id).update(nombre=nuevo_nombre)
-                    return JsonResponse({"status": "success", "message": "Oficina actualizada correctamente."})
+                    contrato = get_object_or_404(Contrato, id=item_id)
+                    contrato.numero = nuevo_nombre
 
-            # Acción desconocida
-            return JsonResponse({"status": "error", "message": "Acción no reconocida."})
+                    oficina_id = request.POST.get("oficina_id")
+                    if oficina_id:
+                        contrato.oficina = get_object_or_404(OficinaRegional, id=oficina_id)
+
+                    contrato.save()
+
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "Contrato actualizado correctamente."
+                    })
+
+                if tipo == "supervision":
+                    TipoSupervision.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "Tipo de supervisión actualizado correctamente."
+                    })
+
+                if tipo == "documento":
+                    TipoDocumento.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "Tipo de documento actualizado correctamente."
+                    })
+
+                if tipo == "oficina":
+                    OficinaRegional.objects.filter(id=item_id).update(nombre=nuevo_nombre)
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "Oficina actualizada correctamente."
+                    })
 
         except Exception as e:
-            return JsonResponse({"status": "error", "message": f"Ocurrió un error: {str(e)}"})
+            return JsonResponse({
+                "status": "error",
+                "message": f"Ocurrió un error interno: {str(e)}"
+            })
 
-    # --- GET (renderiza la plantilla principal) ---
+    # =======================
+    # GET
+    # =======================
     context = {
-        "contratos": Contrato.objects.select_related("oficina").all().order_by("numero"),
-        "tipos_supervision": TipoSupervision.objects.all().order_by("nombre"),
-        "tipos_documento": TipoDocumento.objects.all().order_by("nombre"),
-        "oficinas": OficinaRegional.objects.all().order_by("nombre"),
+        "contratos": Contrato.objects.select_related("oficina").order_by("numero"),
+        "tipos_supervision": TipoSupervision.objects.order_by("nombre"),
+        "tipos_documento": TipoDocumento.objects.order_by("nombre"),
+        "oficinas": OficinaRegional.objects.order_by("nombre"),
     }
 
     return render(request, "admin/admin_lider_catalogos.html", context)
+
 
 # ============================================================
 # ADMINISTRADOR (nivel intermedio, acceso restringido)
@@ -1148,24 +1233,26 @@ def admin_descargar_excel(request):
 
 @role_required(["AdministradorLider"])
 def crear_usuario(request):
-    """
-    Solo el AdministradorLider puede crear cuentas.
-    Crea usuarios, les asigna rol y muestra errores claros si algo falla.
-    """
     if request.method == "POST":
         form = CrearUsuarioForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, f"✅ Usuario '{user.username}' creado correctamente.")
+            form.save()
+            messages.success(request, "✅ Usuario creado correctamente.")
             return redirect("asignaciones:lista_usuarios")
         else:
-            # Muestra los errores de validación directamente en consola y en el formulario
-            print("❌ Errores al crear usuario:", form.errors)
-            messages.error(request, "⚠️ Revisa los campos marcados. No se pudo crear el usuario.")
+            messages.error(request, "⚠️ Revisa los campos marcados.")
     else:
         form = CrearUsuarioForm()
 
-    return render(request, "usuarios/crear.html", {"form": form})
+    return render(
+        request,
+        "usuarios/crear.html",
+        {
+            "form": form,
+            "modo": "crear",
+            "titulo": "Crear Usuario"
+        }
+    )
 
 
 @role_required(["AdministradorLider"])
@@ -1205,22 +1292,31 @@ from .forms import CrearUsuarioForm as UsuarioForm
 
 @role_required(["AdministradorLider"])
 def editar_usuario(request, user_id):
-    """
-    Permite al AdministradorLíder editar un usuario existente.
-    """
     usuario = get_object_or_404(User, id=user_id)
 
     if request.method == "POST":
-        form = UsuarioForm(request.POST, instance=usuario)
+        form = CrearUsuarioForm(request.POST, instance=usuario)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Usuario '{usuario.username}' actualizado correctamente.")
+            messages.success(
+                request,
+                f"✅ Usuario '{usuario.username}' actualizado correctamente."
+            )
             return redirect("asignaciones:lista_usuarios")
+        else:
+            messages.error(request, "⚠️ Revisa los campos marcados.")
     else:
-        form = UsuarioForm(instance=usuario)
+        form = CrearUsuarioForm(instance=usuario)
 
-    return render(request, "usuarios/editar_usuario.html", {"form": form, "usuario": usuario})
-
+    return render(
+        request,
+        "usuarios/editar_usuario.html",
+        {
+            "form": form,
+            "modo": "editar",
+            "titulo": "Editar Usuario"
+        }
+    )
 
 # ============================================================
 #                       BANDEJA 
@@ -1327,10 +1423,15 @@ def crear_anuncio(request):
     return render(request, "misc/crear_anuncio.html", {"grupos": grupos, "usuarios": usuarios})
 
 
+from django.shortcuts import render
+from django.db import models
+import pandas as pd
+import plotly.express as px
+from asignaciones.models import Expediente  # Ajusta el import según tu estructura
+
 # ============================================================
 #                       REPORTES
 # ============================================================
-
 def reportes(request):
     # === Reporte 1: Expedientes por Contrato ===
     data_contratos = (
@@ -1352,7 +1453,11 @@ def reportes(request):
             color_continuous_scale='Blues',
             text='Total'
         )
-        fig_bar.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        fig_bar.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
+        )
         grafico_bar = fig_bar.to_html(full_html=False)
     else:
         grafico_bar = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
@@ -1372,9 +1477,15 @@ def reportes(request):
             df_oficinas,
             names='Oficina',
             values='Total',
-            title='Distribución de Expedientes por Oficina'
+            title='Distribución de Expedientes por Oficina',
+            color_discrete_sequence=px.colors.sequential.Blues
         )
         fig_pie.update_traces(textinfo='percent+label')
+        fig_pie.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
+        )
         grafico_pie = fig_pie.to_html(full_html=False)
     else:
         grafico_pie = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
@@ -1397,17 +1508,30 @@ def reportes(request):
             title='Expedientes por Supervisor',
             markers=True
         )
-        fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        fig_line.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
+        )
         grafico_line = fig_line.to_html(full_html=False)
     else:
         grafico_line = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
+
+    # === Totales generales ===
+    total_expedientes = Expediente.objects.count()
+    total_oficinas = Expediente.objects.values('oficina').distinct().count()
+    total_supervisores = Expediente.objects.values('supervisor').distinct().count()
 
     # === Render final ===
     return render(request, "admin/reportes_dashboard.html", {
         "grafico_bar": grafico_bar,
         "grafico_pie": grafico_pie,
         "grafico_line": grafico_line,
+        "total_expedientes": total_expedientes,
+        "total_oficinas": total_oficinas,
+        "total_supervisores": total_supervisores,
     })
+
 
 # ============================================================
 #                 EXPORTAR REPORTE A EXCEL
