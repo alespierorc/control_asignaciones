@@ -11,6 +11,8 @@
 
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
+
 
 app_name = "asignaciones"
 
@@ -85,7 +87,12 @@ urlpatterns = [
     path("ajax/actualizar-estado/", views.ajax_actualizar_estado, name="ajax_actualizar_estado"),
 
     path("reportes/", views.reportes, name="reportes"),
+    path("reportes/json/", views.reportes_json, name="reportes_json"),
+    path("anuncios/metricas/", views.anuncios_metricas, name="anuncios_metricas"),
     path("reportes/exportar/", views.exportar_excel, name="exportar_excel"),
+    path("anuncios/no-leidos/", views.anuncios_no_leidos, name="anuncios_no_leidos"),
+    path("anuncios/marcar-leido/<int:pk>/",views.marcar_anuncio_leido,name="marcar_anuncio_leido"),
 
+    
 
 ]

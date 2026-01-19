@@ -75,6 +75,7 @@ TEMPLATES = [
 
                 # Context processor personalizado
                 "asignaciones.context_processors.anuncios_context",
+                "asignaciones.context_processors.permisos_navbar",
             ],
         },
     },
@@ -156,3 +157,17 @@ MESSAGE_TAGS = {
 # Permitir desarrollo local
 if DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# ============================================================
+#      RECUPERACIÓN DE CONTRASEÑA (DESARROLLO / PRUEBAS)
+# ============================================================
+
+# Backend de correo para pruebas (muestra el correo en consola)
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Email por defecto del sistema
+DEFAULT_FROM_EMAIL = "SIGMA <no-reply@sigma-control.com>"
+
+# Dominio usado en links de recuperación
+DOMAIN = "127.0.0.1:8000"
+SITE_NAME = "SIGMA – Control de Asignaciones"

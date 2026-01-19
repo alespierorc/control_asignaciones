@@ -1,10 +1,6 @@
 # ============================================================
 #                CONTROL DE ASIGNACIONES - SERMINCO
 # ============================================================
-# Archivo: views.py
-# Propósito: Control de vistas, seguridad por roles y lógica de negocio.
-# Roles soportados: AdministradorLider, Administrador, Coordinador, Supervisor
-# ============================================================
 
 from django.db.models import Q
 from django.urls import reverse
@@ -35,7 +31,8 @@ from django.http import HttpResponse
 from django.db.models import Count
 from django.shortcuts import render
 from .models import Expediente
-
+from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 
 
 
@@ -1343,49 +1340,54 @@ from django.db import models
 
 @login_required
 def anuncios(request):
-    """
-    Muestra los anuncios visibles para el usuario actual.
-    - Los Coordinadores, Administradores y AdministradorLider pueden crear anuncios.
-    - Los Supervisores solo pueden leer.
-    """
     user = request.user
+    ahora = timezone.now()
 
-    # Validar permisos de creación
-    puede_crear = False
-    if user.is_authenticated and user.groups.filter(
-        name__in=["AdministradorLider", "Administrador", "Coordinador"]
-    ).exists():
-        puede_crear = True
+    puede_crear = user.groups.filter(
+        name__in=["Administrador", "AdministradorLider"]
+    ).exists()
 
-    # Mostrar anuncios relevantes
-    if not user.is_authenticated:
-        anuncios = Anuncio.objects.filter(tipo="general").order_by("-fecha_creacion")
+    puede_ver_metricas = puede_crear
+
+    base_qs = Anuncio.objects.filter(
+        Q(fecha_inicio__lte=ahora) | Q(fecha_inicio__isnull=True),
+        Q(fecha_fin__gte=ahora) | Q(fecha_fin__isnull=True),
+    )
+
+    if user.groups.filter(name="AdministradorLider").exists():
+        anuncios = base_qs.filter(remitente=user)
+
+    elif user.groups.filter(name="Administrador").exists():
+        anuncios = base_qs.filter(
+            Q(remitente=user)
+            | Q(destinatario=user)
+            | Q(grupo_destino__in=user.groups.all())
+            | Q(tipo="general")
+        ).distinct()
+
     else:
-        anuncios = Anuncio.objects.filter(
-            models.Q(destinatario=user)
-            | models.Q(grupo_destino__in=user.groups.all())
-            | models.Q(tipo="general")
-        ).select_related("remitente").order_by("-fecha_creacion")
-
-    if request.GET.get("ajax"):
-        html = render_to_string("misc/partials/_anuncios_list.html", {"anuncios": anuncios})
-        return HttpResponse(html)
+        anuncios = base_qs.filter(
+            Q(destinatario=user)
+            | Q(grupo_destino__in=user.groups.all())
+            | Q(tipo="general")
+        )
 
     return render(
         request,
         "misc/anuncios.html",
-        {"anuncios": anuncios, "puede_crear": puede_crear},
+        {
+            "anuncios": anuncios.order_by("-fecha_creacion"),
+            "puede_crear": puede_crear,
+            "puede_ver_metricas": puede_ver_metricas,
+        }
     )
-
 
 @login_required
 def crear_anuncio(request):
-    """
-    Permite a los AdministradoresLider, Administradores y Coordinadores crear anuncios.
-    Los Supervisores no pueden crear.
-    """
-    if not request.user.groups.filter(
-        name__in=["AdministradorLider", "Administrador", "Coordinador"]
+    user = request.user
+
+    if not user.groups.filter(
+        name__in=["AdministradorLider", "Administrador"]
     ).exists():
         messages.error(request, "❌ No tienes permiso para crear anuncios.")
         return redirect("asignaciones:anuncios")
@@ -1397,31 +1399,127 @@ def crear_anuncio(request):
         titulo = request.POST.get("titulo", "").strip()
         contenido = request.POST.get("contenido", "").strip()
         tipo = request.POST.get("tipo", "general")
-        grupo_id = request.POST.get("grupo_destino")
-        destinatario_id = request.POST.get("destinatario")
+        grupo_id = request.POST.get("grupo_destino") or None
+        destinatario_id = request.POST.get("destinatario") or None
+
+        fecha_inicio_raw = request.POST.get("fecha_inicio")
+        fecha_fin_raw = request.POST.get("fecha_fin")
+
+        fecha_inicio = parse_datetime(fecha_inicio_raw) if fecha_inicio_raw else None
+        fecha_fin = parse_datetime(fecha_fin_raw) if fecha_fin_raw else None
 
         if not titulo or not contenido:
-            messages.error(request, "Todos los campos son obligatorios.")
+            messages.error(request, "Todos los campos obligatorios deben completarse.")
             return redirect("asignaciones:crear_anuncio")
 
-        anuncio = Anuncio(
+        if tipo == "grupo" and not grupo_id:
+            messages.error(request, "Debes seleccionar un grupo destino.")
+            return redirect("asignaciones:crear_anuncio")
+
+        if tipo == "individual" and not destinatario_id:
+            messages.error(request, "Debes seleccionar un usuario destinatario.")
+            return redirect("asignaciones:crear_anuncio")
+
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            messages.error(request, "La fecha de fin no puede ser menor que la fecha de inicio.")
+            return redirect("asignaciones:crear_anuncio")
+
+        if fecha_inicio and fecha_inicio < timezone.now():
+            messages.error(request, "La fecha de inicio no puede ser en el pasado.")
+            return redirect("asignaciones:crear_anuncio")
+
+        Anuncio.objects.create(
             titulo=titulo,
             contenido=contenido,
             tipo=tipo,
-            remitente=request.user,
+            remitente=user,
+            grupo_destino_id=grupo_id if tipo == "grupo" else None,
+            destinatario_id=destinatario_id if tipo == "individual" else None,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
         )
 
-        if grupo_id:
-            anuncio.grupo_destino_id = grupo_id
-        if destinatario_id:
-            anuncio.destinatario_id = destinatario_id
-
-        anuncio.save()
-        messages.success(request, f"✅ Anuncio '{titulo}' creado correctamente.")
+        messages.success(request, "✅ Anuncio publicado correctamente.")
         return redirect("asignaciones:anuncios")
 
-    return render(request, "misc/crear_anuncio.html", {"grupos": grupos, "usuarios": usuarios})
+    return render(
+        request,
+        "misc/crear_anuncio.html",
+        {
+            "grupos": grupos,
+            "usuarios": usuarios,
+        }
+    )
 
+@login_required
+def marcar_anuncio_leido(request, pk):
+    anuncio = get_object_or_404(Anuncio, pk=pk)
+
+    AnuncioLectura.objects.get_or_create(
+        anuncio=anuncio,
+        usuario=request.user
+    )
+
+    no_leidos = Anuncio.objects.exclude(
+        anunciolectura__usuario=request.user
+    ).filter(
+        Q(destinatario=request.user)
+        | Q(grupo_destino__in=request.user.groups.all())
+        | Q(tipo="general")
+    ).count()
+
+    return JsonResponse({
+        "status": "ok",
+        "no_leidos": no_leidos
+    })
+
+@login_required
+def anuncios_no_leidos(request):
+    count = Anuncio.objects.exclude(
+        anunciolectura__usuario=request.user
+    ).filter(
+        Q(destinatario=request.user)
+        | Q(grupo_destino__in=request.user.groups.all())
+        | Q(tipo="general")
+    ).count()
+
+    return JsonResponse({"count": count})
+
+@login_required
+def anuncios_metricas(request):
+    if not request.user.groups.filter(
+        name__in=["Administrador", "AdministradorLider"]
+    ).exists():
+        return redirect("asignaciones:anuncios")
+
+    anuncios = (
+        Anuncio.objects
+        .select_related("remitente")
+        .prefetch_related("anunciolectura_set__usuario")
+        .order_by("-fecha_creacion")
+    )
+
+    return render(request, "misc/anuncios_metricas.html", {
+        "anuncios": anuncios
+    })
+@login_required
+def eliminar_anuncio(request, pk):
+    user = request.user
+
+    try:
+        anuncio = Anuncio.objects.get(pk=pk)
+    except Anuncio.DoesNotExist:
+        return JsonResponse({"error": "No existe"}, status=404)
+
+    if user.groups.filter(name__in=["Administrador", "AdministradorLider"]).exists():
+        anuncio.delete()
+        return JsonResponse({"status": "ok"})
+
+    if anuncio.destinatario == user:
+        anuncio.delete()
+        return JsonResponse({"status": "ok"})
+
+    return JsonResponse({"error": "No autorizado"}, status=403)
 
 from django.shortcuts import render
 from django.db import models
@@ -1432,105 +1530,49 @@ from asignaciones.models import Expediente  # Ajusta el import según tu estruct
 # ============================================================
 #                       REPORTES
 # ============================================================
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Expediente
+from django.db import models
+
+@login_required
+@role_required(["Administrador", "AdministradorLider"])
 def reportes(request):
-    # === Reporte 1: Expedientes por Contrato ===
-    data_contratos = (
-        Expediente.objects
-        .values('contrato__numero')
-        .annotate(total=models.Count('id'))
-        .order_by('contrato__numero')
-    )
+    """
+    Renderiza la página de reportes con los totales visibles
+    y prepara los datos para los gráficos en Chart.js vía AJAX.
+    """
 
-    df_contratos = pd.DataFrame(list(data_contratos))
-    if not df_contratos.empty:
-        df_contratos.rename(columns={'contrato__numero': 'Contrato', 'total': 'Total'}, inplace=True)
-        fig_bar = px.bar(
-            df_contratos,
-            x='Contrato',
-            y='Total',
-            title='Expedientes por Contrato',
-            color='Total',
-            color_continuous_scale='Blues',
-            text='Total'
-        )
-        fig_bar.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white')
-        )
-        grafico_bar = fig_bar.to_html(full_html=False)
-    else:
-        grafico_bar = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
-
-    # === Reporte 2: Expedientes por Oficina ===
-    data_oficinas = (
-        Expediente.objects
-        .values('oficina__nombre')
-        .annotate(total=models.Count('id'))
-        .order_by('oficina__nombre')
-    )
-
-    df_oficinas = pd.DataFrame(list(data_oficinas))
-    if not df_oficinas.empty:
-        df_oficinas.rename(columns={'oficina__nombre': 'Oficina', 'total': 'Total'}, inplace=True)
-        fig_pie = px.pie(
-            df_oficinas,
-            names='Oficina',
-            values='Total',
-            title='Distribución de Expedientes por Oficina',
-            color_discrete_sequence=px.colors.sequential.Blues
-        )
-        fig_pie.update_traces(textinfo='percent+label')
-        fig_pie.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white')
-        )
-        grafico_pie = fig_pie.to_html(full_html=False)
-    else:
-        grafico_pie = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
-
-    # === Reporte 3: Expedientes por Supervisor ===
-    data_supervisores = (
-        Expediente.objects
-        .values('supervisor__username')
-        .annotate(total=models.Count('id'))
-        .order_by('supervisor__username')
-    )
-
-    df_supervisores = pd.DataFrame(list(data_supervisores))
-    if not df_supervisores.empty:
-        df_supervisores.rename(columns={'supervisor__username': 'Supervisor', 'total': 'Total'}, inplace=True)
-        fig_line = px.line(
-            df_supervisores,
-            x='Supervisor',
-            y='Total',
-            title='Expedientes por Supervisor',
-            markers=True
-        )
-        fig_line.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white')
-        )
-        grafico_line = fig_line.to_html(full_html=False)
-    else:
-        grafico_line = "<p style='color:#9ca3af'>No hay datos disponibles.</p>"
-
-    # === Totales generales ===
+    # Datos totales
     total_expedientes = Expediente.objects.count()
     total_oficinas = Expediente.objects.values('oficina').distinct().count()
     total_supervisores = Expediente.objects.values('supervisor').distinct().count()
 
-    # === Render final ===
-    return render(request, "admin/reportes_dashboard.html", {
-        "grafico_bar": grafico_bar,
-        "grafico_pie": grafico_pie,
-        "grafico_line": grafico_line,
+    context = {
         "total_expedientes": total_expedientes,
         "total_oficinas": total_oficinas,
         "total_supervisores": total_supervisores,
+    }
+
+    return render(request, "admin/reportes_dashboard.html", context)
+
+@login_required
+@role_required(["Administrador", "AdministradorLider"])
+def reportes_json(request):
+    # Datos para gráficos
+    data_contratos = Expediente.objects.values('contrato__numero').annotate(total=models.Count('id')).order_by('contrato__numero')
+    data_oficinas = Expediente.objects.values('oficina__nombre').annotate(total=models.Count('id')).order_by('oficina__nombre')
+    data_supervisores = Expediente.objects.values('supervisor__username').annotate(total=models.Count('id')).order_by('supervisor__username')
+
+    return JsonResponse({
+        "labels_contratos": [d['contrato__numero'] for d in data_contratos],
+        "values_contratos": [d['total'] for d in data_contratos],
+        "labels_oficinas": [d['oficina__nombre'] for d in data_oficinas],
+        "values_oficinas": [d['total'] for d in data_oficinas],
+        "labels_supervisores": [d['supervisor__username'] for d in data_supervisores],
+        "values_supervisores": [d['total'] for d in data_supervisores],
     })
+
 
 
 # ============================================================
