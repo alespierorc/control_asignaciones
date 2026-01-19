@@ -8,8 +8,10 @@
 
     <!-- ICONOS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
-    <!-- ESTILO DARK -->
+
+    <!-- SWEETALERT2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         :root {
             --bg-dark: #0e1117;
@@ -18,79 +20,78 @@
             --accent-hover: #2563eb;
             --text: #e5e7eb;
             --text-muted: #9ca3af;
-            --success: #22c55e;
-            --error: #ef4444;
-            --warning: #facc15;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --border-soft: #374151;
         }
 
         body {
             background-color: var(--bg-dark);
             color: var(--text);
-            font-family: "Inter", sans-serif;
+            font-family: "Inter", system-ui, sans-serif;
             margin: 0;
         }
 
-        /* NAVBAR SUPERIOR */
+        /* NAVBAR */
         .navbar {
             background-color: var(--bg-panel);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 25px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            padding: 12px 25px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
         }
 
-        .navbar a {
-            color: var(--text);
-            text-decoration: none;
-            margin-right: 15px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .navbar a:hover {
-            color: var(--accent);
-        }
-
-        .logo {
+        .navbar-left a {
             font-size: 1.1rem;
             font-weight: 600;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* CHIP BOTONES */
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* BOTONES */
         .chip {
             background: #1e293b;
             padding: 8px 14px;
-            border-radius: 25px;
+            border-radius: 999px;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: background 0.2s, transform 0.2s;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text);
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
         }
 
         .chip:hover {
             background: var(--accent-hover);
             color: #fff;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
-        /* MENSAJES */
-        .messages {
-            margin: 15px auto;
-            width: 90%;
-            max-width: 900px;
+        /* BOTÓN LOGOUT */
+        .chip-logout {
+            background: transparent;
+            border: 1px solid var(--border-soft);
+            color: var(--text-muted);
         }
 
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-weight: 500;
+        .chip-logout:hover {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: var(--danger);
+            color: var(--danger);
         }
-
-        .alert-success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
-        .alert-error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
-        .alert-warning { background: rgba(250, 204, 21, 0.15); color: var(--warning); }
 
         main {
             padding: 25px;
@@ -99,73 +100,145 @@
         footer {
             text-align: center;
             padding: 15px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             border-top: 1px solid #1f2937;
             margin-top: 30px;
         }
+        .anuncios-chip {
+    position: relative;
+}
+
+.badge-anuncios {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 999px;
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
     </style>
 </head>
 
 <body>
-    <!-- NAVBAR SUPERIOR -->
-    <nav class="navbar">
-        <div class="navbar-left">
-            <a href="{% url 'asignaciones:home_router' %}" class="logo">
-                <i class="bi bi-buildings"></i> SERMINCO
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <a href="{% url 'asignaciones:home_router' %}">
+            <i class="bi bi-buildings"></i> SERMINCO
+        </a>
+    </div>
+
+    <div class="navbar-right">
+        {% if user.is_authenticated %}
+
+            <a class="chip" href="{% url 'asignaciones:home_router' %}">
+                <i class="bi bi-house-door"></i> Inicio
             </a>
-        </div>
-        <div class="navbar-right">
-            {% if user.is_authenticated %}
-                <a class="chip" href="{% url 'asignaciones:home_router' %}">
-                    <i class="bi bi-house-door"></i> Inicio
-                </a>
-                <a class="chip" href="{% url 'asignaciones:reportes' %}">
-    <i class="bi bi-bar-chart"></i> Reportes
-</a>
-                <a class="chip" href="{% url 'asignaciones:anuncios' %}">
-                    <i class="bi bi-megaphone"></i> Anuncios
-                </a>
-                <a class="chip" href="{% url 'asignaciones:bandeja' %}">
-                    <i class="bi bi-envelope"></i> Bandeja
-                </a>
-                <a class="chip" href="{% url 'asignaciones:logout' %}"
-                   onclick="return confirm('¿Seguro que deseas cerrar sesión?');">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-            {% else %}
-                <a class="chip" href="{% url 'asignaciones:login' %}">
-                    <i class="bi bi-person-circle"></i> Iniciar sesión
-                </a>
+
+            {% if mostrar_reportes %}
+            <a class="chip" href="{% url 'asignaciones:reportes' %}">
+                <i class="bi bi-bar-chart"></i> Reportes
+            </a>
             {% endif %}
-        </div>
-    </nav>
 
-    <!-- MENSAJES -->
-    {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    <i class="bi bi-info-circle"></i> {{ message }}
-                </div>
-            {% endfor %}
-        </div>
+            <a class="chip" href="{% url 'asignaciones:anuncios' %}">
+    <i class="bi bi-megaphone"></i>
+    Anuncios
+    {% if anuncios_no_leidos > 0 %}
+    <span id="badge-anuncios"
+          style="
+            background:#ef4444;
+            color:white;
+            padding:2px 8px;
+            border-radius:999px;
+            font-size:0.75rem;
+            font-weight:700;
+            margin-left:4px;
+            animation:pulse 1.2s infinite;
+          ">
+        {{ anuncios_no_leidos }}
+    </span>
     {% endif %}
+</a>
 
-    <!-- CONTENIDO -->
-    <main>
-        {% block content %}
-        {% endblock %}
-    </main>
+            <a class="chip" href="{% url 'asignaciones:bandeja' %}">
+                <i class="bi bi-envelope"></i> Bandeja
+            </a>
 
-    <footer>
-        &copy; 2025 SERMINCO — Sistema de Control de Asignaciones
-    </footer>
+            <!-- LOGOUT -->
+            <a class="chip chip-logout logout-btn"
+               href="{% url 'asignaciones:logout' %}"
+               title="Cerrar sesión">
+                <i class="bi bi-power"></i>
+            </a>
 
-    <script>
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(el => el.style.display = 'none');
-        }, 4000);
-    </script>
+        {% else %}
+            <a class="chip" href="{% url 'asignaciones:login' %}">
+                <i class="bi bi-person-circle"></i> Iniciar sesión
+            </a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- CONTENIDO -->
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    &copy; 2025 SERMINCO — Sistema de Control de Asignaciones
+</footer>
+
+<!-- SWEETALERT LOGOUT -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const logoutBtn = document.querySelector(".logout-btn");
+    if (!logoutBtn) return;
+
+    logoutBtn.addEventListener("click", e => {
+        e.preventDefault();
+
+        Swal.fire({
+            title: "Cerrar sesión",
+            text: "¿Deseas salir del sistema?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sí, cerrar sesión",
+            cancelButtonText: "Cancelar",
+            reverseButtons: true,
+            confirmButtonColor: "#ef4444",
+            cancelButtonColor: "#374151",
+            background: "#0e1117",
+            color: "#e5e7eb"
+        }).then(result => {
+            if (result.isConfirmed) {
+                window.location.href = logoutBtn.href;
+            }
+        });
+    });
+
+});
+</script>
+
 </body>
 </html>

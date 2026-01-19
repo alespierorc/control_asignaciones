@@ -1,23 +1,206 @@
 {% extends "base.html" %}
-{% block title %}Reportes - SERMINCO{% endblock %}
+{% block title %}Admin Reportes - SERMINCO{% endblock %}
 {% block content %}
 
-<h1><i class="bi bi-bar-chart"></i> Reportes Generales</h1>
-<p>Visualiza las estadísticas generales del sistema.</p>
+<div class="dashboard">
 
-<div style="margin-top:30px;">
-    <h3>📘 Expedientes por Contrato</h3>
-    {{ grafico_bar|safe }}
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <h1>Panel de Reportes - Administración</h1>
+    <p>Estadísticas generales y acceso completo a los datos del sistema</p>
+  </header>
+
+  <!-- ===== BOTONES DE REPORTE ===== -->
+  <div class="resumen">
+    <button class="card-btn active" data-target="chartContratos">
+      <span class="icon"><i class="fa-solid fa-file-lines"></i></span>
+      <h3>Total de Expedientes</h3>
+      <p class="counter" data-target="{{ total_expedientes }}">0</p>
+    </button>
+    <button class="card-btn" data-target="chartOficinas">
+      <span class="icon"><i class="fa-solid fa-building"></i></span>
+      <h3>Oficinas Activas</h3>
+      <p class="counter" data-target="{{ total_oficinas }}">0</p>
+    </button>
+    <button class="card-btn" data-target="chartSupervisores">
+      <span class="icon"><i class="fa-solid fa-user-tie"></i></span>
+      <h3>Supervisores</h3>
+      <p class="counter" data-target="{{ total_supervisores }}">0</p>
+    </button>
+  </div>
+
+  <!-- ===== GRAFICAS ===== -->
+  <section class="graficos">
+    <div class="grafico" id="chartContratos">
+      <h2>Expedientes por Contrato</h2>
+      <canvas id="contratosChart"></canvas>
+    </div>
+    <div class="grafico" id="chartOficinas" style="display:none;">
+      <h2>Expedientes por Oficina Regional</h2>
+      <canvas id="oficinasChart"></canvas>
+    </div>
+    <div class="grafico" id="chartSupervisores" style="display:none;">
+      <h2>Expedientes por Supervisor</h2>
+      <canvas id="supervisoresChart"></canvas>
+    </div>
+  </section>
+
 </div>
 
-<div style="margin-top:50px;">
-    <h3>🏢 Expedientes por Oficina Regional</h3>
-    {{ grafico_pie|safe }}
-</div>
+<!-- ===== LIBS ===== -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div style="margin-top:50px;">
-    <h3>🧑‍💼 Expedientes por Supervisor</h3>
-    {{ grafico_line|safe }}
-</div>
+<script>
+// ===== BOTONES DE REPORTE =====
+const buttons = document.querySelectorAll('.card-btn');
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.grafico').forEach(g => { g.style.display='none'; g.style.opacity=0; });
+    const grafContainer = document.getElementById(target);
+    grafContainer.style.display='block';
+    setTimeout(()=>grafContainer.style.opacity=1,50);
+    grafContainer.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+
+// ===== CONTADORES ANIMADOS =====
+const counters = document.querySelectorAll('.counter');
+counters.forEach(counter => {
+  const updateCount = () => {
+    const target = +counter.getAttribute('data-target');
+    const count = +counter.innerText;
+    const increment = Math.ceil(target / 100);
+    if(count < target) {
+      counter.innerText = count + increment > target ? target : count + increment;
+      setTimeout(updateCount, 20);
+    }
+  };
+  updateCount();
+});
+
+// ===== CHARTS =====
+let contratosChart, oficinasChart, supervisoresChart;
+
+function loadCharts(data) {
+  const contratosCtx = document.getElementById('contratosChart').getContext('2d');
+  const oficinasCtx = document.getElementById('oficinasChart').getContext('2d');
+  const supervisoresCtx = document.getElementById('supervisoresChart').getContext('2d');
+
+  const commonOptions = {
+    responsive:true,
+    plugins:{
+      legend:{ display:false },
+      tooltip:{
+        backgroundColor:'#1e293b',
+        titleColor:'#60a5fa',
+        bodyColor:'#e2e8f0',
+        borderColor:'#60a5fa',
+        borderWidth:1,
+        titleFont:{ weight:'bold' },
+      }
+    },
+    scales:{
+      y:{ beginAtZero:true, grid:{color:'rgba(255,255,255,0.1)'}, ticks:{color:'#e2e8f0'} },
+      x:{ grid:{color:'rgba(255,255,255,0.1)'}, ticks:{color:'#e2e8f0'} }
+    }
+  };
+
+  // ===== Contratos Bar Chart =====
+  if(contratosChart) contratosChart.destroy();
+  contratosChart = new Chart(contratosCtx,{
+    type:'bar',
+    data:{
+      labels:data.labels_contratos,
+      datasets:[{
+        label:'Total',
+        data:data.values_contratos,
+        backgroundColor:'#60a5fa',
+        borderRadius:8,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      ...commonOptions,
+      animation:{ duration:1500, easing:'easeOutQuart' }
+    }
+  });
+
+  // ===== Oficinas Pie Chart =====
+  if(oficinasChart) oficinasChart.destroy();
+  oficinasChart = new Chart(oficinasCtx,{
+    type:'pie',
+    data:{
+      labels:data.labels_oficinas,
+      datasets:[{
+        data:data.values_oficinas,
+        backgroundColor:['#334155','#475569','#64748b','#94a3b8','#cbd5e1','#f1f5f9','#1e293b'],
+        borderColor:'#0f172a',
+        borderWidth:2
+      }]
+    },
+    options:{
+      plugins:{ legend:{ position:'bottom', labels:{color:'#e2e8f0'} } },
+      animation:{ animateRotate:true, animateScale:true, duration:1500 }
+    }
+  });
+
+  // ===== Supervisores Line Chart =====
+  if(supervisoresChart) supervisoresChart.destroy();
+  supervisoresChart = new Chart(supervisoresCtx,{
+    type:'line',
+    data:{
+      labels:data.labels_supervisores,
+      datasets:[{
+        label:'Total',
+        data:data.values_supervisores,
+        borderColor:'#60a5fa',
+        backgroundColor:'rgba(96,165,250,0.2)',
+        tension:0.4,
+        fill:true,
+        pointBackgroundColor:'#60a5fa',
+        pointRadius:6
+      }]
+    },
+    options:{
+      ...commonOptions,
+      animation:{ duration:1500, easing:'easeOutQuart' }
+    }
+  });
+}
+
+// ===== FETCH AJAX PARA ACTUALIZAR EN TIEMPO REAL =====
+async function fetchData() {
+  const response = await fetch("{% url 'asignaciones:reportes_json' %}");
+  const data = await response.json();
+  loadCharts(data);
+}
+
+// Carga inicial
+fetchData();
+// Actualización cada 15 segundos
+setInterval(fetchData,15000);
+</script>
+
+<style>
+body { margin:0; padding:0; background:#0f172a; color:#e2e8f0; font-family:'Segoe UI',sans-serif; }
+.dashboard { max-width:1400px; margin:0 auto; padding:20px; }
+.header { position: sticky; top:0; background:#0f172a; z-index:1000; text-align:center; padding:15px 0; border-bottom:1px solid #1e293b; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+.header h1 { color:#60a5fa; font-size:2rem; margin:0; }
+.header p { color:#94a3b8; font-size:1rem; margin:5px 0 0; }
+.resumen { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin:25px 0; }
+.card-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; width:220px; padding:20px; border-radius:20px; border:none; background:#1e293b; cursor:pointer; transition: all 0.3s ease; position:relative; }
+.card-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(37,99,235,0.5); }
+.card-btn.active { background:#334155; box-shadow: 0 10px 25px rgba(37,99,235,0.8); }
+.card-btn h3 { margin:8px 0; font-size:1.1rem; color:#60a5fa; }
+.card-btn p { font-size:1.8rem; font-weight:bold; }
+.icon i { font-size:2rem; color:#f1f5f9; }
+.graficos { display:grid; gap:30px; grid-template-columns:1fr; }
+.grafico { background:#1e293b; border-radius:20px; padding:25px; border:1px solid rgba(37,99,235,0.4); box-shadow:0 8px 30px rgba(0,0,0,0.5); opacity:0; transition: opacity 0.5s ease; }
+.grafico h2 { color:#60a5fa; font-size:1.4rem; margin-bottom:12px; }
+</style>
 
 {% endblock %}

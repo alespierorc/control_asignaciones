@@ -136,14 +136,63 @@ class Mensaje(models.Model):
 # ============================================================
 
 class Anuncio(models.Model):
-    titulo = models.CharField(max_length=200)
+
+    PRIORIDAD_CHOICES = [
+        ("normal", "Normal"),
+        ("importante", "Importante"),
+        ("critico", "Crítico"),
+    ]
+
+    TIPO_CHOICES = [
+        ("general", "General"),
+        ("grupo", "Grupo"),
+        ("individual", "Individual"),
+    ]
+
+    titulo = models.CharField(max_length=255)
     contenido = models.TextField()
-    tipo = models.CharField(max_length=50, choices=[("INFO", "Informativo"), ("URGENTE", "Urgente")])
-    remitente = models.ForeignKey(User, on_delete=models.CASCADE, related_name="anuncios_enviados")
-    destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="anuncios_recibidos")
-    grupo_destino = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
+
+    remitente = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="anuncios_enviados"
+    )
+
+    destinatario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="anuncios_recibidos"
+    )
+
+    grupo_destino = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="general")
+    prioridad = models.CharField(max_length=20, choices=PRIORIDAD_CHOICES, default="normal")
+
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     leido = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ["-fecha_creacion"]
+
     def __str__(self):
-        return f"{self.titulo} ({self.tipo})"
+        return self.titulo
+
+class AnuncioLectura(models.Model):
+    anuncio = models.ForeignKey(Anuncio, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha_lectura = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("anuncio", "usuario")
