@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Anuncios{% endblock %}
+{% block title %}Anuncios | SERMINCO{% endblock %}
 
 {% block content %}
-
 <style>
 /* =========================
    CONTENEDOR
 ========================= */
-.anuncios-container {
-    max-width: 1100px;
+.anuncios-wrapper {
+    max-width: 980px;
     margin: auto;
+    padding-bottom: 40px;
 }
 
 /* =========================
@@ -21,51 +21,55 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
     gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
 }
 
-.anuncios-header h1 {
-    font-size: 1.6rem;
+.anuncios-header h2 {
     margin: 0;
-}
-
-.anuncios-actions {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
 }
 
 /* =========================
    BOTONES
 ========================= */
+.anuncios-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .btn-primary,
 .btn-secondary {
-    padding: 9px 16px;
-    border-radius: 10px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: .9rem;
+    font-weight: 500;
     border: none;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    text-decoration: none;
+    transition: all .2s ease;
 }
 
 .btn-primary {
-    background: var(--accent);
-    color: #fff;
+    background: #3b82f6;
+    color: white;
 }
 
 .btn-primary:hover {
-    background: var(--accent-hover);
+    background: #2563eb;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
     background: #1f2937;
-    color: var(--text);
-    border: 1px solid var(--border-soft);
+    color: #e5e7eb;
+    border: 1px solid #374151;
 }
 
 .btn-secondary:hover {
@@ -73,86 +77,58 @@
 }
 
 /* =========================
-   LISTA
-========================= */
-.anuncios-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* =========================
-   CARD
+   TARJETA ANUNCIO
 ========================= */
 .anuncio-card {
-    background: var(--bg-panel);
-    border: 1px solid var(--border-soft);
-    border-radius: 14px;
-    padding: 16px 18px;
+    background: linear-gradient(145deg, #161b22, #0e1117);
+    border: 1px solid #1f2937;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
     display: flex;
-    gap: 14px;
+    justify-content: space-between;
+    gap: 16px;
+    transition: all .25s ease;
     cursor: pointer;
-    position: relative;
-    transition: all 0.35s ease;
-    animation: fadeUp 0.4s ease forwards;
-}
-
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .anuncio-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-}
-
-.anuncio-card.no-leido {
-    box-shadow: inset 4px 0 0 var(--accent);
-}
-
-.anuncio-icon {
-    font-size: 1.6rem;
-    color: var(--accent);
+    border-color: #3b82f6;
+    transform: translateY(-2px);
 }
 
 /* =========================
    TEXTO
 ========================= */
-.anuncio-content {
-    flex: 1;
+.anuncio-left {
+    display: flex;
+    gap: 14px;
+}
+
+.anuncio-icon {
+    color: #3b82f6;
+    font-size: 1.5rem;
+    margin-top: 3px;
 }
 
 .anuncio-title {
-    font-size: 1.05rem;
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
-.anuncio-text {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-    max-height: 42px;
+.anuncio-content {
+    color: #cbd5e1;
+    font-size: .95rem;
+    line-height: 1.45;
+    max-height: 2.9em;
     overflow: hidden;
-    position: relative;
+    text-overflow: ellipsis;
 }
 
-.anuncio-text::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(to top, var(--bg-panel), transparent);
-}
-
-.anuncio-meta {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-top: 8px;
+.anuncio-date {
+    font-size: .75rem;
+    color: #9ca3af;
+    margin-top: 6px;
 }
 
 /* =========================
@@ -160,209 +136,346 @@
 ========================= */
 .anuncio-actions {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
 }
 
-.btn-icon {
+.anuncio-actions button {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: #9ca3af;
     cursor: pointer;
     font-size: 1.1rem;
+    transition: all .2s ease;
 }
 
-.btn-icon:hover {
-    color: var(--danger);
+.anuncio-actions button:hover {
+    color: #ef4444;
+    transform: scale(1.1);
 }
 
 /* =========================
-   MODAL
+   EMPTY STATE
 ========================= */
-.modal-overlay {
+.empty-state {
+    text-align: center;
+    color: #9ca3af;
+    padding: 70px 10px;
+}
+
+.empty-state i {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+}
+
+/* =========================
+   MODALES
+========================= */
+.modal-bg {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.65);
+    background: rgba(0,0,0,.65);
     display: none;
-    align-items: center;
     justify-content: center;
-    z-index: 9999;
-    animation: fadeIn 0.25s ease;
-}
-
-.modal-overlay.show {
-    display: flex;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    align-items: center;
+    z-index: 1000;
 }
 
 .modal {
-    background: var(--bg-panel);
+    background: #0e1117;
     border-radius: 16px;
-    max-width: 650px;
+    padding: 22px;
     width: 90%;
-    padding: 24px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    animation: scaleIn 0.3s ease;
+    max-width: 560px;
+    border: 1px solid #1f2937;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
-@keyframes scaleIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+.modal h3 {
+    margin-top: 0;
 }
 
-.modal-header {
+.modal-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
 }
 
-.modal-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.modal-close {
-    background: transparent;
+.btn-cancel {
+    background: #374151;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
     border: none;
-    color: var(--text-muted);
-    font-size: 1.4rem;
-    cursor: pointer;
 }
 
-.modal-close:hover {
-    color: var(--danger);
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
 }
 
-.modal-content {
-    font-size: 0.95rem;
-    color: var(--text);
-    line-height: 1.6;
-    white-space: pre-line;
+/* =========================
+   ESTADOS LEÍDO / NO LEÍDO
+========================= */
+.anuncio-card.no-leido {
+    border-left: 5px solid #3b82f6;
+    position: relative;
 }
 
-.modal-meta {
-    margin-top: 18px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
+.anuncio-card.no-leido::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    background: #ef4444;
+    border-radius: 50%;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    animation: pulse 1.5s infinite;
 }
+
+.anuncio-card.leido {
+    opacity: .6;
+    border-left: 5px solid #374151;
+    background: linear-gradient(145deg, #111827, #0b0f15);
+}
+
+/* =========================
+   ANIMACIÓN
+========================= */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: .6; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.anuncio-card.leido {
+    opacity: .55;
+    border-color: #374151;
+}
+
+.anuncio-card.leido .anuncio-icon {
+    color: #6b7280;
+}
+
+.anuncio-badge-leido {
+    font-size: .7rem;
+    background: #374151;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #d1d5db;
+    margin-left: 8px;
+}
+
 </style>
 
-<div class="anuncios-container">
 
+<div class="anuncios-wrapper">
+
+    <!-- HEADER -->
     <div class="anuncios-header">
-        <h1><i class="bi bi-megaphone"></i> Anuncios</h1>
+        <h2><i class="bi bi-megaphone"></i> Anuncios</h2>
 
-        {% if puede_crear or puede_ver_metricas %}
+        {% if puede_crear %}
         <div class="anuncios-actions">
-            {% if puede_crear %}
             <a href="{% url 'asignaciones:crear_anuncio' %}" class="btn-primary">
                 <i class="bi bi-plus-circle"></i> Crear anuncio
             </a>
-            {% endif %}
+
             {% if puede_ver_metricas %}
             <a href="{% url 'asignaciones:anuncios_metricas' %}" class="btn-secondary">
-                <i class="bi bi-graph-up"></i> Métricas
+                <i class="bi bi-bar-chart"></i> Métricas
             </a>
             {% endif %}
         </div>
         {% endif %}
     </div>
 
-    <div class="anuncios-list">
-        {% for anuncio in anuncios %}
-        <div class="anuncio-card {% if not anuncio.leido %}no-leido{% endif %}"
-             data-id="{{ anuncio.id }}"
-             data-titulo="{{ anuncio.titulo }}"
-             data-contenido="{{ anuncio.contenido|escapejs }}"
-             data-meta="{{ anuncio.fecha_creacion|date:'d/m/Y H:i' }}">
-
-            <div class="anuncio-icon">
-                <i class="bi bi-bell-fill"></i>
-            </div>
-
-            <div class="anuncio-content">
+    <!-- LISTA -->
+    {% for anuncio in anuncios %}
+    <div class="anuncio-card no-leido" data-id="{{ anuncio.id }}">
+        <div class="anuncio-left">
+            <i class="bi bi-bell-fill anuncio-icon"></i>
+            <div>
                 <div class="anuncio-title">{{ anuncio.titulo }}</div>
-                <div class="anuncio-text">{{ anuncio.contenido }}</div>
-                <div class="anuncio-meta">
+                <div class="anuncio-content">{{ anuncio.contenido }}</div>
+                <div class="anuncio-date">
                     {{ anuncio.fecha_creacion|date:"d/m/Y H:i" }}
                 </div>
             </div>
+        </div>
 
-            <div class="anuncio-actions">
-                <button class="btn-icon btn-eliminar-anuncio" data-id="{{ anuncio.id }}">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
+        <div class="anuncio-actions">
+            <button class="btn-eliminar" data-id="{{ anuncio.id }}" title="Eliminar">
+                <i class="bi bi-trash"></i>
+            </button>
         </div>
-        {% empty %}
-        <div style="text-align:center;color:var(--text-muted);padding:30px;">
-            No hay anuncios disponibles.
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <i class="bi bi-check-circle"></i>
+        <p>No tienes anuncios pendientes 🎉</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div class="modal-bg" id="modalEliminar">
+    <div class="modal">
+        <h3>Eliminar anuncio</h3>
+        <p>Este anuncio se ocultará para ti.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel">Cancelar</button>
+            <button class="btn-danger" id="confirmEliminar">Eliminar</button>
         </div>
-        {% endfor %}
     </div>
 </div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modalAnuncio">
+<!-- MODAL VER ANUNCIO -->
+<div class="modal-bg" id="modalVerAnuncio">
     <div class="modal">
-        <div class="modal-header">
-            <div class="modal-title" id="modalTitulo"></div>
-            <button class="modal-close" id="modalClose">&times;</button>
+        <h3 id="modalTitulo"></h3>
+        <p id="modalContenido" style="white-space: pre-wrap;"></p>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="cerrarModalAnuncio">Cerrar</button>
         </div>
-        <div class="modal-content" id="modalContenido"></div>
-        <div class="modal-meta" id="modalMeta"></div>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+let anuncioIdEliminar = null;
+let requestEnCurso = false;
 
-    const modal = document.getElementById("modalAnuncio");
-    const modalTitulo = document.getElementById("modalTitulo");
-    const modalContenido = document.getElementById("modalContenido");
-    const modalMeta = document.getElementById("modalMeta");
-    const modalClose = document.getElementById("modalClose");
+/* =========================
+   BADGE REAL
+========================= */
+function actualizarBadge(valor = null) {
+    const badge = document.getElementById("badge-anuncios");
+    if (!badge) return;
 
-    document.querySelectorAll(".anuncio-card").forEach(card => {
-        card.addEventListener("click", () => {
+    if (valor !== null) {
+        if (valor > 0) {
+            badge.textContent = valor;
+            badge.style.display = "inline-block";
+        } else {
+            badge.textContent = "";
+            badge.style.display = "none";
+        }
+        return;
+    }
 
-            modalTitulo.innerText = card.dataset.titulo;
-            modalContenido.innerText = card.dataset.contenido;
-            modalMeta.innerText = card.dataset.meta;
+    fetch("{% url 'asignaciones:anuncios_no_leidos' %}", {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-store"
+    })
+    .then(r => r.json())
+    .then(data => actualizarBadge(Number(data.count || 0)));
+}
 
-            modal.classList.add("show");
+/* =========================
+   ELIMINAR
+========================= */
+document.querySelectorAll(".btn-eliminar").forEach(btn => {
+    btn.onclick = e => {
+        e.stopPropagation();
+        anuncioIdEliminar = btn.dataset.id;
+        document.getElementById("modalEliminar").style.display = "flex";
+    };
+});
 
-            if (card.classList.contains("no-leido")) {
-                fetch(`/anuncios/marcar-leido/${card.dataset.id}/`, {
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
-                }).then(() => {
-                    card.classList.remove("no-leido");
+document.querySelector(".btn-cancel").onclick = () => {
+    document.getElementById("modalEliminar").style.display = "none";
+};
 
-                    const badge = document.getElementById("badge-anuncios");
-                    if (badge) {
-                        let count = parseInt(badge.innerText);
-                        count = Math.max(0, count - 1);
-                        badge.innerText = count;
-                        if (count === 0) badge.remove();
-                    }
-                });
+document.getElementById("confirmEliminar").onclick = () => {
+    fetch(`/anuncios/eliminar/${anuncioIdEliminar}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        // eliminar SOLO el card correcto
+        document.querySelector(`.anuncio-card[data-id='${anuncioIdEliminar}']`)?.remove();
+        document.getElementById("modalEliminar").style.display = "none";
+        actualizarBadge(data.no_leidos);
+    });
+};
+
+/* =========================
+   VER + MARCAR LEÍDO
+========================= */
+document.querySelectorAll(".anuncio-card").forEach(card => {
+    card.addEventListener("click", () => {
+
+        const anuncioId = card.dataset.id;
+
+        // 1️⃣ Mostrar modal SIEMPRE
+        document.getElementById("modalTitulo").innerText =
+            card.querySelector(".anuncio-title")?.innerText || "";
+
+        document.getElementById("modalContenido").innerText =
+            card.querySelector(".anuncio-content")?.innerText || "";
+
+        document.getElementById("modalVerAnuncio").style.display = "flex";
+
+        // 2️⃣ Si ya está leído, NO volver a pedir backend
+        if (card.classList.contains("leido")) return;
+
+        // 3️⃣ Evitar doble request
+        if (requestEnCurso) return;
+        requestEnCurso = true;
+
+        fetch(`/anuncios/marcar-leido/${anuncioId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "X-Requested-With": "XMLHttpRequest"
             }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === "ok") {
+                card.classList.remove("no-leido");
+                card.classList.add("leido");
+                actualizarBadge(data.no_leidos);
+            }
+        })
+        .finally(() => {
+            requestEnCurso = false;
         });
     });
+});
 
-    modalClose.addEventListener("click", () => {
-        modal.classList.remove("show");
-    });
+document.getElementById("cerrarModalAnuncio").onclick = () => {
+    document.getElementById("modalVerAnuncio").style.display = "none";
+};
 
-    modal.addEventListener("click", e => {
-        if (e.target === modal) modal.classList.remove("show");
-    });
+/* =========================
+   EVENTOS GLOBALES
+========================= */
+document.addEventListener("DOMContentLoaded", () => {
+    actualizarBadge();
+});
 
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+        actualizarBadge();
+    }
+});
+
+window.addEventListener("pageshow", () => {
+    actualizarBadge();
 });
 </script>
+
+
+
 
 {% endblock %}

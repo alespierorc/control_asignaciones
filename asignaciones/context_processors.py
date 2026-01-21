@@ -1,21 +1,32 @@
 from .models import Anuncio
 from django.db import models
+from django.utils import timezone
+from django.db.models import Q
 
 def anuncios_context(request):
     if not request.user.is_authenticated:
         return {}
 
     user = request.user
+    ahora = timezone.now()
 
-    anuncios_no_leidos = Anuncio.objects.filter(
-        models.Q(destinatario=user) |
-        models.Q(grupo_destino__in=user.groups.all()) |
-        models.Q(tipo="general"),
-        leido=False
-    ).count()
+    anuncios_no_leidos = (
+        Anuncio.objects
+        .exclude(lecturas__usuario=user)
+        .exclude(eliminaciones__usuario=user)
+        .filter(
+            Q(destinatario=user)
+            | Q(grupo_destino__in=user.groups.all())
+            | Q(tipo="general"),
+            Q(fecha_inicio__lte=ahora) | Q(fecha_inicio__isnull=True),
+            Q(fecha_fin__gte=ahora) | Q(fecha_fin__isnull=True),
+        )
+        .distinct()
+        .count()
+    )
 
     return {
-        "anuncios_no_leidos": anuncios_no_leidos
+        "contador_anuncios": anuncios_no_leidos
     }
 
 def permisos_navbar(request):

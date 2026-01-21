@@ -92,6 +92,7 @@ urlpatterns = [
     path("reportes/exportar/", views.exportar_excel, name="exportar_excel"),
     path("anuncios/no-leidos/", views.anuncios_no_leidos, name="anuncios_no_leidos"),
     path("anuncios/marcar-leido/<int:pk>/",views.marcar_anuncio_leido,name="marcar_anuncio_leido"),
+    path("anuncios/eliminar/<int:pk>/",views.eliminar_anuncio,name="eliminar_anuncio"),
 
     
 

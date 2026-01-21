@@ -181,7 +181,6 @@ class Anuncio(models.Model):
     fecha_fin = models.DateTimeField(null=True, blank=True)
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    leido = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-fecha_creacion"]
@@ -190,9 +189,39 @@ class Anuncio(models.Model):
         return self.titulo
 
 class AnuncioLectura(models.Model):
-    anuncio = models.ForeignKey(Anuncio, on_delete=models.CASCADE)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    anuncio = models.ForeignKey(
+        Anuncio,
+        on_delete=models.CASCADE,
+        related_name="lecturas"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="anuncios_leidos"
+    )
     fecha_lectura = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ("anuncio", "usuario")
+
+    def __str__(self):
+        return f"{self.usuario} leyó {self.anuncio}"
+
+class AnuncioEliminado(models.Model):
+    anuncio = models.ForeignKey(
+        Anuncio,
+        on_delete=models.CASCADE,
+        related_name="eliminaciones"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="anuncios_eliminados"
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("anuncio", "usuario")
+
+    def __str__(self):
+        return f"{self.usuario} eliminó {self.anuncio}"
