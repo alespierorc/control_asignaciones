@@ -160,24 +160,10 @@
             </a>
             {% endif %}
 
-            <a class="chip" href="{% url 'asignaciones:anuncios' %}">
+            <a class="chip anuncios-chip" href="{% url 'asignaciones:anuncios' %}">
     <i class="bi bi-megaphone"></i>
     Anuncios
-    {% if anuncios_no_leidos > 0 %}
-    <span id="badge-anuncios"
-          style="
-            background:#ef4444;
-            color:white;
-            padding:2px 8px;
-            border-radius:999px;
-            font-size:0.75rem;
-            font-weight:700;
-            margin-left:4px;
-            animation:pulse 1.2s infinite;
-          ">
-        {{ anuncios_no_leidos }}
-    </span>
-    {% endif %}
+    <span id="badge-anuncios" class="badge-anuncios" style="display:none;"></span>
 </a>
 
             <a class="chip" href="{% url 'asignaciones:bandeja' %}">
@@ -213,28 +199,64 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     const logoutBtn = document.querySelector(".logout-btn");
-    if (!logoutBtn) return;
 
-    logoutBtn.addEventListener("click", e => {
-        e.preventDefault();
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", e => {
+            e.preventDefault();
 
-        Swal.fire({
-            title: "Cerrar sesión",
-            text: "¿Deseas salir del sistema?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Sí, cerrar sesión",
-            cancelButtonText: "Cancelar",
-            reverseButtons: true,
-            confirmButtonColor: "#ef4444",
-            cancelButtonColor: "#374151",
-            background: "#0e1117",
-            color: "#e5e7eb"
-        }).then(result => {
-            if (result.isConfirmed) {
-                window.location.href = logoutBtn.href;
-            }
+            Swal.fire({
+                title: "Cerrar sesión",
+                text: "¿Deseas salir del sistema?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Sí, cerrar sesión",
+                cancelButtonText: "Cancelar",
+                reverseButtons: true,
+                confirmButtonColor: "#ef4444",
+                cancelButtonColor: "#374151",
+                background: "#0e1117",
+                color: "#e5e7eb"
+            }).then(result => {
+                if (result.isConfirmed) {
+                    window.location.href = logoutBtn.href;
+                }
+            });
         });
+    }
+    const badge = document.getElementById("badge-anuncios");
+    if (!badge) return;
+
+    async function actualizarBadge() {
+        try {
+            const response = await fetch("{% url 'asignaciones:anuncios_no_leidos' %}", {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+
+            const data = await response.json();
+            const count = Number(data.count) || 0;
+
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = "inline-block";
+            } else {
+                badge.textContent = "";
+                badge.style.display = "none";
+            }
+        } catch (error) {
+            console.error("Error actualizando badge de anuncios:", error);
+            badge.style.display = "none";
+        }
+    }
+
+    /* AL CARGAR */
+    actualizarBadge();
+
+    /* AL VOLVER A LA PESTAÑA (FIX CLAVE DEL BUG) */
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            actualizarBadge();
+        }
     });
 
 });
