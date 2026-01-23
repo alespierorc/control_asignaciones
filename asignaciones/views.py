@@ -34,7 +34,13 @@ from .models import Expediente
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.db import transaction
-from .models import Anuncio, AnuncioLectura
+from django.db.models import Exists, OuterRef
+from django.views.decorators.csrf import csrf_exempt
+from .models import (
+    Anuncio,
+    AnuncioLectura,
+    AnuncioEliminado,  
+)
 
 
 from .forms import (
@@ -1322,10 +1328,140 @@ def editar_usuario(request, user_id):
 
 @login_required
 def bandeja(request):
-    """Todos los usuarios autenticados pueden acceder."""
-    recibidos = Mensaje.objects.filter(destinatario=request.user).select_related("remitente")
-    usuarios = User.objects.all()
-    return render(request, "misc/bandeja.html", {"recibidos": recibidos, "usuarios": usuarios})
+    tipo = request.GET.get("tipo", "recibidos")
+
+    # =========================
+    # ENVIAR MENSAJE
+    # =========================
+    if request.method == "POST":
+        destinatario_username = request.POST.get("destinatario")
+        asunto = request.POST.get("asunto")
+        cuerpo = request.POST.get("contenido")
+
+        if not destinatario_username or not asunto or not cuerpo:
+            messages.error(request, "Completa todos los campos")
+            return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
+
+        try:
+            destinatario = User.objects.get(username=destinatario_username)
+        except User.DoesNotExist:
+            messages.error(request, "El usuario destinatario no existe")
+            return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
+
+        Mensaje.objects.create(
+            remitente=request.user,
+            destinatario=destinatario,
+            asunto=asunto,
+            cuerpo=cuerpo
+        )
+
+        messages.success(request, "Mensaje enviado correctamente")
+        # 🔹 Redirige siempre a "enviados" después de enviar
+        return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
+
+    # =========================
+    # LISTADO DE MENSAJES
+    # =========================
+    if tipo == "enviados":
+        mensajes = Mensaje.objects.filter(
+            remitente=request.user,
+            eliminado_por_remitente=False
+        )
+    else:
+        mensajes = Mensaje.objects.filter(
+            destinatario=request.user,
+            eliminado_por_destinatario=False
+        )
+
+    return render(request, "misc/bandeja.html", {
+        "mensajes": mensajes,
+        "tipo": tipo
+    })
+
+
+@login_required
+def leer_mensaje(request, pk):
+    mensaje = get_object_or_404(Mensaje, pk=pk)
+
+    # 🔐 Seguridad total
+    if request.user not in [mensaje.remitente, mensaje.destinatario]:
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    if request.user == mensaje.destinatario and not mensaje.leido:
+        mensaje.leido = True
+        mensaje.save(update_fields=["leido"])
+
+    return JsonResponse({
+        "id": mensaje.id,
+        "asunto": mensaje.asunto,
+        "cuerpo": mensaje.cuerpo,
+        "remitente": mensaje.remitente.username if mensaje.remitente else "Sistema",
+        "fecha": mensaje.creado_en.strftime("%d/%m/%Y %H:%M")
+    })
+
+
+@login_required
+def eliminar_mensaje(request, pk):
+    mensaje = get_object_or_404(Mensaje, pk=pk)
+
+    if request.user == mensaje.remitente:
+        mensaje.eliminado_por_remitente = True
+    elif request.user == mensaje.destinatario:
+        mensaje.eliminado_por_destinatario = True
+    else:
+        return JsonResponse({"error": "No autorizado"}, status=403)
+
+    mensaje.save(update_fields=[
+        "eliminado_por_remitente",
+        "eliminado_por_destinatario"
+    ])
+
+    messages.success(request, "Mensaje eliminado")
+    return redirect("asignaciones:bandeja")
+
+
+@login_required
+def mensajes_parciales(request, tipo):
+    """
+    Devuelve solo los rows HTML de los mensajes según tipo (recibidos/enviados)
+    """
+    if tipo == "enviados":
+        mensajes = Mensaje.objects.filter(
+            remitente=request.user,
+            eliminado_por_remitente=False
+        )
+    else:
+        mensajes = Mensaje.objects.filter(
+            destinatario=request.user,
+            eliminado_por_destinatario=False
+        )
+
+    return render(request, "misc/mensajes_parciales.html", {
+        "mensajes": mensajes
+    })
+
+
+@csrf_exempt
+@login_required
+def eliminar_mensajes_ajax(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        ids = data.get("ids", [])
+
+        for m_id in ids:
+            try:
+                mensaje = Mensaje.objects.get(pk=m_id)
+                if request.user == mensaje.remitente:
+                    mensaje.eliminado_por_remitente = True
+                elif request.user == mensaje.destinatario:
+                    mensaje.eliminado_por_destinatario = True
+                mensaje.save()
+            except Mensaje.DoesNotExist:
+                continue
+
+        return JsonResponse({"success": True})
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
 
 # ============================================================
 #                  ANUNCIOS - CREACIÓN Y LISTADO
@@ -1349,16 +1485,24 @@ def anuncios(request):
 
     base_qs = (
         Anuncio.objects
-        .exclude(eliminaciones__usuario=user)  
+        .exclude(eliminaciones__usuario=user)
         .filter(
             Q(fecha_inicio__lte=ahora) | Q(fecha_inicio__isnull=True),
             Q(fecha_fin__gte=ahora) | Q(fecha_fin__isnull=True),
         )
+        .annotate(
+            leido=Exists(
+                AnuncioLectura.objects.filter(
+                    anuncio=OuterRef("pk"),
+                    usuario=user
+                )
+            )
+        )
     )
 
-    
     if user.groups.filter(name="AdministradorLider").exists():
         anuncios_qs = base_qs.filter(remitente=user)
+
     elif user.groups.filter(name="Administrador").exists():
         anuncios_qs = base_qs.filter(
             Q(remitente=user)
@@ -1366,6 +1510,7 @@ def anuncios(request):
             | Q(grupo_destino__in=user.groups.all())
             | Q(tipo="general")
         ).distinct()
+
     else:
         anuncios_qs = base_qs.filter(
             Q(destinatario=user)
@@ -1373,9 +1518,9 @@ def anuncios(request):
             | Q(tipo="general")
         )
 
-    
+    # 🔒 CONTADOR (NO TOCADO)
     contador_anuncios = anuncios_qs.exclude(
-        lecturas__usuario=user  
+        lecturas__usuario=user
     ).count()
 
     return render(request, "misc/anuncios.html", {
@@ -1384,6 +1529,7 @@ def anuncios(request):
         "puede_crear": puede_crear,
         "puede_ver_metricas": puede_ver_metricas,
     })
+
 
 
 @login_required
@@ -1409,7 +1555,6 @@ def crear_anuncio(request):
         fecha_inicio = parse_datetime(fecha_inicio_raw) if fecha_inicio_raw else None
         fecha_fin = parse_datetime(fecha_fin_raw) if fecha_fin_raw else None
 
-        
         if not titulo or not contenido:
             messages.error(request, "Todos los campos obligatorios deben completarse.")
             return redirect("asignaciones:crear_anuncio")
@@ -1430,7 +1575,6 @@ def crear_anuncio(request):
             messages.error(request, "La fecha de inicio no puede ser en el pasado.")
             return redirect("asignaciones:crear_anuncio")
 
-        
         Anuncio.objects.create(
             titulo=titulo,
             contenido=contenido,
@@ -1451,6 +1595,7 @@ def crear_anuncio(request):
     })
 
 
+
 @login_required
 @transaction.atomic
 def marcar_anuncio_leido(request, pk):
@@ -1459,7 +1604,6 @@ def marcar_anuncio_leido(request, pk):
 
     anuncio = get_object_or_404(Anuncio, pk=pk)
 
-    
     AnuncioLectura.objects.get_or_create(
         anuncio=anuncio,
         usuario=request.user
@@ -1471,6 +1615,7 @@ def marcar_anuncio_leido(request, pk):
     })
 
 
+
 @login_required
 def eliminar_anuncio(request, pk):
     if request.method != "POST":
@@ -1478,7 +1623,6 @@ def eliminar_anuncio(request, pk):
 
     anuncio = get_object_or_404(Anuncio, pk=pk)
 
-    
     AnuncioEliminado.objects.get_or_create(
         anuncio=anuncio,
         usuario=request.user
@@ -1488,6 +1632,7 @@ def eliminar_anuncio(request, pk):
         "status": "ok",
         "no_leidos": contar_anuncios_no_leidos(request.user)
     })
+
 
 
 @login_required

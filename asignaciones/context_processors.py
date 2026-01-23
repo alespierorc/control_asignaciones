@@ -2,6 +2,7 @@ from .models import Anuncio
 from django.db import models
 from django.utils import timezone
 from django.db.models import Q
+from .models import Mensaje
 
 def anuncios_context(request):
     if not request.user.is_authenticated:
@@ -50,4 +51,15 @@ def permisos_navbar(request):
     # Por defecto, no mostrar
     return {
         "mostrar_reportes": False
+    }
+
+def contador_mensajes(request):
+    if not request.user.is_authenticated:
+        return {}
+
+    return {
+        "mensajes_no_leidos": Mensaje.objects.filter(
+            destinatario=request.user,
+            leido=False
+        ).count()
     }

@@ -273,7 +273,6 @@
 
 </style>
 
-
 <div class="anuncios-wrapper">
 
     <!-- HEADER -->
@@ -297,7 +296,7 @@
 
     <!-- LISTA -->
     {% for anuncio in anuncios %}
-    <div class="anuncio-card no-leido" data-id="{{ anuncio.id }}">
+    <div class="anuncio-card {% if anuncio.leido %}leido{% else %}no-leido{% endif %}" data-id="{{ anuncio.id }}">
         <div class="anuncio-left">
             <i class="bi bi-bell-fill anuncio-icon"></i>
             <div>
@@ -351,7 +350,7 @@ let anuncioIdEliminar = null;
 let requestEnCurso = false;
 
 /* =========================
-   BADGE REAL
+   BADGE REAL (NO SE TOCA)
 ========================= */
 function actualizarBadge(valor = null) {
     const badge = document.getElementById("badge-anuncios");
@@ -377,21 +376,27 @@ function actualizarBadge(valor = null) {
 }
 
 /* =========================
-   ELIMINAR
+   ELIMINAR (FIX REAL)
 ========================= */
 document.querySelectorAll(".btn-eliminar").forEach(btn => {
-    btn.onclick = e => {
+    btn.addEventListener("click", e => {
         e.stopPropagation();
         anuncioIdEliminar = btn.dataset.id;
         document.getElementById("modalEliminar").style.display = "flex";
-    };
+    });
 });
 
-document.querySelector(".btn-cancel").onclick = () => {
-    document.getElementById("modalEliminar").style.display = "none";
-};
+document.querySelectorAll(".btn-cancel").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.getElementById("modalEliminar").style.display = "none";
+        anuncioIdEliminar = null;
+    });
+});
 
-document.getElementById("confirmEliminar").onclick = () => {
+document.getElementById("confirmEliminar").addEventListener("click", () => {
+
+    if (!anuncioIdEliminar) return;
+
     fetch(`/anuncios/eliminar/${anuncioIdEliminar}/`, {
         method: "POST",
         headers: {
@@ -399,24 +404,30 @@ document.getElementById("confirmEliminar").onclick = () => {
             "X-Requested-With": "XMLHttpRequest"
         }
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error("Error eliminando");
+        return r.json();
+    })
     .then(data => {
-        // eliminar SOLO el card correcto
-        document.querySelector(`.anuncio-card[data-id='${anuncioIdEliminar}']`)?.remove();
+        document
+            .querySelector(`.anuncio-card[data-id="${anuncioIdEliminar}"]`)
+            ?.remove();
+
         document.getElementById("modalEliminar").style.display = "none";
         actualizarBadge(data.no_leidos);
-    });
-};
+        anuncioIdEliminar = null;
+    })
+    .catch(err => console.error(err));
+});
 
 /* =========================
-   VER + MARCAR LEÍDO
+   VER + MARCAR LEÍDO (OK)
 ========================= */
 document.querySelectorAll(".anuncio-card").forEach(card => {
     card.addEventListener("click", () => {
 
         const anuncioId = card.dataset.id;
 
-        // 1️⃣ Mostrar modal SIEMPRE
         document.getElementById("modalTitulo").innerText =
             card.querySelector(".anuncio-title")?.innerText || "";
 
@@ -425,11 +436,9 @@ document.querySelectorAll(".anuncio-card").forEach(card => {
 
         document.getElementById("modalVerAnuncio").style.display = "flex";
 
-        // 2️⃣ Si ya está leído, NO volver a pedir backend
         if (card.classList.contains("leido")) return;
-
-        // 3️⃣ Evitar doble request
         if (requestEnCurso) return;
+
         requestEnCurso = true;
 
         fetch(`/anuncios/marcar-leido/${anuncioId}/`, {
@@ -447,35 +456,22 @@ document.querySelectorAll(".anuncio-card").forEach(card => {
                 actualizarBadge(data.no_leidos);
             }
         })
-        .finally(() => {
-            requestEnCurso = false;
-        });
+        .finally(() => requestEnCurso = false);
     });
 });
 
-document.getElementById("cerrarModalAnuncio").onclick = () => {
+document.getElementById("cerrarModalAnuncio").addEventListener("click", () => {
     document.getElementById("modalVerAnuncio").style.display = "none";
-};
+});
 
 /* =========================
    EVENTOS GLOBALES
 ========================= */
-document.addEventListener("DOMContentLoaded", () => {
-    actualizarBadge();
-});
-
+document.addEventListener("DOMContentLoaded", actualizarBadge);
 document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-        actualizarBadge();
-    }
+    if (!document.hidden) actualizarBadge();
 });
-
-window.addEventListener("pageshow", () => {
-    actualizarBadge();
-});
+window.addEventListener("pageshow", actualizarBadge);
 </script>
-
-
-
 
 {% endblock %}

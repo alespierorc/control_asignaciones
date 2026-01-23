@@ -1,211 +1,388 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}Bandeja de mensajes{% endblock %}
 
 {% block content %}
 <style>
-  .bandeja-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 30px;
-  }
+/* ===============================
+   CONTENEDOR GENERAL
+================================ */
+.bandeja-wrapper {
+  margin: 40px auto;
+  max-width: 1200px;
+  background: #1f2937;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.4);
+  font-family: "Inter", sans-serif;
+  color: #f3f4f6;
+  transition: all 0.3s ease;
+}
 
-  .bandeja-header, .crear-mensaje, .mensajes-lista {
-    background: #1f2937;
-    border-radius: 16px;
-    color: #f3f4f6;
-    padding: 22px 24px;
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
-  }
+/* ===============================
+   TITULO
+================================ */
+.bandeja-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
 
-  .bandeja-header h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 15px;
-  }
+/* ===============================
+   LAYOUT
+================================ */
+.bandeja-layout {
+  display: flex;
+  gap: 24px;
+}
 
-  .bandeja-header input, .bandeja-header select {
-    background: #111827;
-    border: 1px solid #374151;
-    border-radius: 10px;
-    color: #f3f4f6;
-    padding: 8px 12px;
-  }
+/* ===============================
+   MENÚ IZQUIERDO
+================================ */
+.bandeja-menu {
+  flex: 0 0 180px;
+  border-right: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-  .bandeja-header input {
-    width: 240px;
-  }
+.menu-item {
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #e5e7eb;
+  transition: 0.2s;
+}
 
-  .btn-primary {
-    background: #2563eb;
-    border: none;
-    color: white;
-    font-weight: 600;
-    border-radius: 10px;
-    padding: 10px 18px;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
+.menu-item.active,
+.menu-item:hover {
+  background: rgba(255,255,255,.06);
+}
 
-  .btn-primary:hover {
-    background: #3b82f6;
-  }
+/* ===============================
+   PANEL DERECHO
+================================ */
+.bandeja-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
 
-  .crear-mensaje h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 15px;
-  }
+/* ===============================
+   ACCIONES
+================================ */
+.bandeja-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  .crear-mensaje input, .crear-mensaje select, .crear-mensaje textarea {
-    background: #111827;
-    border: 1px solid #374151;
-    border-radius: 10px;
-    color: #f3f4f6;
-    padding: 10px 12px;
-    width: 100%;
-    margin-bottom: 12px;
-  }
+.bandeja-actions input {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: #f3f4f6;
+  width: 280px;
+}
 
-  .crear-mensaje textarea {
-    resize: none;
-    height: 100px;
-  }
+.btn-primary {
+  background: #2563eb;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: 0.2s;
+}
 
-  .mensajes-lista h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
+.btn-primary:hover {
+  background: #1d4ed8;
+}
 
-  .mensajes-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
+.btn-danger {
+  background: #dc2626;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 
-  .mensajes-table th, .mensajes-table td {
-    padding: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: left;
-  }
+.btn-danger:hover {
+  background: #b91c1c;
+}
 
-  .mensajes-table th {
-    text-transform: uppercase;
-    opacity: 0.8;
-    font-size: 13px;
-  }
+/* ===============================
+   CREAR MENSAJE
+================================ */
+.crear-mensaje {
+  background: #111827;
+  border-radius: 14px;
+  padding: 18px;
+  display: none;
+  animation: fadeIn 0.3s ease;
+  flex-direction: column;
+}
 
-  .mensajes-table tr:nth-child(even) {
-    background: rgba(255,255,255,0.03);
-  }
+.crear-mensaje input,
+.crear-mensaje textarea {
+  width: 100%;
+  margin-bottom: 12px;
+  background: #020617;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 10px;
+  color: #f3f4f6;
+}
 
-  .toast {
-    position: fixed; top: 25px; right: 25px;
-    background: #10b981; color: #fff;
-    padding: 14px 20px; border-radius: 10px; font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    opacity: 0; pointer-events: none; transform: translateY(-15px);
-    transition: all 0.4s ease; display: flex; align-items: center;
-  }
-  .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  .toast.error { background: #ef4444; }
+.crear-mensaje textarea {
+  resize: none;
+  height: 120px;
+}
+
+/* ===============================
+   CONTENEDOR DE MENSAJES FUERA
+================================ */
+.mensajes-wrapper {
+  margin: 20px auto;
+  max-width: 1200px;
+  background: #111827;
+  border-radius: 14px;
+  padding: 16px;
+  max-height: 650px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #1f2937;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.card-row:hover {
+  background: rgba(37,99,235,.05);
+}
+
+.card-col {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-col.remitente {
+  flex: 0 0 200px;
+  font-weight: 600;
+}
+
+.card-col.asunto {
+  flex: 2;
+}
+
+.card-col.fecha {
+  flex: 0 0 150px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.card-actions {
+  flex: 0 0 100px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* ===============================
+   MODAL
+================================ */
+#modalMensaje {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+#modalMensaje .modal-content {
+  background: #1f2937;
+  padding: 24px;
+  border-radius: 18px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+#modalMensaje .close-modal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #2563eb;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+#modalMensaje h3 {
+  margin-bottom: 12px;
+}
+
+#modalMensaje p {
+  white-space: pre-wrap;
+}
+
+/* ===============================
+   ANIMACIONES
+================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 </style>
 
-<div class="bandeja-container">
-  <div class="bandeja-header">
-    <h2><i class="fas fa-envelope-open-text"></i> Bandeja de mensajes</h2>
-    <div style="display: flex; gap: 12px; align-items: center;">
-      <input type="text" placeholder="Buscar mensaje..." id="busqueda">
-      <select id="filtro">
-        <option value="todos">Todos</option>
-        <option value="enviados">Enviados</option>
-        <option value="recibidos">Recibidos</option>
-      </select>
-      <button class="btn-primary" id="btnNuevo"><i class="fas fa-pen"></i> Crear mensaje</button>
+<div class="bandeja-wrapper">
+  <div class="bandeja-title">Bandeja de mensajes</div>
+
+  <div class="bandeja-layout">
+    <!-- MENÚ IZQUIERDO -->
+    <div class="bandeja-menu">
+      <div class="menu-item {% if tipo == 'recibidos' %}active{% endif %}" data-tipo="recibidos">Recibidos</div>
+      <div class="menu-item {% if tipo == 'enviados' %}active{% endif %}" data-tipo="enviados">Enviados</div>
     </div>
-  </div>
 
-  <div class="crear-mensaje" id="crearMensaje" style="display:none;">
-    <h3>Nuevo mensaje</h3>
-    <form id="formMensaje">
-      <input type="text" id="destinatario" name="destinatario" placeholder="Destinatario (usuario o correo)" required>
-      <input type="text" id="asunto" name="asunto" placeholder="Asunto" required>
-      <select id="tipo" name="tipo">
-        <option value="informativo">Informativo</option>
-        <option value="urgente">Urgente</option>
-        <option value="recordatorio">Recordatorio</option>
-      </select>
-      <textarea id="contenido" name="contenido" placeholder="Escribe el contenido del mensaje..." required></textarea>
-      <div style="text-align:right;">
-        <button class="btn-primary" type="submit"><i class="fas fa-paper-plane"></i> Enviar mensaje</button>
+    <!-- PANEL DERECHO -->
+    <div class="bandeja-panel">
+      <div class="bandeja-actions">
+        <input type="text" placeholder="Buscar mensaje…">
+        <button class="btn-primary" id="btnNuevo">Crear mensaje</button>
       </div>
-    </form>
-  </div>
 
-  <div class="mensajes-lista">
-    <h3><i class="fas fa-inbox"></i> Mensajes recibidos</h3>
-    <div style="overflow-x:auto; max-height:300px; overflow-y:auto;">
-      <table class="mensajes-table">
-        <thead>
-          <tr>
-            <th>Remitente</th>
-            <th>Asunto</th>
-            <th>Tipo</th>
-            <th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody id="tablaMensajes">
-          <tr><td colspan="4">No hay mensajes aún.</td></tr>
-        </tbody>
-      </table>
+      <!-- CREAR MENSAJE -->
+      <div class="crear-mensaje" id="crearMensaje">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="text" name="destinatario" placeholder="Usuario destinatario" required>
+          <input type="text" name="asunto" placeholder="Asunto" required>
+          <textarea name="contenido" placeholder="Escriba el mensaje…" required></textarea>
+          <div style="text-align:right;">
+            <button class="btn-primary">Enviar</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="toast success" id="toastSuccess"><i class="fas fa-check-circle"></i> Mensaje enviado correctamente</div>
-<div class="toast error" id="toastError"><i class="fas fa-exclamation-triangle"></i> Debes completar todos los campos</div>
+<!-- CONTENEDOR INDEPENDIENTE DE MENSAJES -->
+<div class="mensajes-wrapper">
+  {% if mensajes %}
+  <div style="text-align:right; margin-bottom:8px;">
+    <button class="btn-danger" id="btnEliminar">Eliminar seleccionados</button>
+  </div>
+  {% endif %}
+  {% for m in mensajes %}
+  <div class="card-row" data-id="{{ m.id }}">
+    <input type="checkbox" class="select-mensaje">
+    <div class="card-col remitente">
+      {% if tipo == 'recibidos' %}{{ m.remitente.username }}{% else %}{{ m.destinatario.username }}{% endif %}
+    </div>
+    <div class="card-col asunto">{{ m.asunto }}</div>
+    <div class="card-col fecha">{{ m.creado_en|date:"d/m/Y H:i" }}</div>
+  </div>
+  {% empty %}
+  <div style="padding:16px; text-align:center;">No hay mensajes.</div>
+  {% endfor %}
+</div>
+
+<!-- MODAL -->
+<div id="modalMensaje">
+  <div class="modal-content">
+    <button class="close-modal">Cerrar</button>
+    <h3 id="modalAsunto"></h3>
+    <p id="modalRemitente"></p>
+    <p id="modalContenido"></p>
+    <p id="modalFecha" style="color:#9ca3af; text-align:right;"></p>
+  </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const btnNuevo = document.getElementById('btnNuevo');
-  const crearMensaje = document.getElementById('crearMensaje');
-  const form = document.getElementById('formMensaje');
-  const toastSuccess = document.getElementById('toastSuccess');
-  const toastError = document.getElementById('toastError');
-  const tabla = document.getElementById('tablaMensajes');
+/* DESPLEGAR CREAR MENSAJE */
+document.getElementById("btnNuevo").onclick = () => {
+  const box = document.getElementById("crearMensaje");
+  box.style.display = box.style.display === "flex" ? "none" : "flex";
+};
 
-  const showToast = el => { el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 3000); };
-  
-  btnNuevo.addEventListener('click', () => {
-    crearMensaje.style.display = crearMensaje.style.display === 'none' ? 'block' : 'none';
-  });
+/* CAMBIO RECIBIDOS / ENVIADOS */
+document.querySelectorAll(".menu-item").forEach(btn => {
+  btn.onclick = () => {
+    const tipo = btn.dataset.tipo;
+    window.location.href = `{% url 'asignaciones:bandeja' %}?tipo=${tipo}`;
+  };
+});
 
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const destinatario = form.destinatario.value.trim();
-    const asunto = form.asunto.value.trim();
-    const tipo = form.tipo.value.trim();
-    const contenido = form.contenido.value.trim();
+/* MODAL AL HACER CLICK EN CARD */
+document.querySelectorAll(".card-row").forEach(row => {
+  row.onclick = e => {
+    if(e.target.type === "checkbox") return; // no abrir modal si clic en checkbox
+    const id = row.dataset.id;
+    fetch(`/mensajes/leer/${id}/`)
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById("modalAsunto").innerText = data.asunto;
+        document.getElementById("modalRemitente").innerText = `De: ${data.remitente}`;
+        document.getElementById("modalContenido").innerText = data.cuerpo;
+        document.getElementById("modalFecha").innerText = data.fecha;
+        document.getElementById("modalMensaje").style.display = "flex";
+      });
+  };
+});
 
-    if (!destinatario || !asunto || !contenido) {
-      showToast(toastError);
-      return;
-    }
+document.querySelector("#modalMensaje .close-modal").onclick = () => {
+  document.getElementById("modalMensaje").style.display = "none";
+};
 
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td>${destinatario}</td>
-      <td>${asunto}</td>
-      <td>${tipo}</td>
-      <td>${new Date().toLocaleString('es-PE')}</td>
-    `;
-    tabla.prepend(fila);
-    form.reset();
-    showToast(toastSuccess);
-  });
+/* ELIMINAR MENSAJES SELECCIONADOS CON CONFIRMACIÓN */
+document.getElementById("btnEliminar")?.addEventListener("click", () => {
+  const checkboxes = [...document.querySelectorAll(".select-mensaje:checked")];
+  if (!checkboxes.length) return alert("Selecciona al menos un mensaje");
+
+  if(!confirm("¿Estás seguro que deseas eliminar los mensajes seleccionados?")) return;
+
+  const ids = checkboxes.map(c => c.closest(".card-row").dataset.id);
+  fetch("{% url 'asignaciones:eliminar_mensajes_ajax' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ ids })
+  }).then(() => location.reload());
 });
 </script>
 {% endblock %}
