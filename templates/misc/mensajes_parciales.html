@@ -1,0 +1,15 @@
+{% for m in mensajes %}
+<div class="mensaje-row {% if not m.leido %}no-leido{% endif %}" 
+     data-id="{{ m.id }}" 
+     data-asunto="{{ m.asunto }}" 
+     data-remitente="{{ m.remitente.username }}" 
+     data-cuerpo="{{ m.cuerpo }}" 
+     data-fecha="{{ m.creado_en|date:'d/m/Y H:i' }}">
+    <input type="checkbox" value="{{ m.id }}">
+    <div>{{ m.remitente.username }}</div>
+    <div>{{ m.asunto }}</div>
+    <div class="mensaje-fecha">{{ m.creado_en|date:"d/m/Y H:i" }}</div>
+</div>
+{% empty %}
+<div style="padding:16px;">No hay mensajes.</div>
+{% endfor %}

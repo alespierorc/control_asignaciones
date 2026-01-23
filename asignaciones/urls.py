@@ -93,6 +93,10 @@ urlpatterns = [
     path("anuncios/no-leidos/", views.anuncios_no_leidos, name="anuncios_no_leidos"),
     path("anuncios/marcar-leido/<int:pk>/",views.marcar_anuncio_leido,name="marcar_anuncio_leido"),
     path("anuncios/eliminar/<int:pk>/",views.eliminar_anuncio,name="eliminar_anuncio"),
+    path("mensajes/leer/<int:pk>/",views.leer_mensaje,name="leer_mensaje"),
+    path("mensajes/<str:tipo>/", views.mensajes_parciales, name="mensajes_parciales"),
+    path("mensajes/eliminar/", views.eliminar_mensajes_ajax, name="eliminar_mensajes_ajax"),
+
 
     
 

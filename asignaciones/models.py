@@ -114,18 +114,30 @@ class Expediente(models.Model):
 # ============================================================
 #                  MENSAJERÍA INTERNA
 # ============================================================
-
 class Mensaje(models.Model):
-    remitente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="mensajes_enviados")
-    destinatario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="mensajes_recibidos")
+    remitente = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="mensajes_enviados"
+    )
+    destinatario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="mensajes_recibidos"
+    )
+
     asunto = models.CharField(max_length=200)
     cuerpo = models.TextField()
+    leido = models.BooleanField(default=False)
     creado_en = models.DateTimeField(auto_now_add=True)
+
+    eliminado_por_remitente = models.BooleanField(default=False)
+    eliminado_por_destinatario = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-creado_en"]
-        verbose_name = "Mensaje"
-        verbose_name_plural = "Mensajes"
 
     def __str__(self):
         return f"{self.asunto} ({self.remitente} → {self.destinatario})"
