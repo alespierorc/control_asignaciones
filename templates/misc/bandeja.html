@@ -207,6 +207,30 @@
 }
 
 /* ===============================
+   HEADER SUPERIOR DE MENSAJES
+================================ */
+.mensajes-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;   /* CLAVE: misma altura horizontal */
+  margin-bottom: 14px;
+  gap: 16px;
+}
+
+.mensajes-titulo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0;            /* CLAVE: evita desalineación vertical */
+  line-height: 1;       /* CLAVE: centra perfecto */
+}
+
+.mensajes-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===============================
    MODAL
 ================================ */
 #modalMensaje {
@@ -251,6 +275,170 @@
 #modalMensaje p {
   white-space: pre-wrap;
 }
+/* ===============================
+   ENCABEZADO MENSAJES
+================================ */
+.mensajes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.mensajes-header-cols {
+  display: flex;
+  width: 100%;
+  font-weight: 600;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.mensajes-header-cols .col-remitente {
+  width: 200px;
+}
+
+.mensajes-header-cols .col-asunto {
+  flex: 1;
+}
+
+.mensajes-header-cols .col-fecha {
+  width: 150px;
+  text-align: right;
+}
+
+.mensajes-header-actions {
+  display: flex;
+  gap: 8px;
+}
+/* ===============================
+   BOTONES HEADER MENSAJES
+================================ */
+.mensajes-header-actions .btn-danger,
+.mensajes-header-actions .btn-primary {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: 8px;
+  line-height: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Botón secundario visual */
+.mensajes-header-actions .btn-primary {
+  background: #374151;
+}
+
+.mensajes-header-actions .btn-primary:hover {
+  background: #4b5563;
+}
+
+.mensajes-header-cols {
+  display: flex;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 10px;
+  padding: 0 8px;
+}
+
+.mensajes-header-cols .col-remitente {
+  width: 200px;
+}
+
+.mensajes-header-cols .col-asunto {
+  flex: 1;
+}
+
+.mensajes-header-cols .col-fecha {
+  width: 150px;
+  text-align: right;
+}
+
+.no-mensajes {
+  padding: 30px;
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ===============================
+   ENCABEZADOS DE COLUMNAS
+================================ */
+.mensajes-header-cols {
+  display: flex;
+  align-items: center;          /* 👈 CLAVE: alineación vertical */
+  padding: 8px 16px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.col-remitente {
+  flex: 0 0 200px;
+}
+
+.col-asunto {
+  flex: 2;
+}
+
+.col-fecha {
+  flex: 0 0 150px;
+  text-align: right;
+  padding-right: 100px; /* 👈 separación elegante del borde */
+}
+
+
+/* Evitar scroll horizontal innecesario */
+body {
+  overflow-x: hidden;
+}
+
+.mensajes-wrapper {
+  overflow-x: hidden;   /* 👈 importante */
+}
+
+/* ===============================
+   MENSAJES LEÍDOS / NO LEÍDOS
+================================ */
+
+/* NO LEÍDO */
+.card-row.no-leido {
+  background: #0b1220;
+  border-left: 4px solid #3b82f6;
+  font-weight: 600;
+}
+
+.card-row.no-leido .card-col.asunto {
+  color: #ffffff;
+}
+
+/* LEÍDO */
+.card-row.leido {
+  opacity: 0.75;
+}
+
+/* ===============================
+   ANIMACIÓN MENSAJE NUEVO
+================================ */
+@keyframes mensajeNuevo {
+  0% {
+    background-color: #1e40af;
+    transform: scale(0.97);
+  }
+  100% {
+    background-color: #0b1220;
+    transform: scale(1);
+  }
+}
+
+.card-row.animado {
+  animation: mensajeNuevo 0.6s ease;
+}
+
 
 /* ===============================
    ANIMACIONES
@@ -266,14 +454,18 @@
 }
 </style>
 
-<div class="bandeja-wrapper">
+<div class="bandeja-wrapper"> 
   <div class="bandeja-title">Bandeja de mensajes</div>
 
   <div class="bandeja-layout">
     <!-- MENÚ IZQUIERDO -->
     <div class="bandeja-menu">
-      <div class="menu-item {% if tipo == 'recibidos' %}active{% endif %}" data-tipo="recibidos">Recibidos</div>
-      <div class="menu-item {% if tipo == 'enviados' %}active{% endif %}" data-tipo="enviados">Enviados</div>
+      <div class="menu-item {% if tipo == 'recibidos' %}active{% endif %}" data-tipo="recibidos">
+        Recibidos
+      </div>
+      <div class="menu-item {% if tipo == 'enviados' %}active{% endif %}" data-tipo="enviados">
+        Enviados
+      </div>
     </div>
 
     <!-- PANEL DERECHO -->
@@ -301,22 +493,57 @@
 
 <!-- CONTENEDOR INDEPENDIENTE DE MENSAJES -->
 <div class="mensajes-wrapper">
-  {% if mensajes %}
-  <div style="text-align:right; margin-bottom:8px;">
-    <button class="btn-danger" id="btnEliminar">Eliminar seleccionados</button>
-  </div>
-  {% endif %}
-  {% for m in mensajes %}
-  <div class="card-row" data-id="{{ m.id }}">
-    <input type="checkbox" class="select-mensaje">
-    <div class="card-col remitente">
-      {% if tipo == 'recibidos' %}{{ m.remitente.username }}{% else %}{{ m.destinatario.username }}{% endif %}
+
+  <!-- HEADER SUPERIOR (SIEMPRE VISIBLE) -->
+  <div class="mensajes-header-top">
+    <h3 class="mensajes-titulo">
+      {% if tipo == 'recibidos' %}
+        Bandeja de Recibidos
+      {% else %}
+        Bandeja de Enviados
+      {% endif %}
+    </h3>
+
+    <div class="mensajes-header-actions">
+      <button class="btn-danger" id="btnEliminar">
+        Eliminar mensajes
+      </button>
+      <button class="btn-primary" id="btnDeseleccionar" style="display:none;">
+        Deseleccionar
+      </button>
     </div>
-    <div class="card-col asunto">{{ m.asunto }}</div>
-    <div class="card-col fecha">{{ m.creado_en|date:"d/m/Y H:i" }}</div>
   </div>
+
+  <!-- ENCABEZADOS DE COLUMNAS (SIEMPRE VISIBLES) -->
+  <div class="mensajes-header-cols">
+    <span class="col-remitente">
+      {% if tipo == 'recibidos' %}Remitente{% else %}Destinatario{% endif %}
+    </span>
+    <span class="col-asunto">Asunto</span>
+    <span class="col-fecha">Fecha</span>
+  </div>
+
+  <!-- LISTADO DE MENSAJES -->
+  {% for m in mensajes %}
+    <div class="card-row {% if not m.leido and tipo == 'recibidos' %}no-leido animado{% else %}leido{% endif %}"
+     data-id="{{ m.id }}">
+      <input type="checkbox" class="select-mensaje" style="display:none;">
+
+      <div class="card-col remitente">
+        {% if tipo == 'recibidos' %}
+          {{ m.remitente.username }}
+        {% else %}
+          {{ m.destinatario.username }}
+        {% endif %}
+      </div>
+
+      <div class="card-col asunto">{{ m.asunto }}</div>
+      <div class="card-col fecha">{{ m.creado_en|date:"d/m/Y H:i" }}</div>
+    </div>
   {% empty %}
-  <div style="padding:16px; text-align:center;">No hay mensajes.</div>
+    <div class="no-mensajes">
+      No hay mensajes en esta bandeja.
+    </div>
   {% endfor %}
 </div>
 
@@ -332,57 +559,127 @@
 </div>
 
 <script>
-/* DESPLEGAR CREAR MENSAJE */
-document.getElementById("btnNuevo").onclick = () => {
-  const box = document.getElementById("crearMensaje");
-  box.style.display = box.style.display === "flex" ? "none" : "flex";
-};
+document.addEventListener("DOMContentLoaded", () => {
 
-/* CAMBIO RECIBIDOS / ENVIADOS */
-document.querySelectorAll(".menu-item").forEach(btn => {
-  btn.onclick = () => {
-    const tipo = btn.dataset.tipo;
-    window.location.href = `{% url 'asignaciones:bandeja' %}?tipo=${tipo}`;
-  };
-});
+  /* ===============================
+     CREAR MENSAJE (1 CLICK)
+  ================================ */
+  const btnNuevo = document.getElementById("btnNuevo");
+  const crearMensaje = document.getElementById("crearMensaje");
 
-/* MODAL AL HACER CLICK EN CARD */
-document.querySelectorAll(".card-row").forEach(row => {
-  row.onclick = e => {
-    if(e.target.type === "checkbox") return; // no abrir modal si clic en checkbox
-    const id = row.dataset.id;
-    fetch(`/mensajes/leer/${id}/`)
-      .then(r => r.json())
-      .then(data => {
-        document.getElementById("modalAsunto").innerText = data.asunto;
-        document.getElementById("modalRemitente").innerText = `De: ${data.remitente}`;
-        document.getElementById("modalContenido").innerText = data.cuerpo;
-        document.getElementById("modalFecha").innerText = data.fecha;
-        document.getElementById("modalMensaje").style.display = "flex";
-      });
-  };
-});
+  if (btnNuevo && crearMensaje) {
+    btnNuevo.addEventListener("click", (e) => {
+      e.preventDefault();
+      crearMensaje.style.display =
+        crearMensaje.style.display === "flex" ? "none" : "flex";
+    });
+  }
 
-document.querySelector("#modalMensaje .close-modal").onclick = () => {
-  document.getElementById("modalMensaje").style.display = "none";
-};
+  /* ===============================
+     CAMBIO RECIBIDOS / ENVIADOS
+  ================================ */
+  document.querySelectorAll(".menu-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const tipo = item.dataset.tipo;
+      if (tipo) {
+        window.location.href = `{% url 'asignaciones:bandeja' %}?tipo=${tipo}`;
+      }
+    });
+  });
 
-/* ELIMINAR MENSAJES SELECCIONADOS CON CONFIRMACIÓN */
-document.getElementById("btnEliminar")?.addEventListener("click", () => {
-  const checkboxes = [...document.querySelectorAll(".select-mensaje:checked")];
-  if (!checkboxes.length) return alert("Selecciona al menos un mensaje");
+  /* ===============================
+     MODAL MENSAJE
+  ================================ */
+  const modal = document.getElementById("modalMensaje");
+  const closeModal = document.querySelector("#modalMensaje .close-modal");
+  let modoEliminar = false;
 
-  if(!confirm("¿Estás seguro que deseas eliminar los mensajes seleccionados?")) return;
+  document.querySelectorAll(".card-row").forEach(row => {
+    row.addEventListener("click", (e) => {
 
-  const ids = checkboxes.map(c => c.closest(".card-row").dataset.id);
-  fetch("{% url 'asignaciones:eliminar_mensajes_ajax' %}", {
-    method: "POST",
-    headers: {
-      "X-CSRFToken": "{{ csrf_token }}",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ ids })
-  }).then(() => location.reload());
+      if (e.target.classList.contains("select-mensaje")) return;
+      if (modoEliminar) return;
+
+      const id = row.dataset.id;
+      if (!id) return;
+
+      fetch(`/mensajes/leer/${id}/`)
+        .then(res => res.json())
+        .then(data => {
+
+          if (row.classList.contains("no-leido")) {
+            row.classList.remove("no-leido", "animado");
+            row.classList.add("leido");
+            if (window.actualizarBadgeMensajes) window.actualizarBadgeMensajes(true);
+          }
+
+          document.getElementById("modalAsunto").innerText = data.asunto;
+          document.getElementById("modalRemitente").innerText = data.remitente;
+          document.getElementById("modalContenido").innerText = data.cuerpo;
+          document.getElementById("modalFecha").innerText = data.fecha;
+
+          modal.style.display = "flex";
+        });
+    });
+  });
+
+  if (closeModal) {
+    closeModal.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+  }
+
+  /* ===============================
+     ELIMINAR MENSAJES
+  ================================ */
+  const btnEliminar = document.getElementById("btnEliminar");
+  const btnDeseleccionar = document.getElementById("btnDeseleccionar");
+  const checkboxes = document.querySelectorAll(".select-mensaje");
+
+  if (btnEliminar) {
+    btnEliminar.addEventListener("click", () => {
+
+      if (!modoEliminar) {
+        modoEliminar = true;
+        btnEliminar.innerText = "Confirmar mensajes a eliminar";
+        if (btnDeseleccionar) btnDeseleccionar.style.display = "inline-block";
+
+        checkboxes.forEach(cb => { cb.style.display = "inline-block"; cb.checked = false; });
+        return;
+      }
+
+      const seleccionados = [...checkboxes].filter(cb => cb.checked);
+      if (!seleccionados.length) { alert("Selecciona al menos un mensaje"); return; }
+
+      const ids = seleccionados.map(cb => cb.closest(".card-row").dataset.id);
+
+      fetch("{% url 'asignaciones:eliminar_mensajes_ajax' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ids })
+      })
+      .then(res => { if (res.ok) location.reload(); });
+    });
+  }
+
+  /* ===============================
+     DESELECCIONAR / CANCELAR
+  ================================ */
+  if (btnDeseleccionar) {
+    btnDeseleccionar.addEventListener("click", () => {
+      modoEliminar = false;
+      btnEliminar.innerText = "Eliminar mensajes";
+      btnDeseleccionar.style.display = "none";
+
+      checkboxes.forEach(cb => { cb.checked = false; cb.style.display = "none"; });
+    });
+  }
+
 });
 </script>
+
+
 {% endblock %}
