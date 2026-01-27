@@ -2,6 +2,7 @@
 #                CONTROL DE ASIGNACIONES - SERMINCO
 # ============================================================
 
+import json
 from django.db.models import Q
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
@@ -1323,7 +1324,7 @@ def editar_usuario(request, user_id):
     )
 
 # ============================================================
-#                       BANDEJA 
+#                       BANDEJA
 # ============================================================
 
 @login_required
@@ -1334,18 +1335,25 @@ def bandeja(request):
     # ENVIAR MENSAJE
     # =========================
     if request.method == "POST":
-        destinatario_username = request.POST.get("destinatario")
+        destinatario_input = request.POST.get("destinatario")
         asunto = request.POST.get("asunto")
         cuerpo = request.POST.get("contenido")
 
-        if not destinatario_username or not asunto or not cuerpo:
+        if not destinatario_input or not asunto or not cuerpo:
             messages.error(request, "Completa todos los campos")
             return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
 
+        # 🔥 BUSCAR POR EMAIL O USERNAME
         try:
-            destinatario = User.objects.get(username=destinatario_username)
+            destinatario = User.objects.filter(
+                Q(username=destinatario_input) | Q(email=destinatario_input)
+            ).first()
+
+            if not destinatario:
+                raise User.DoesNotExist
+
         except User.DoesNotExist:
-            messages.error(request, "El usuario destinatario no existe")
+            messages.error(request, "No existe un usuario con ese correo o nombre")
             return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
 
         Mensaje.objects.create(
@@ -1356,7 +1364,6 @@ def bandeja(request):
         )
 
         messages.success(request, "Mensaje enviado correctamente")
-        # 🔹 Redirige siempre a "enviados" después de enviar
         return redirect(f"{reverse('asignaciones:bandeja')}?tipo=enviados")
 
     # =========================
@@ -1366,12 +1373,12 @@ def bandeja(request):
         mensajes = Mensaje.objects.filter(
             remitente=request.user,
             eliminado_por_remitente=False
-        )
+        ).order_by("-creado_en")
     else:
         mensajes = Mensaje.objects.filter(
             destinatario=request.user,
             eliminado_por_destinatario=False
-        )
+        ).order_by("-creado_en")
 
     return render(request, "misc/bandeja.html", {
         "mensajes": mensajes,
@@ -1379,11 +1386,14 @@ def bandeja(request):
     })
 
 
+# ============================================================
+#                       LEER MENSAJE (AJAX)
+# ============================================================
+
 @login_required
 def leer_mensaje(request, pk):
     mensaje = get_object_or_404(Mensaje, pk=pk)
 
-    # 🔐 Seguridad total
     if request.user not in [mensaje.remitente, mensaje.destinatario]:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
@@ -1391,14 +1401,21 @@ def leer_mensaje(request, pk):
         mensaje.leido = True
         mensaje.save(update_fields=["leido"])
 
+    # Contar nuevamente los mensajes no leídos
+    count_no_leidos = contar_mensajes_no_leidos(request.user)
+
     return JsonResponse({
         "id": mensaje.id,
         "asunto": mensaje.asunto,
         "cuerpo": mensaje.cuerpo,
-        "remitente": mensaje.remitente.username if mensaje.remitente else "Sistema",
-        "fecha": mensaje.creado_en.strftime("%d/%m/%Y %H:%M")
+        "remitente": mensaje.remitente.username,
+        "fecha": mensaje.creado_en.strftime("%d/%m/%Y %H:%M"),
+        "no_leidos_count": count_no_leidos  # ✅ contador actualizado
     })
 
+# ============================================================
+#                       ELIMINAR 1 MENSAJE
+# ============================================================
 
 @login_required
 def eliminar_mensaje(request, pk):
@@ -1411,57 +1428,52 @@ def eliminar_mensaje(request, pk):
     else:
         return JsonResponse({"error": "No autorizado"}, status=403)
 
-    mensaje.save(update_fields=[
-        "eliminado_por_remitente",
-        "eliminado_por_destinatario"
-    ])
-
+    mensaje.save()
     messages.success(request, "Mensaje eliminado")
-    return redirect("asignaciones:bandeja")
+    return redirect(f"{reverse('asignaciones:bandeja')}?tipo=recibidos")
 
 
-@login_required
-def mensajes_parciales(request, tipo):
-    """
-    Devuelve solo los rows HTML de los mensajes según tipo (recibidos/enviados)
-    """
-    if tipo == "enviados":
-        mensajes = Mensaje.objects.filter(
-            remitente=request.user,
-            eliminado_por_remitente=False
-        )
-    else:
-        mensajes = Mensaje.objects.filter(
-            destinatario=request.user,
-            eliminado_por_destinatario=False
-        )
-
-    return render(request, "misc/mensajes_parciales.html", {
-        "mensajes": mensajes
-    })
-
+# ============================================================
+#                  ELIMINAR VARIOS (AJAX)
+# ============================================================
 
 @csrf_exempt
 @login_required
 def eliminar_mensajes_ajax(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        ids = data.get("ids", [])
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
 
-        for m_id in ids:
-            try:
-                mensaje = Mensaje.objects.get(pk=m_id)
-                if request.user == mensaje.remitente:
-                    mensaje.eliminado_por_remitente = True
-                elif request.user == mensaje.destinatario:
-                    mensaje.eliminado_por_destinatario = True
-                mensaje.save()
-            except Mensaje.DoesNotExist:
-                continue
+    data = json.loads(request.body)
+    ids = data.get("ids", [])
 
-        return JsonResponse({"success": True})
-    return JsonResponse({"error": "Método no permitido"}, status=405)
+    for m_id in ids:
+        try:
+            mensaje = Mensaje.objects.get(pk=m_id)
+            if request.user == mensaje.remitente:
+                mensaje.eliminado_por_remitente = True
+            elif request.user == mensaje.destinatario:
+                mensaje.eliminado_por_destinatario = True
+            mensaje.save()
+        except Mensaje.DoesNotExist:
+            continue
 
+    return JsonResponse({"success": True})
+
+@login_required
+def mensajes_no_leidos(request):
+    count = contar_mensajes_no_leidos(request.user)
+    return JsonResponse({"count": count})
+
+
+def contar_mensajes_no_leidos(user):
+    return (
+        Mensaje.objects
+        .filter(
+            destinatario=user,
+            leido=False
+        )
+        .count()
+    )
 
 # ============================================================
 #                  ANUNCIOS - CREACIÓN Y LISTADO

@@ -13,99 +13,98 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        :root {
-            --bg-dark: #0e1117;
-            --bg-panel: #161b22;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --text: #e5e7eb;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --border-soft: #374151;
-        }
+:root {
+    --bg-dark: #0e1117;
+    --bg-panel: #161b22;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --text: #e5e7eb;
+    --text-muted: #9ca3af;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --border-soft: #374151;
+}
 
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text);
-            font-family: "Inter", system-ui, sans-serif;
-            margin: 0;
-        }
+/* ============================
+   BASE
+============================ */
+body {
+    background-color: var(--bg-dark);
+    color: var(--text);
+    font-family: "Inter", system-ui, sans-serif;
+    margin: 0;
+}
 
-        /* NAVBAR */
-        .navbar {
-            background-color: var(--bg-panel);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 25px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-        }
+/* ============================
+   NAVBAR
+============================ */
+.navbar {
+    background-color: var(--bg-panel);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 25px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
 
-        .navbar-left a {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+.navbar-left a {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
-        .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        /* BOTONES */
-        .chip {
-            background: #1e293b;
-            padding: 8px 14px;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text);
-            text-decoration: none;
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
-        }
+/* ============================
+   CHIPS
+============================ */
+.chip {
+    background: #1e293b;
+    padding: 8px 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+}
 
-        .chip:hover {
-            background: var(--accent-hover);
-            color: #fff;
-            transform: translateY(-1px);
-        }
+.chip:hover {
+    background: var(--accent-hover);
+    color: #fff;
+    transform: translateY(-1px);
+}
 
-        /* BOTÓN LOGOUT */
-        .chip-logout {
-            background: transparent;
-            border: 1px solid var(--border-soft);
-            color: var(--text-muted);
-        }
+/* LOGOUT */
+.chip-logout {
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    color: var(--text-muted);
+}
 
-        .chip-logout:hover {
-            background: rgba(239, 68, 68, 0.12);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
+.chip-logout:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: var(--danger);
+    color: var(--danger);
+}
 
-        main {
-            padding: 25px;
-        }
-
-        footer {
-            text-align: center;
-            padding: 15px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            border-top: 1px solid #1f2937;
-            margin-top: 30px;
-        }
-        .anuncios-chip {
+/* ============================
+   BADGES (ANUNCIOS + MENSAJES)
+============================ */
+.anuncios-chip {
     position: relative;
 }
 
@@ -119,22 +118,68 @@
     font-weight: 700;
     padding: 3px 7px;
     border-radius: 999px;
-    animation: pulse 1.8s infinite;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
-    }
-    70% {
-        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-    }
+/* animación SOLO cuando llega algo nuevo */
+.badge-pulse {
+    animation: badgePulse 0.6s ease-out;
 }
 
-    </style>
+@keyframes badgePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+}
+
+/* ============================
+   MENSAJES (BANDEJA)
+============================ */
+.mensaje {
+    padding: 14px 18px;
+    border-bottom: 1px solid #1f2937;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.mensaje:hover {
+    background: rgba(59, 130, 246, 0.08);
+    transform: translateX(2px);
+}
+
+/* NO LEÍDO */
+.mensaje.no-leido {
+    background: rgba(59, 130, 246, 0.12);
+    font-weight: 600;
+    border-left: 3px solid var(--accent);
+}
+
+/* LEÍDO */
+.mensaje.leido {
+    opacity: 0.6;
+    font-weight: 400;
+    border-left: 3px solid transparent;
+}
+
+/* ============================
+   MAIN / FOOTER
+============================ */
+main {
+    padding: 25px;
+}
+
+footer {
+    text-align: center;
+    padding: 15px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-top: 1px solid #1f2937;
+    margin-top: 30px;
+}
+</style>
+
 </head>
 
 <body>
@@ -160,14 +205,22 @@
             </a>
             {% endif %}
 
+            <!-- ANUNCIOS -->
             <a class="chip anuncios-chip" href="{% url 'asignaciones:anuncios' %}">
-    <i class="bi bi-megaphone"></i>
-    Anuncios
-    <span id="badge-anuncios" class="badge-anuncios" style="display:none;"></span>
-</a>
+                <i class="bi bi-megaphone"></i>
+                Anuncios
+                <span id="badge-anuncios"
+                      class="badge-anuncios"
+                      style="display:none;"></span>
+            </a>
 
-            <a class="chip" href="{% url 'asignaciones:bandeja' %}">
-                <i class="bi bi-envelope"></i> Bandeja
+            <!-- MENSAJES -->
+            <a class="chip anuncios-chip" href="{% url 'asignaciones:bandeja' %}">
+                <i class="bi bi-envelope"></i>
+                Bandeja
+                <span id="badge-mensajes"
+                      class="badge-anuncios"
+                      style="display:none;"></span>
             </a>
 
             <!-- LOGOUT -->
@@ -198,69 +251,105 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    const logoutBtn = document.querySelector(".logout-btn");
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", e => {
-            e.preventDefault();
-
-            Swal.fire({
-                title: "Cerrar sesión",
-                text: "¿Deseas salir del sistema?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Sí, cerrar sesión",
-                cancelButtonText: "Cancelar",
-                reverseButtons: true,
-                confirmButtonColor: "#ef4444",
-                cancelButtonColor: "#374151",
-                background: "#0e1117",
-                color: "#e5e7eb"
-            }).then(result => {
-                if (result.isConfirmed) {
-                    window.location.href = logoutBtn.href;
-                }
-            });
-        });
-    }
-    const badge = document.getElementById("badge-anuncios");
-    if (!badge) return;
-
-    async function actualizarBadge() {
-        try {
-            const response = await fetch("{% url 'asignaciones:anuncios_no_leidos' %}", {
-                headers: { "X-Requested-With": "XMLHttpRequest" },
-                cache: "no-store"
-            });
-
-            const data = await response.json();
-            const count = Number(data.count) || 0;
-
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = "inline-block";
-            } else {
-                badge.textContent = "";
-                badge.style.display = "none";
-            }
-        } catch (error) {
-            console.error("Error actualizando badge de anuncios:", error);
-            badge.style.display = "none";
-        }
-    }
-
-    /* AL CARGAR */
-    actualizarBadge();
-
-    /* AL VOLVER A LA PESTAÑA (FIX CLAVE DEL BUG) */
-    document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) {
-            actualizarBadge();
-        }
+  /* ============================
+     LOGOUT CON SWEETALERT
+  ============================ */
+  const logoutBtn = document.querySelector(".logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", e => {
+      e.preventDefault();
+      Swal.fire({
+        title: "Cerrar sesión",
+        text: "¿Deseas salir del sistema?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, cerrar sesión",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#374151",
+        background: "#0e1117",
+        color: "#e5e7eb"
+      }).then(result => {
+        if (result.isConfirmed) window.location.href = logoutBtn.href;
+      });
     });
+  }
+
+  /* ============================
+     BADGES DE ANUNCIOS
+  ============================ */
+  const badgeAnuncios = document.getElementById("badge-anuncios");
+  async function actualizarBadgeAnuncios() {
+    if (!badgeAnuncios) return;
+    try {
+      const res = await fetch("{% url 'asignaciones:anuncios_no_leidos' %}", { headers: { "X-Requested-With": "XMLHttpRequest" }, cache: "no-store" });
+      const { count } = await res.json();
+      toggleBadge(badgeAnuncios, count);
+    } catch (err) { console.error("Error anuncios:", err); badgeAnuncios.style.display = "none"; }
+  }
+
+  /* ============================
+     BADGES DE MENSAJES
+  ============================ */
+  const badgeMensajes = document.getElementById("badge-mensajes");
+  let mensajesPrevios = 0;
+  async function actualizarBadgeMensajes(animar = false) {
+    if (!badgeMensajes) return;
+    try {
+      const res = await fetch("{% url 'asignaciones:mensajes_no_leidos' %}", { headers: { "X-Requested-With": "XMLHttpRequest" }, cache: "no-store" });
+      const { count } = await res.json();
+      if (animar && count > mensajesPrevios) animarBadge(badgeMensajes);
+      mensajesPrevios = count;
+      toggleBadge(badgeMensajes, count);
+    } catch (err) { console.error("Error mensajes:", err); badgeMensajes.style.display = "none"; }
+  }
+
+  /* ============================
+     FUNCIONES UTILES
+  ============================ */
+  function toggleBadge(badge, count) {
+    if (count > 0) { badge.textContent = count; badge.style.display = "inline-flex"; }
+    else { badge.textContent = ""; badge.style.display = "none"; }
+  }
+
+  function animarBadge(badge) {
+    badge.classList.remove("badge-pulse");
+    void badge.offsetWidth; // reset animation
+    badge.classList.add("badge-pulse");
+  }
+
+  /* ============================
+     MARCAR MENSAJE COMO LEÍDO
+  ============================ */
+  window.marcarMensajeLeido = async function (mensajeId, elemento) {
+    try {
+      await fetch(`/mensajes/${mensajeId}/leer/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}", "X-Requested-With": "XMLHttpRequest" }
+      });
+      if (elemento) { elemento.classList.remove("no-leido"); elemento.classList.add("leido"); }
+      actualizarBadgeMensajes(false);
+    } catch (err) { console.error("Error al marcar leído:", err); }
+  };
+
+  /* ============================
+     INICIAL
+  ============================ */
+  actualizarBadgeAnuncios();
+  actualizarBadgeMensajes();
+
+  /* ============================
+     ACTUALIZAR AL VOLVER A PESTAÑA
+  ============================ */
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      actualizarBadgeAnuncios();
+      actualizarBadgeMensajes(true);
+    }
+  });
 
 });
 </script>
-
 </body>
 </html>
