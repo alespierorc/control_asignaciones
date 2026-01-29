@@ -121,9 +121,24 @@
             </select>
           </div>
 
+          <!-- SOLO AÑADÍ id -->
           <div>
             <label>Fecha de asignación</label>
-            <input type="date" name="fecha_asignacion" value="{{ data.fecha_asignacion }}" class="i-date dark" required />
+            <input type="date" name="fecha_asignacion" id="fecha_asignacion"
+                   value="{{ data.fecha_asignacion }}"
+                   class="i-date dark" required />
+          </div>
+
+          <!-- ===== NUEVO CAMPO ===== -->
+          <div>
+            <label>Fecha límite del expediente</label>
+            <input type="date" name="fecha_limite" id="fecha_limite"
+                   value="{{ data.fecha_limite }}"
+                   class="i-date dark" />
+
+            <div id="plazoPreview" class="plazo-preview">
+              — días de plazo
+            </div>
           </div>
 
         </div>
@@ -140,69 +155,87 @@
 
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("expedienteForm");
 
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
+  /* ==============================
+     CONFIRMAR REGISTRO
+  ============================== */
+  if (form) {
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
 
-    Swal.fire({
-      title: "Confirmar registro",
-      text: "¿Deseas registrar este expediente?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#0ea5e9",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Registrar",
-      cancelButtonText: "Cancelar"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        form.submit();
-        Swal.fire({
-          title: "Procesando...",
-          text: "Guardando expediente...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
-      }
-    });
-  });
-
-  {% if messages %}
-    {% for message in messages %}
       Swal.fire({
-        icon: "{{ message.tags|default:'info' }}",
-        title: "{{ message }}",
-        timer: 2000,
-        showConfirmButton: false,
-        background: "#0f172a",
-        color: "#ffffff",
-        iconColor: "{% if message.tags == 'success' %}#22c55e{% elif message.tags == 'error' %}#ef4444{% else %}#0ea5e9{% endif %}"
-      }).then(() => {
-        {% if message.tags == 'success' %}
-          const form = document.getElementById('expedienteForm');
-          if (form) {
-            form.reset();
-            // Mostrar toast discreto en esquina inferior
-            const Toast = Swal.mixin({
-              toast: true,
-              position: 'bottom-end',
-              showConfirmButton: false,
-              timer: 2000,
-              background: "#0f172a",
-              color: "#e2e8f0",
-              iconColor: "#0ea5e9"
-            });
-            Toast.fire({
-              icon: 'info',
-              title: 'Formulario listo para un nuevo registro'
-            });
-          }
-        {% endif %}
+        title: "Confirmar registro",
+        text: "¿Deseas registrar este expediente?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#0ea5e9",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Registrar",
+        cancelButtonText: "Cancelar"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+          Swal.fire({
+            title: "Procesando...",
+            text: "Guardando expediente...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+        }
       });
-    {% endfor %}
-  {% endif %}
+    });
+  }
+
+  /* ==============================
+     CALCULO PLAZO — CORREGIDO
+     (conteo inclusivo)
+  ============================== */
+
+  const fa = document.getElementById("fecha_asignacion");
+  const fl = document.getElementById("fecha_limite");
+  const preview = document.getElementById("plazoPreview");
+
+  function calcular() {
+  if (!fa.value || !fl.value) {
+    preview.innerText = "— días de plazo";
+    preview.className = "plazo-preview";
+    return;
+  }
+
+  const d1 = new Date(fa.value + "T00:00:00");
+  const d2 = new Date(fl.value + "T00:00:00");
+
+  const diff = d2 - d1;
+  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24)); // ✅ sin +1
+
+  if (dias < 0) {
+    preview.innerText = "Fecha inválida";
+    preview.className = "plazo-preview plazo-alerta";
+    return;
+  }
+
+  if (dias === 0) {
+    preview.innerText = "Mismo día";
+  } else if (dias === 1) {
+    preview.innerText = "1 día de plazo";
+  } else {
+    preview.innerText = dias + " días de plazo";
+  }
+
+  preview.className = "plazo-preview plazo-ok";
+}
+
+
+  if (fa) fa.addEventListener("change", calcular);
+  if (fl) fl.addEventListener("change", calcular);
+
+  // calcular si ya vienen valores cargados (post error, edición, etc.)
+  calcular();
+
 });
 </script>
 
@@ -341,5 +374,14 @@ label {
 .req {
   color: #f87171;
 }
+.plazo-preview {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.plazo-ok { color: #22c55e; }
+.plazo-alerta { color: #ef4444; }
+
 </style>
 {% endblock %}

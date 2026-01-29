@@ -78,11 +78,23 @@ class Expediente(models.Model):
     codigo_actividad = models.CharField(max_length=50, blank=True)
     razon_social = models.CharField(max_length=200, blank=True)
     carta_linea = models.CharField(max_length=100, blank=True)
-    visita_decision = models.CharField(max_length=2, choices=[("SI", "Sí"), ("NO", "No")], default="NO")
+    visita_decision = models.CharField(
+        max_length=2,
+        choices=[("SI", "Sí"), ("NO", "No")],
+        default="NO"
+    )
 
     fecha_asignacion = models.DateField(null=False, blank=False)
     fecha_visita = models.DateField(null=True, blank=True)
     fecha_derivacion = models.DateField(null=True, blank=True)
+
+    # ✅ NUEVO CAMPO — FECHA LÍMITE DEL EXPEDIENTE
+    fecha_limite = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha límite de cumplimiento"
+    )
+
     observaciones = models.TextField(blank=True)
 
     estado = models.CharField(max_length=20, choices=ESTADOS, default="EN_PROCESO")
@@ -92,7 +104,8 @@ class Expediente(models.Model):
     contrato = models.ForeignKey(Contrato, on_delete=models.PROTECT)
     oficina = models.ForeignKey(OficinaRegional, on_delete=models.PROTECT)
     supervisor = models.ForeignKey(
-        User, on_delete=models.PROTECT,
+        User,
+        on_delete=models.PROTECT,
         limit_choices_to={"groups__name": "Supervisor"}
     )
     tipo_supervision = models.ForeignKey(TipoSupervision, on_delete=models.SET_NULL, null=True, blank=True)
@@ -109,6 +122,25 @@ class Expediente(models.Model):
 
     def __str__(self):
         return f"{self.siged} ({self.get_estado_display()})"
+
+    # ==========================
+    # ✅ HELPERS PARA CONTADOR
+    # ==========================
+
+    def dias_restantes(self):
+        """Devuelve días restantes hasta fecha límite"""
+        from django.utils import timezone
+
+        if not self.fecha_limite:
+            return None
+
+        delta = self.fecha_limite - timezone.now().date()
+        return delta.days
+
+    def esta_vencido(self):
+        """Indica si el expediente ya venció"""
+        dias = self.dias_restantes()
+        return dias is not None and dias < 0
 
 
 # ============================================================
