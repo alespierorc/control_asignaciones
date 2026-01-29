@@ -37,6 +37,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Exists, OuterRef
 from django.views.decorators.csrf import csrf_exempt
+from django.db import IntegrityError
 from .models import (
     Anuncio,
     AnuncioLectura,
@@ -366,48 +367,42 @@ from asignaciones.decorators import role_required
 def coordinador_registrar(request):
     """
     Permite al coordinador registrar un nuevo expediente.
-    Incluye selección de contrato, oficina, tipo de supervisión y documento.
-    Filtra las listas desplegables con solo los valores válidos definidos.
+    Usa catálogos dinámicos administrados por el Administrador Líder.
+    Incluye fecha límite y cálculo de plazo.
     """
 
-    # ==== Listas válidas predefinidas ====
-    contratos_validos = ["SUP2500192", "SUP2500203", "SUP2500217", "SUP2500235"]
-    oficinas_validas = ["Piura", "Lima", "Arequipa", "Moquegua"]
-    tipos_documento_validos = ["Informe de Supervisión", "Informe Técnico", "Ficha de Registro", "Resolución"]
-    tipos_supervision_validos = [
-        "Actos Inseguros", "Atención de Denuncias", "Atención de Solicitud de ITF",
-        "Atención de Solicitudes de AVC-AVP", "Comprobación de operaciones",
-        "Condiciones de seguridad", "Condiciones de seguridad con observaciones",
-        "Control Metrológico CL especial", "Control Volumétrico",
-        "Criticidad de Cilindros de GLP", "Denuncia - Actos Inseguros",
-        "Denuncia - PRICE", "Denuncias-Informal", "Ejecución/Levantamiento de Med. Seg.",
-        "Envasado, Pintado y Canje de cilindros", "Etiquetados de cilindros de GLP",
-        "Informalidad", "PRICE", "Por Operaciones",
-        "RHO - Inscripción, Modificación",
-        "RHO - Modificación de datos, suspensión, cancelación y habilitación",
-        "SPIC", "Supervisión Operativa de Seguridad de CD y RD de GLP",
-        "Supervisión Operativa de Seguridad de LV GLP",
-        "Supervisión Operativa de Seguridad de LVGLP", "Verificación Póliza"
-    ]
-
-    # ==== Datos base (para selects) ====
+    # ==== Catálogos dinámicos ====
     supervisores = User.objects.filter(groups__name="Supervisor").order_by("first_name")
-    contratos = Contrato.objects.filter(numero__in=contratos_validos).order_by("numero")
-    oficinas = OficinaRegional.objects.filter(nombre__in=oficinas_validas).order_by("nombre")
-    tipos_supervision = TipoSupervision.objects.filter(nombre__in=tipos_supervision_validos).order_by("nombre")
-    tipos_documento = TipoDocumento.objects.filter(nombre__in=tipos_documento_validos).order_by("nombre")
+    contratos = Contrato.objects.select_related("oficina").order_by("numero")
+    oficinas = OficinaRegional.objects.order_by("nombre")
+    tipos_supervision = TipoSupervision.objects.order_by("nombre")
+    tipos_documento = TipoDocumento.objects.order_by("nombre")
 
     data = {}
 
-    # ==== POST: Registrar expediente ====
+    # =========================
+    # POST
+    # =========================
     if request.method == "POST":
         data = {k: request.POST.get(k, "").strip() for k in request.POST.keys()}
 
-        campos_obligatorios = ["siged", "carta_linea", "contrato", "oficina", "supervisor_id"]
+        campos_obligatorios = [
+            "siged",
+            "carta_linea",
+            "contrato",
+            "oficina",
+            "supervisor_id",
+            "fecha_asignacion",
+            "fecha_limite",
+        ]
+
         faltantes = [c for c in campos_obligatorios if not data.get(c)]
 
         if faltantes:
-            messages.error(request, f"⚠️ Debes completar los campos obligatorios: {', '.join(faltantes)}.")
+            messages.error(
+                request,
+                f"⚠️ Debes completar los campos obligatorios: {', '.join(faltantes)}."
+            )
             return render(request, "coordinador/registrar.html", {
                 "data": data,
                 "supervisores": supervisores,
@@ -418,6 +413,7 @@ def coordinador_registrar(request):
             })
 
         try:
+            # ==== Relaciones ====
             contrato = get_object_or_404(Contrato, id=data["contrato"])
             oficina = get_object_or_404(OficinaRegional, id=data["oficina"])
             supervisor = get_object_or_404(User, id=data["supervisor_id"])
@@ -426,11 +422,18 @@ def coordinador_registrar(request):
                 get_object_or_404(TipoSupervision, id=data["tipo_supervision"])
                 if data.get("tipo_supervision") else None
             )
+
             tipo_documento = (
                 get_object_or_404(TipoDocumento, id=data["tipo_documento"])
                 if data.get("tipo_documento") else None
             )
 
+            # ==== Fechas seguras ====
+            fecha_visita = request.POST.get("fecha_visita") or None
+            fecha_derivacion = request.POST.get("fecha_derivacion") or None
+            fecha_limite = request.POST.get("fecha_limite") or None
+
+            # ==== Crear expediente ====
             expediente = Expediente.objects.create(
                 siged=data["siged"],
                 carta_linea=data["carta_linea"],
@@ -438,31 +441,56 @@ def coordinador_registrar(request):
                 codigo_actividad=data.get("codigo_actividad", ""),
                 razon_social=data.get("razon_social", ""),
                 visita_decision=data.get("visita_decision", "NO"),
-                fecha_asignacion=data.get("fecha_asignacion") or None,
+
+                fecha_asignacion=data["fecha_asignacion"],
+                fecha_visita=fecha_visita,
+                fecha_derivacion=fecha_derivacion,
+                fecha_limite=fecha_limite,
+
+                observaciones=request.POST.get("observaciones") or "",  # ✅ FIX NOT NULL
+
                 contrato=contrato,
                 oficina=oficina,
                 supervisor=supervisor,
                 tipo_supervision=tipo_supervision,
                 tipo_documento=tipo_documento,
-                estado="EN PROCESO",
+
+                estado="EN_PROCESO",
             )
 
-            # Crear anuncio informativo
+            # ==== Anuncio automático al supervisor ====
             Anuncio.objects.create(
                 titulo=f"Nuevo expediente asignado: {expediente.siged}",
-                contenido=f"Has recibido un nuevo expediente asignado por {request.user.get_full_name()}.",
+                contenido=f"Tienes un nuevo expediente asignado por {request.user.get_full_name()}",
                 tipo="INFO",
                 destinatario=supervisor,
                 remitente=request.user,
             )
 
-            messages.success(request, f"✅ Expediente {expediente.siged} registrado correctamente.")
+            messages.success(
+                request,
+                f"✅ Expediente {expediente.siged} registrado correctamente."
+            )
             return redirect("asignaciones:coordinador_registrar")
 
+        # =========================
+        # SIGED DUPLICADO
+        # =========================
+        except IntegrityError:
+            transaction.set_rollback(True)
+
+            messages.error(
+                request,
+                "❌ Ya existe un expediente con ese N° SIGED."
+            )
+
         except Exception as e:
+            transaction.set_rollback(True)
             messages.error(request, f"❌ Error al guardar el expediente: {e}")
 
-    # ==== Render inicial o reintento ====
+    # =========================
+    # GET / RENDER
+    # =========================
     return render(request, "coordinador/registrar.html", {
         "data": data,
         "supervisores": supervisores,
@@ -471,6 +499,7 @@ def coordinador_registrar(request):
         "tipos_supervision_choices": [(t.id, t.nombre) for t in tipos_supervision],
         "tipos_documento_choices": [(t.id, t.nombre) for t in tipos_documento],
     })
+
 
 @role_required(["Coordinador"])
 def coordinador_revisar(request):

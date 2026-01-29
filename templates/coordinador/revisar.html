@@ -20,7 +20,6 @@
     }
   }
 
-  /* === Panel Izquierdo === */
   .rev-panel {
     background: #1f2937;
     border-radius: 16px;
@@ -49,7 +48,6 @@
     line-height: 1.5;
   }
 
-  /* === Panel Derecho === */
   .rev-section {
     background: #2d3643;
     border-radius: 16px;
@@ -68,7 +66,6 @@
     gap: 8px;
   }
 
-  /* === Filtros === */
   .rev-filter {
     background: #1f2937;
     padding: 18px;
@@ -103,7 +100,6 @@
     background: #0284c7;
   }
 
-  /* === Tabla === */
   .rev-table-container {
     background: #1f2937;
     border-radius: 12px;
@@ -145,12 +141,10 @@
     top: 0;
     z-index: 2;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-    transition: box-shadow 0.3s ease;
   }
 
   th, td {
     padding: 12px 14px;
-    text-align: left;
     border-bottom: 1px solid #4b5563;
     white-space: nowrap;
   }
@@ -177,122 +171,181 @@
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.85rem;
-    display: inline-block;
   }
 
   .estado-badge.pendiente { background: #facc15; color: #1e293b; }
   .estado-badge.proceso { background: #0ea5e9; color: #fff; }
   .estado-badge.concluido { background: #22c55e; color: #fff; }
+
+  /* ===== BADGES PLAZO ===== */
+  .plazo-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .plazo-ok { background:#22c55e; color:#fff; }
+  .plazo-alerta { background:#facc15; color:#1e293b; }
+  .plazo-vencido { background:#ef4444; color:#fff; }
+  .plazo-hoy { background:#f97316; color:#fff; }
 </style>
 
 <div class="rev-wrapper">
-  <!-- PANEL IZQUIERDO -->
-  <div class="rev-panel">
-    <h5>Coordinador</h5>
 
-    <div class="p-3">
-      <p class="fw-semibold mb-1 text-white-50">Indicaciones</p>
-      <p>
-        Revisa el avance de los expedientes por contrato y carta línea.
-        Verifica las fechas de visita, derivación y el estado actual del expediente.
-      </p>
-    </div>
+<div class="rev-panel">
+<h5>Coordinador</h5>
 
-    <div class="p-3">
-      <p class="fw-semibold mb-1 text-white-50">Recomendación</p>
-      <p>
-        Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b>
-        y coordina con el supervisor las acciones necesarias para concluirlos.
-      </p>
-    </div>
-  </div>
+<div class="p-3">
+<p class="fw-semibold mb-1 text-white-50">Indicaciones</p>
+<p>
+Revisa el avance de los expedientes por contrato y carta línea.
+Verifica las fechas de visita, derivación y el estado actual del expediente.
+</p>
+</div>
 
-  <!-- PANEL DERECHO -->
-  <div class="rev-section">
-    <h5><i class="bi bi-folder2-open"></i> Revisar Expedientes</h5>
+<div class="p-3">
+<p class="fw-semibold mb-1 text-white-50">Recomendación</p>
+<p>
+Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b>
+y coordina con el supervisor las acciones necesarias para concluirlos.
+</p>
+</div>
+</div>
 
-    <!-- FILTROS -->
-    <form method="get" class="rev-filter">
-      <select name="contrato">
-        <option value="">-- Seleccionar Contrato --</option>
-        {% for contrato in contratos %}
-          <option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
-            {{ contrato.numero }} – {{ contrato.oficina.nombre }}
-          </option>
-        {% endfor %}
-      </select>
+<div class="rev-section">
 
-      <input type="text" name="carta_linea" placeholder="Carta Línea" value="{{ request.GET.carta_linea }}">
-      <button type="submit"><i class="bi bi-search"></i> Buscar</button>
-    </form>
+<h5><i class="bi bi-folder2-open"></i> Revisar Expedientes</h5>
 
-    <!-- TABLA CON SCROLL INTERNO -->
-    <div class="rev-table-container" id="revTableContainer">
-      <table>
-        <thead>
-          <tr>
-            <th>N° SIGED</th>
-            <th>Carta Línea</th>
-            <th>Código OSINERGMIN</th>
-            <th>Código Actividad</th>
-            <th>Razón Social</th>
-            <th>Tipo Supervisión</th>
-            <th>Tipo Documento</th>
-            <th>Oficina Regional</th>
-            <th>Supervisor</th>
-            <th>Fecha Asignación</th>
-            <th>Fecha Derivación</th>
-            <th>Fecha Visita</th>
-            <th>Estado</th>
-            <th>Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if expedientes %}
-            {% for e in expedientes %}
-              <tr>
-                <td>{{ e.siged }}</td>
-                <td>{{ e.carta_linea }}</td>
-                <td>{{ e.codigo }}</td>
-                <td>{{ e.codigo_actividad }}</td>
-                <td>{{ e.razon_social }}</td>
-                <td>{{ e.get_tipo_supervision_display|default:e.tipo_supervision }}</td>
-                <td>{{ e.get_tipo_documento_display|default:e.tipo_documento }}</td>
-                <td>{{ e.oficina.nombre }}</td>
-                <td>{{ e.supervisor.get_full_name }}</td>
-                <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
-                <td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
-                <td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
-                <td>
-                  <span class="estado-badge {% if e.estado == 'Pendiente' %}pendiente{% elif e.estado == 'En proceso' %}proceso{% elif e.estado == 'Concluido' %}concluido{% endif %}">
-                    {{ e.estado }}
-                  </span>
-                </td>
-                <td>{{ e.observaciones|default:"Sin observaciones" }}</td>
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="14" class="no-results">No se encontraron expedientes registrados.</td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+<form method="get" class="rev-filter">
+<select name="contrato">
+<option value="">-- Seleccionar Contrato --</option>
+{% for contrato in contratos %}
+<option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
+{{ contrato.numero }} – {{ contrato.oficina.nombre }}
+</option>
+{% endfor %}
+</select>
+
+<input type="text" name="carta_linea" placeholder="Carta Línea" value="{{ request.GET.carta_linea }}">
+<button type="submit"><i class="bi bi-search"></i> Buscar</button>
+</form>
+
+<div class="rev-table-container" id="revTableContainer">
+<table>
+<thead>
+<tr>
+<th>N° SIGED</th>
+<th>Carta Línea</th>
+<th>Código OSINERGMIN</th>
+<th>Código Actividad</th>
+<th>Razón Social</th>
+<th>Tipo Supervisión</th>
+<th>Tipo Documento</th>
+<th>Oficina Regional</th>
+<th>Supervisor</th>
+<th>Fecha Asignación</th>
+<th>Fecha Derivación</th>
+<th>Fecha Visita</th>
+<th>Estado</th>
+<th>Observaciones</th>
+<th>Plazo restante</th>
+</tr>
+</thead>
+
+<tbody>
+{% if expedientes %}
+{% for e in expedientes %}
+<tr>
+<td>{{ e.siged }}</td>
+<td>{{ e.carta_linea }}</td>
+<td>{{ e.codigo }}</td>
+<td>{{ e.codigo_actividad }}</td>
+<td>{{ e.razon_social }}</td>
+<td>{{ e.get_tipo_supervision_display|default:e.tipo_supervision }}</td>
+<td>{{ e.get_tipo_documento_display|default:e.tipo_documento }}</td>
+<td>{{ e.oficina.nombre }}</td>
+<td>{{ e.supervisor.get_full_name }}</td>
+<td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+<td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
+<td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
+
+<td>
+<span class="estado-badge {% if e.estado == 'Pendiente' %}pendiente{% elif e.estado == 'En proceso' %}proceso{% elif e.estado == 'Concluido' %}concluido{% endif %}">
+{{ e.estado }}
+</span>
+</td>
+
+<td>{{ e.observaciones|default:"Sin observaciones" }}</td>
+
+<td>
+{% if e.fecha_limite %}
+<span class="plazo-badge js-plazo"
+data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}">
+calculando...
+</span>
+{% else %}
+—
+{% endif %}
+</td>
+
+</tr>
+{% endfor %}
+{% else %}
+<tr>
+<td colspan="15" class="no-results">No se encontraron expedientes registrados.</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+</div>
 </div>
 
 <script>
-  // Efecto dinámico de sombra en el encabezado al hacer scroll
-  document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById("revTableContainer");
-    container.addEventListener("scroll", () => {
-      if (container.scrollTop > 0) {
-        container.classList.add("scrolled");
-      } else {
-        container.classList.remove("scrolled");
-      }
-    });
-  });
+document.addEventListener("DOMContentLoaded", () => {
+
+const container = document.getElementById("revTableContainer");
+container.addEventListener("scroll", () => {
+container.classList.toggle("scrolled", container.scrollTop > 0);
+});
+
+/* ===== CALCULO PLAZO DINAMICO ===== */
+
+function actualizarPlazos() {
+const hoy = new Date();
+hoy.setHours(0,0,0,0);
+
+document.querySelectorAll(".js-plazo").forEach(el => {
+
+const fl = new Date(el.dataset.fechaLimite + "T00:00:00");
+fl.setHours(0,0,0,0);
+
+const dias = Math.round((fl - hoy) / 86400000);
+
+if (dias > 3) {
+el.textContent = dias + " días";
+el.className = "plazo-badge plazo-ok js-plazo";
+}
+else if (dias >= 1) {
+el.textContent = dias + " días";
+el.className = "plazo-badge plazo-alerta js-plazo";
+}
+else if (dias === 0) {
+el.textContent = "Hoy vence";
+el.className = "plazo-badge plazo-hoy js-plazo";
+}
+else {
+el.textContent = "Vencido " + Math.abs(dias) + "d";
+el.className = "plazo-badge plazo-vencido js-plazo";
+}
+
+});
+}
+
+actualizarPlazos();
+setInterval(actualizarPlazos, 60 * 60 * 1000);
+
+});
 </script>
+
 {% endblock %}
