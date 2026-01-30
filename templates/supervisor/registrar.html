@@ -194,6 +194,61 @@
     gap: 8px;
     z-index: 9999;
   }
+  /* ===== PLAZO RESTANTE — ESTILOS ===== */
+.plazo-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-block;
+}
+
+.plazo-ok {
+  background:#22c55e;
+  color:#ffffff;
+}
+
+.plazo-alerta {
+  background:#facc15;
+  color:#1e293b;
+}
+
+.plazo-hoy {
+  background:#f97316;
+  color:#ffffff;
+}
+
+.plazo-vencido {
+  background:#ef4444;
+  color:#ffffff;
+}
+/* ===== CENTRAR TODAS LAS COLUMNAS DE TABLAS ===== */
+
+table th,
+table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Centrar contenido interno si hay spans, badges o íconos */
+table td > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===== MEJORA VISUAL PARA BADGES DE PLAZO ===== */
+
+.plazo-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 70px;
+}
+
 
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
@@ -263,7 +318,9 @@
         <input type="date" id="fecha_visita" name="fecha_visita" class="blue-input" required>
       </div>
       <div style="text-align:right;margin-top:18px">
-        <button class="btn-primary" type="button" id="btnGuardar"><i class="bi bi-check-circle"></i> Registrar visita</button>
+        <button class="btn-primary" type="button" id="btnGuardar">
+          <i class="bi bi-check-circle"></i> Registrar visita
+        </button>
       </div>
     </form>
   </section>
@@ -287,8 +344,10 @@
           <th>Oficina Regional</th>
           <th>Fecha Asignación</th>
           <th>Fecha Visita</th>
+          <th>Plazo restante</th> <!-- ✅ AÑADIDO -->
         </tr>
       </thead>
+
       <tbody>
         {% if expedientes %}
           {% for e in expedientes %}
@@ -304,10 +363,27 @@
             <td>{{ e.oficina.nombre }}</td>
             <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
             <td>{{ e.fecha_visita|date:"d/m/Y"|default:"—" }}</td>
+
+            <!-- ✅ AÑADIDO — NO AFECTA FECHA VISITA -->
+            <td>
+              {% if e.fecha_limite %}
+                <span class="plazo-badge js-plazo"
+                      data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}">
+                  calculando...
+                </span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
           </tr>
           {% endfor %}
         {% else %}
-          <tr><td colspan="11" style="text-align:center;">No hay expedientes registrados aún.</td></tr>
+          <tr>
+            <td colspan="12" style="text-align:center;">
+              No hay expedientes registrados aún.
+            </td>
+          </tr>
         {% endif %}
       </tbody>
     </table>
@@ -315,19 +391,32 @@
 </div>
 
 <!-- TOASTS -->
-<div class="toast success" id="toastSuccess"><i class="bi bi-check-circle-fill"></i> Visita registrada correctamente</div>
-<div class="toast error" id="toastError"><i class="bi bi-exclamation-triangle-fill"></i> Debe seleccionar un expediente y una fecha válida</div>
+<div class="toast success" id="toastSuccess">
+  <i class="bi bi-check-circle-fill"></i> Visita registrada correctamente
+</div>
+
+<div class="toast error" id="toastError">
+  <i class="bi bi-exclamation-triangle-fill"></i> Debe seleccionar un expediente y una fecha válida
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+
+  /* =========================
+     SCROLL SOMBRA TABLAS
+  ========================== */
   const scrolls = [document.getElementById("scrollBusqueda"), document.getElementById("scrollAsignados")];
   scrolls.forEach(el => {
+    if (!el) return;
     el.addEventListener("scroll", () => {
       if (el.scrollTop > 0) el.classList.add("scrolled");
       else el.classList.remove("scrolled");
     });
   });
 
+  /* =========================
+     ELEMENTOS
+  ========================== */
   const btnBuscar = document.getElementById("btnBuscar");
   const sigedInput = document.getElementById("sigedInput");
   const cartaInput = document.getElementById("cartaInput");
@@ -338,6 +427,9 @@ document.addEventListener("DOMContentLoaded", function() {
   const toastError = document.getElementById("toastError");
   const tablaExpedientes = document.querySelector("#tablaExpedientes tbody");
 
+  /* =========================
+     CSRF
+  ========================== */
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -359,22 +451,35 @@ document.addEventListener("DOMContentLoaded", function() {
     setTimeout(() => el.classList.remove("show"), 3000);
   }
 
+  /* =========================
+     BUSCAR EXPEDIENTE
+  ========================== */
   btnBuscar.addEventListener("click", function(e) {
     e.preventDefault();
     let tipo = "", query = "";
-    if (sigedInput.value.trim()) { tipo = "siged"; query = sigedInput.value.trim(); }
-    else if (cartaInput.value.trim()) { tipo = "carta_linea"; query = cartaInput.value.trim(); }
-    else return showToast(toastError);
+
+    if (sigedInput.value.trim()) {
+      tipo = "siged";
+      query = sigedInput.value.trim();
+    } else if (cartaInput.value.trim()) {
+      tipo = "carta_linea";
+      query = cartaInput.value.trim();
+    } else {
+      return showToast(toastError);
+    }
 
     fetch(`/ajax/autocomplete/?tipo=${tipo}&q=${encodeURIComponent(query)}`)
       .then(res => res.json())
       .then(data => {
         tablaResultados.innerHTML = "";
         const resultados = data.results || [];
+
         if (!resultados.length) {
-          tablaResultados.innerHTML = `<tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>`;
+          tablaResultados.innerHTML =
+            `<tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>`;
           return;
         }
+
         resultados.forEach(exp => {
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -391,9 +496,14 @@ document.addEventListener("DOMContentLoaded", function() {
       .catch(() => showToast(toastError));
   });
 
+  /* =========================
+     REGISTRAR VISITA
+     (NO TOCADO — ORIGINAL)
+  ========================== */
   btnGuardar.addEventListener("click", async () => {
     const seleccionado = document.querySelector("input[name='expediente_id']:checked");
     const fecha = fechaInput.value;
+
     if (!seleccionado || !fecha) return showToast(toastError);
 
     const formData = new FormData();
@@ -403,23 +513,73 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
       const res = await fetch("{% url 'asignaciones:supervisor_registrar' %}", {
         method: "POST",
-        headers: { "X-CSRFToken": csrftoken, "X-Requested-With": "XMLHttpRequest" },
+        headers: {
+          "X-CSRFToken": csrftoken,
+          "X-Requested-With": "XMLHttpRequest"
+        },
         body: formData
       });
+
       const data = await res.json();
+
       if (data.status === "success") {
         showToast(toastSuccess);
+
         const siged = seleccionado.closest("tr").children[1].textContent.trim();
         const fila = tablaExpedientes.querySelector(`tr[data-siged="${siged}"]`);
+
         if (fila) {
-          fila.children[10].textContent = data.fecha_visita;
+          fila.children[10].textContent = data.fecha_visita; // NO TOCADO
           fila.classList.add("updated");
           setTimeout(() => fila.classList.remove("updated"), 1500);
         }
+
         fechaInput.value = "";
+
       } else showToast(toastError);
-    } catch { showToast(toastError); }
+
+    } catch {
+      showToast(toastError);
+    }
   });
+
+  /* =========================
+     ✅ NUEVO — PLAZO RESTANTE DINÁMICO
+     SOLO USA fecha_limite
+     NO DEPENDE DE fecha_visita
+  ========================== */
+
+  function actualizarPlazos() {
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
+    document.querySelectorAll(".js-plazo").forEach(el => {
+      const fl = el.dataset.fechaLimite;
+      if (!fl) return;
+
+      const limite = new Date(fl + "T00:00:00");
+      const dias = Math.floor((limite - hoy) / (1000*60*60*24));
+
+      el.classList.remove("plazo-ok","plazo-alerta","plazo-vencido");
+
+      if (dias > 0) {
+        el.textContent = dias + " días";
+        el.classList.add("plazo-ok");
+      }
+      else if (dias === 0) {
+        el.textContent = "Hoy";
+        el.classList.add("plazo-alerta");
+      }
+      else {
+        el.textContent = dias + " días";
+        el.classList.add("plazo-vencido");
+      }
+    });
+  }
+
+  actualizarPlazos();
+
 });
 </script>
+
 {% endblock %}

@@ -304,48 +304,79 @@ calculando...
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-const container = document.getElementById("revTableContainer");
-container.addEventListener("scroll", () => {
-container.classList.toggle("scrolled", container.scrollTop > 0);
-});
+  // ===== sombra scroll (tu comportamiento original) =====
+  const container = document.getElementById("revTableContainer");
+  if (container) {
+    container.addEventListener("scroll", () => {
+      container.classList.toggle("scrolled", container.scrollTop > 0);
+    });
+  }
 
-/* ===== CALCULO PLAZO DINAMICO ===== */
+  /* ===== CALCULO PLAZO + TERMINADO EN VERDE/ROJO ===== */
 
-function actualizarPlazos() {
-const hoy = new Date();
-hoy.setHours(0,0,0,0);
+  function actualizarPlazos() {
 
-document.querySelectorAll(".js-plazo").forEach(el => {
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
 
-const fl = new Date(el.dataset.fechaLimite + "T00:00:00");
-fl.setHours(0,0,0,0);
+    document.querySelectorAll(".js-plazo").forEach(el => {
 
-const dias = Math.round((fl - hoy) / 86400000);
+      const estado = (el.dataset.estado || "").toUpperCase();
+      const fechaLimiteStr = el.dataset.fechaLimite;
 
-if (dias > 3) {
-el.textContent = dias + " días";
-el.className = "plazo-badge plazo-ok js-plazo";
-}
-else if (dias >= 1) {
-el.textContent = dias + " días";
-el.className = "plazo-badge plazo-alerta js-plazo";
-}
-else if (dias === 0) {
-el.textContent = "Hoy vence";
-el.className = "plazo-badge plazo-hoy js-plazo";
-}
-else {
-el.textContent = "Vencido " + Math.abs(dias) + "d";
-el.className = "plazo-badge plazo-vencido js-plazo";
-}
+      if (!fechaLimiteStr) return;
 
-});
-}
+      const fl = new Date(fechaLimiteStr + "T00:00:00");
+      fl.setHours(0,0,0,0);
 
-actualizarPlazos();
-setInterval(actualizarPlazos, 60 * 60 * 1000);
+      const dias = Math.round((fl - hoy) / 86400000);
+
+      // ===============================
+      // CASO: EXPEDIENTE CONCLUIDO
+      // ===============================
+      if (estado === "CONCLUIDO") {
+
+        if (dias >= 0) {
+          // terminó dentro del plazo
+          el.textContent = "Terminado";
+          el.className = "plazo-badge plazo-ok js-plazo";
+        } else {
+          // terminó fuera de plazo
+          el.textContent = "Terminado (" + dias + "d)";
+          el.className = "plazo-badge plazo-vencido js-plazo";
+        }
+
+        return;
+      }
+
+      // ===============================
+      // CASO: NO CONCLUIDO
+      // ===============================
+
+      if (dias > 3) {
+        el.textContent = dias + " días";
+        el.className = "plazo-badge plazo-ok js-plazo";
+      }
+      else if (dias >= 0) {
+        el.textContent = dias + " días";
+        el.className = "plazo-badge plazo-alerta js-plazo";
+      }
+      else {
+        el.textContent = "Vencido (" + dias + "d)";
+        el.className = "plazo-badge plazo-vencido js-plazo";
+      }
+
+    });
+  }
+
+  // ejecutar al cargar
+  actualizarPlazos();
+
+  // recalcular cada hora
+  setInterval(actualizarPlazos, 60 * 60 * 1000);
 
 });
 </script>
+
 
 {% endblock %}
