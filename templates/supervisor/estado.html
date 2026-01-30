@@ -295,6 +295,78 @@
     display: flex; align-items: center; gap: 8px;
     z-index: 9999;
   }
+  /* ===== CENTRAR CONTENIDO DE TABLAS ===== */
+table th,
+table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ===== BADGES PLAZO RESTANTE ===== */
+.plazo-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+}
+
+.plazo-ok {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.plazo-alerta {
+  background: #facc15;
+  color: #1e293b;
+}
+
+.plazo-hoy {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.plazo-vencido {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.fecha-estado-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.fecha-estado-row input[type="date"] {
+  width: 180px;
+  max-width: 180px;
+}
+
+.btn-mark {
+  background: transparent;
+  border: 2px solid #64748b;
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-mark:hover {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.btn-mark.activo {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
 
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
@@ -314,7 +386,6 @@
       </ul>
     </div>
 
-    <!-- NUEVO: PANEL RESUMEN -->
     <div class="resumen-card" id="panelResumen">
       <h5><i class="bi bi-bar-chart"></i> Resumen</h5>
       <div class="resumen-item"><span>Total de expedientes:</span> <span id="r-total">0</span></div>
@@ -326,7 +397,6 @@
   <div class="estado-main">
     <h4><i class="bi bi-clipboard-check"></i> Gestión de Estado del Expediente</h4>
 
-    <!-- FILTROS -->
     <form method="get" class="filtros">
       <div>
         <label>N.º SIGED</label>
@@ -339,7 +409,6 @@
       <button type="button" id="btnBuscar"><i class="bi bi-search"></i> Buscar</button>
     </form>
 
-    <!-- TABLA RESULTADOS -->
     <div class="tabla-container">
       <table id="tablaBusqueda">
         <thead>
@@ -356,27 +425,33 @@
       </table>
     </div>
 
-    <!-- FORMULARIO DE ESTADO -->
     <form method="post" id="formEstado" class="estado-form">
       {% csrf_token %}
       <input type="hidden" id="expedienteSeleccionado">
 
+      <!-- 🔽 CAMBIO AQUÍ: fecha corta + toggle al costado -->
       <label>Fecha de derivación</label>
-      <input type="date" name="fecha_derivacion" id="fechaDerivacion">
 
-      <div class="toggle-wrapper">
-        <span>Marcar como Concluido</span>
-        <label class="switch">
-          <input type="checkbox" id="estadoToggle" name="estado" value="CONCLUIDO">
-          <span class="slider"></span>
-        </label>
+      <div class="fecha-estado-row">
+        <input type="date" name="fecha_derivacion" id="fechaDerivacion">
+
+        <div class="toggle-wrapper">
+          <span>Marcar como Concluido</span>
+          <label class="switch">
+            <input type="checkbox" id="estadoToggle" name="estado" value="CONCLUIDO">
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
+      <!-- 🔼 FIN CAMBIO -->
 
       <label>Observaciones</label>
       <textarea name="observaciones" id="observaciones" placeholder="Escribe observaciones (opcional)"></textarea>
 
       <div style="text-align:right;">
-        <button type="button" id="btnGuardar" class="btn-guardar"><i class="bi bi-save"></i> Guardar cambios</button>
+        <button type="button" id="btnGuardar" class="btn-guardar">
+          <i class="bi bi-save"></i> Guardar cambios
+        </button>
       </div>
     </form>
   </div>
@@ -401,10 +476,12 @@
           <th>Fecha Derivación</th>
           <th>Estado</th>
           <th>Observaciones</th>
+          <th>Plazo restante</th>
         </tr>
       </thead>
       <tbody>
         {% for e in expedientes %}
+        {% with dias=e.dias_restantes %}
         <tr data-id="{{ e.id }}">
           <td>{{ e.siged }}</td>
           <td>{{ e.codigo }}</td>
@@ -424,21 +501,41 @@
             {% endif %}
           </td>
           <td>{{ e.observaciones|default:"—" }}</td>
+
+          <td>
+            {% if dias == None %}
+              —
+            {% elif dias < 0 %}
+              <span class="plazo-badge plazo-vencido">Vencido</span>
+            {% elif dias == 0 %}
+              <span class="plazo-badge plazo-hoy">Hoy</span>
+            {% elif dias <= 2 %}
+              <span class="plazo-badge plazo-alerta">{{ dias }} días</span>
+            {% else %}
+              <span class="plazo-badge plazo-ok">{{ dias }} días</span>
+            {% endif %}
+          </td>
+
         </tr>
+        {% endwith %}
         {% empty %}
-        <tr><td colspan="12" style="text-align:center;">No hay expedientes asignados.</td></tr>
+        <tr><td colspan="13" style="text-align:center;">No hay expedientes asignados.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- TOASTS -->
 <div class="toast" id="toastSuccess"><i class="bi bi-check-circle-fill"></i> Cambios guardados correctamente</div>
 <div class="toast error" id="toastError"><i class="bi bi-exclamation-triangle-fill"></i> Error o datos incompletos</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
+  // =========================
+  // RESUMEN
+  // =========================
+
   const resumen = {
     total: document.getElementById("r-total"),
     proceso: document.getElementById("r-proceso"),
@@ -448,12 +545,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function actualizarResumen() {
     const filas = document.querySelectorAll("#tablaExpedientes tbody tr[data-id]");
     let total = 0, proceso = 0, concluido = 0;
+
     filas.forEach(f => {
-      const estado = f.querySelector("td:nth-child(11)").innerText.trim();
+      const estadoCell = f.querySelector("td:nth-child(11)");
+      if (!estadoCell) return;
+
+      const estado = estadoCell.innerText.trim();
       if (estado !== "—") total++;
       if (estado.includes("Concluido")) concluido++;
       else proceso++;
     });
+
     resumen.total.textContent = total;
     resumen.proceso.textContent = proceso;
     resumen.concluido.textContent = concluido;
@@ -461,34 +563,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
   actualizarResumen();
 
+  // =========================
+  // ELEMENTOS
+  // =========================
+
   const sigedInput = document.getElementById("sigedInput");
   const cartaInput = document.getElementById("cartaInput");
   const btnBuscar = document.getElementById("btnBuscar");
   const tablaBusqueda = document.querySelector("#tablaBusqueda tbody");
+
   const expedienteSeleccionado = document.getElementById("expedienteSeleccionado");
   const fechaDeriv = document.getElementById("fechaDerivacion");
   const toggle = document.getElementById("estadoToggle");
   const observaciones = document.getElementById("observaciones");
   const btnGuardar = document.getElementById("btnGuardar");
+
   const tablaFinal = document.querySelector("#tablaExpedientes tbody");
+
   const toastSuccess = document.getElementById("toastSuccess");
   const toastError = document.getElementById("toastError");
 
   const showToast = (el) => {
+    if (!el) return;
     el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), 3000);
   };
 
+  // =========================
+  // BUSCAR
+  // =========================
+
   btnBuscar.addEventListener("click", async () => {
+
     const siged = sigedInput.value.trim();
     const carta = cartaInput.value.trim();
 
     if (!siged && !carta) {
-      tablaBusqueda.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Ingrese N.º SIGED o Carta de línea.</td></tr>";
+      tablaBusqueda.innerHTML =
+        "<tr><td colspan='6' style='text-align:center;'>Ingrese N.º SIGED o Carta de línea.</td></tr>";
       return;
     }
 
     const url = `{% url 'asignaciones:supervisor_estado' %}?siged=${encodeURIComponent(siged)}&carta_linea=${encodeURIComponent(carta)}`;
+
     const res = await fetch(url, {
       method: "GET",
       headers: {"X-Requested-With": "XMLHttpRequest"}
@@ -497,37 +614,71 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await res.json();
 
     if (data.status === "success" && data.results.length > 0) {
+
       tablaBusqueda.innerHTML = "";
+
       data.results.forEach(exp => {
+
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
-          <td><button type="button" class="btn-select" data-id="${exp.id}"><i class="bi bi-check2-circle"></i></button></td>
+          <td>
+            <button type="button"
+                    class="btn-select btn-mark"
+                    data-id="${exp.id}"
+                    title="Marcar expediente">
+              <i class="bi bi-circle"></i>
+            </button>
+          </td>
           <td>${exp.siged}</td>
           <td>${exp.carta_linea}</td>
           <td>${exp.codigo_actividad}</td>
           <td>${exp.tipo_supervision}</td>
           <td>${exp.fecha_asignacion}</td>
         `;
+
         tablaBusqueda.appendChild(tr);
       });
 
+      // =========================
+      // MARCAR UNO SOLO
+      // =========================
+
       document.querySelectorAll(".btn-select").forEach(btn => {
+
         btn.addEventListener("click", () => {
+
           expedienteSeleccionado.value = btn.dataset.id;
-          document.querySelectorAll(".btn-select").forEach(b => b.classList.remove("activo"));
+
+          document.querySelectorAll(".btn-select").forEach(b => {
+            b.classList.remove("activo");
+            b.innerHTML = '<i class="bi bi-circle"></i>';
+          });
+
           btn.classList.add("activo");
+          btn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+
           showToast(toastSuccess);
-          toastSuccess.textContent = "Expediente seleccionado correctamente.";
+          if (toastSuccess) toastSuccess.textContent = "Expediente seleccionado correctamente.";
         });
+
       });
+
     } else {
-      tablaBusqueda.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Sin resultados.</td></tr>";
+      tablaBusqueda.innerHTML =
+        "<tr><td colspan='6' style='text-align:center;'>Sin resultados.</td></tr>";
     }
+
   });
 
- 
+  // =========================
+  // GUARDAR
+  // =========================
+
   btnGuardar.addEventListener("click", async e => {
+
     e.preventDefault();
+
     const id = expedienteSeleccionado.value;
     const fecha = fechaDeriv.value;
     const obs = observaciones.value.trim();
@@ -535,7 +686,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!id || !fecha) {
       showToast(toastError);
-      toastError.textContent = "Debes seleccionar un expediente y una fecha.";
+      if (toastError) toastError.textContent = "Debes seleccionar un expediente y una fecha.";
       return;
     }
 
@@ -555,16 +706,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await res.json();
 
     if (data.status === "success") {
+
       showToast(toastSuccess);
-      toastSuccess.textContent = "Cambios guardados correctamente.";
+      if (toastSuccess) toastSuccess.textContent = "Cambios guardados correctamente.";
 
       const fila = tablaFinal.querySelector(`tr[data-id='${id}']`);
+
       if (fila) {
-        fila.children[9].textContent = data.expediente.fecha_derivacion;
-        fila.children[10].innerHTML = estado
-          ? '<span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>'
-          : '<span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>';
-        fila.children[11].textContent = data.expediente.observaciones;
+
+        // FECHA DERIVACIÓN
+        if (fila.children[9])
+          fila.children[9].textContent = data.expediente.fecha_derivacion || "—";
+
+        // ESTADO
+        if (fila.children[10])
+          fila.children[10].innerHTML = estado
+            ? '<span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>'
+            : '<span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>';
+
+        // OBSERVACIONES
+        if (fila.children[11])
+          fila.children[11].textContent = data.expediente.observaciones || "—";
+
+        // =========================
+        // PLAZO — SOLO BACKEND
+        // =========================
+
+        if (fila.children[12]) {
+
+          let html = "—";
+
+          if (data.expediente.plazo_texto) {
+            html = `<span class="plazo-badge ${data.expediente.plazo_clase || ""}">
+                      ${data.expediente.plazo_texto}
+                    </span>`;
+          }
+
+          fila.children[12].innerHTML = html;
+        }
+
         fila.classList.add("highlight");
         setTimeout(() => fila.classList.remove("highlight"), 2000);
       }
@@ -573,11 +753,19 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("formEstado").reset();
       expedienteSeleccionado.value = "";
       toggle.checked = false;
+
     } else {
+
       showToast(toastError);
-      toastError.textContent = data.message || "Error al guardar cambios.";
+      if (toastError)
+        toastError.textContent = data.message || "Error al guardar cambios.";
+
     }
+
   });
+
 });
 </script>
+
+
 {% endblock %}
