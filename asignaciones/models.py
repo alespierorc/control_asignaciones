@@ -72,23 +72,14 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-
 class Expediente(models.Model):
     """Registro detallado de expedientes asignados a supervisores."""
-
-    # =====================================================
-    # ESTADOS
-    # =====================================================
 
     ESTADOS = [
         ("EN_PROCESO", "En proceso"),
         ("PENDIENTE", "Pendiente"),
         ("CONCLUIDO", "Concluido"),
     ]
-
-    # =====================================================
-    # CAMPOS BASE
-    # =====================================================
 
     siged = models.CharField(max_length=50, unique=True, verbose_name="N° SIGED")
     codigo = models.CharField(max_length=50, blank=True)
@@ -102,26 +93,19 @@ class Expediente(models.Model):
         default="NO"
     )
 
-    # =====================================================
-    # FECHAS
-    # =====================================================
+    # ===================== FECHAS =====================
 
     fecha_asignacion = models.DateField()
-
-    # ❗ NO intervienen en el cálculo de plazo
     fecha_visita = models.DateField(null=True, blank=True)
     fecha_derivacion = models.DateField(null=True, blank=True)
 
-    # ✅ Fecha límite — base del plazo
     fecha_limite = models.DateField(
         null=True,
         blank=True,
         verbose_name="Fecha límite de cumplimiento"
     )
 
-    # =====================================================
-    # CONTROL
-    # =====================================================
+    # ===================== CONTROL =====================
 
     observaciones = models.TextField(blank=True)
 
@@ -133,9 +117,7 @@ class Expediente(models.Model):
 
     concluido = models.BooleanField(default=False)
 
-    # =====================================================
-    # RELACIONES
-    # =====================================================
+    # ===================== RELACIONES =====================
 
     contrato = models.ForeignKey("Contrato", on_delete=models.PROTECT)
     oficina = models.ForeignKey("OficinaRegional", on_delete=models.PROTECT)
@@ -160,174 +142,114 @@ class Expediente(models.Model):
         blank=True
     )
 
-    # =====================================================
-    # AUDITORÍA
-    # =====================================================
+    # ===================== AUDITORÍA =====================
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # =====================================================
-    # META
-    # =====================================================
+    # ===================== META =====================
 
     class Meta:
-        ordering = ["-created_at"]
         verbose_name = "Expediente"
         verbose_name_plural = "Expedientes"
+        ordering = [
+            "concluido",        # EN PROCESO primero
+            "fecha_limite",     # más urgentes arriba
+            "-fecha_asignacion"
+        ]
 
     def __str__(self):
         return f"{self.siged} ({self.get_estado_display()})"
 
-    # =====================================================
-    # ================= PLAZO — CÁLCULO ===================
-    # =====================================================
+    # ===================== PLAZO =====================
 
     def plazo_total_dias(self):
-        """
-        Duración fija del plazo
-        fecha_limite - fecha_asignacion
-        """
         if self.fecha_asignacion and self.fecha_limite:
             return (self.fecha_limite - self.fecha_asignacion).days
         return None
 
     def dias_restantes(self):
-        """
-        Plazo dinámico contra HOY
-        Puede ser negativo
-        """
         if not self.fecha_limite:
             return None
-
         hoy = timezone.now().date()
         return (self.fecha_limite - hoy).days
 
     def dias_tardanza(self):
-        """
-        Días pasados del plazo
-        """
         dias = self.dias_restantes()
-        if dias is not None and dias < 0:
-            return abs(dias)
-        return 0
+        return abs(dias) if dias is not None and dias < 0 else 0
 
-    def esta_vencido(self):
-        dias = self.dias_restantes()
-        return dias is not None and dias < 0
-
-    def esta_en_plazo(self):
-        dias = self.dias_restantes()
-        return dias is not None and dias >= 0
-
-    # =====================================================
-    # RESULTADO LÓGICO DEL PLAZO
-    # =====================================================
-
-    def resultado_plazo(self):
-
-        if not self.fecha_limite:
-            return "SIN_LIMITE"
-
-        dias = self.dias_restantes()
-
-        if self.estado == "CONCLUIDO" or self.concluido:
-
-            if self.fecha_derivacion:
-                diff = (self.fecha_limite - self.fecha_derivacion).days
-                if diff >= 0:
-                    return "CONCLUIDO_EN_PLAZO"
-                return "CONCLUIDO_TARDE"
-
-            return "CONCLUIDO"
-
-        if dias is not None and dias < 0:
-            return "VENCIDO"
-
-        return "EN_CURSO"
-
-    # =====================================================
-    # TEXTO UI PERSISTENTE
-    # =====================================================
+    # ===================== TEXTO UI (FINAL) =====================
 
     def texto_plazo_ui(self):
         """
-        Devuelve (texto, color)
+        Texto EXACTO que se muestra en la UI
         """
 
         if not self.fecha_limite:
-            return "—", "neutral"
+            return "—"
 
-        hoy = timezone.now().date()
-
-        # =====================
-        # SI YA CONCLUYÓ
-        # =====================
-
+        # ===== CONCLUIDO =====
         if self.estado == "CONCLUIDO" or self.concluido:
 
             if not self.fecha_derivacion:
-                return "Terminado", "verde"
+                return "Terminado"
 
             diff = (self.fecha_limite - self.fecha_derivacion).days
 
-            if diff >= 0:
-                return f"Terminado antes ({diff} días)", "verde"
-            else:
-                return f"Terminado pasando ({abs(diff)} días)", "rojo"
+            if diff > 0:
+                return f"Terminado antes {diff} días"
 
-        # =====================
-        # NO CONCLUIDO
-        # =====================
+            if diff == 0:
+                return "Terminado"
 
+            return f"Terminado {diff} días"  # negativo
+
+        # ===== EN PROCESO =====
+        hoy = timezone.now().date()
         dias = (self.fecha_limite - hoy).days
 
         if dias == 0:
-            return "Hoy", "amarillo"
+            return "Hoy"
 
-        if dias > 0:
-            return f"{dias} días", "amarillo"
+        return f"{dias} días"
 
-        return f"{dias} días", "rojo"
+    # ===================== CLASE CSS BADGE =====================
 
     def clase_plazo_badge(self):
+        if not self.fecha_limite:
+            return ""
 
-        _, color = self.texto_plazo_ui()
+        # ===== CONCLUIDO =====
+        if self.estado == "CONCLUIDO" or self.concluido:
 
-        return {
-            "verde": "plazo-ok",
-            "rojo": "plazo-vencido",
-            "amarillo": "plazo-alerta",
-            "neutral": ""
-        }.get(color, "")
+            if not self.fecha_derivacion:
+                return "plazo-ok"
 
-    # =====================================================
-    # PAYLOAD LISTO PARA AJAX
-    # =====================================================
+            diff = (self.fecha_limite - self.fecha_derivacion).days
+
+            return "plazo-ok" if diff >= 0 else "plazo-vencido"
+
+        # ===== EN PROCESO =====
+        # 🔶 SIEMPRE amarillo
+        return "plazo-alerta"
+
+    # ===================== AJAX PAYLOAD =====================
 
     def plazo_ui_payload(self):
-
-        texto, _ = self.texto_plazo_ui()
-
         return {
-            "plazo_texto": texto,
+            "plazo_texto": self.texto_plazo_ui(),
             "plazo_clase": self.clase_plazo_badge(),
             "dias_restantes": self.dias_restantes(),
             "dias_tardanza": self.dias_tardanza(),
         }
 
-    # =====================================================
-    # SAVE HOOK
-    # =====================================================
+    # ===================== SAVE =====================
 
     def save(self, *args, **kwargs):
-
         if self.estado == "CONCLUIDO":
             self.concluido = True
-
         super().save(*args, **kwargs)
-
-
+        
 # ============================================================
 #                  MENSAJERÍA INTERNA
 # ============================================================

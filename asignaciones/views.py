@@ -243,9 +243,7 @@ def estado_expediente(request):
     - Actualizar estado (POST AJAX)
     """
 
-    # =====================================================
-    # ======================= GET ========================
-    # =====================================================
+    # ======================= GET =======================
 
     if request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest" and request.method == "GET":
 
@@ -271,28 +269,24 @@ def estado_expediente(request):
             filtro |= Q(carta_linea__icontains=carta)
 
         expedientes = (
-            expedientes.filter(filtro)
+            expedientes
+            .filter(filtro)
             .select_related("tipo_supervision", "tipo_documento", "oficina")
-            .order_by("-fecha_asignacion")[:10]
+            .order_by("concluido", "fecha_limite", "-fecha_asignacion")[:10]
         )
 
-        resultados = [
-            {
-                "id": e.id,
-                "siged": e.siged or "",
-                "carta_linea": e.carta_linea or "",
-                "codigo_actividad": e.codigo_actividad or "",
-                "tipo_supervision": e.tipo_supervision.nombre if e.tipo_supervision else "",
-                "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
-            }
-            for e in expedientes
-        ]
+        resultados = [{
+            "id": e.id,
+            "siged": e.siged or "",
+            "carta_linea": e.carta_linea or "",
+            "codigo_actividad": e.codigo_actividad or "",
+            "tipo_supervision": e.tipo_supervision.nombre if e.tipo_supervision else "",
+            "fecha_asignacion": e.fecha_asignacion.strftime("%d/%m/%Y") if e.fecha_asignacion else "",
+        } for e in expedientes]
 
         return JsonResponse({"status": "success", "results": resultados})
 
-    # =====================================================
     # ======================= POST =======================
-    # =====================================================
 
     if request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest" and request.method == "POST":
 
@@ -303,103 +297,58 @@ def estado_expediente(request):
             marcado_concluido = request.POST.get("estado", "").upper() == "CONCLUIDO"
 
             if not exp_id or not fecha_deriv:
-                return JsonResponse({
-                    "status": "error",
-                    "message": "Datos incompletos."
-                })
+                return JsonResponse({"status": "error", "message": "Datos incompletos."})
 
             expediente = Expediente.objects.filter(id=exp_id).first()
             if not expediente:
-                return JsonResponse({
-                    "status": "error",
-                    "message": "Expediente no encontrado."
-                })
-
-            # =========================
-            # PERMISOS
-            # =========================
+                return JsonResponse({"status": "error", "message": "Expediente no encontrado."})
 
             if request.user.groups.filter(name="Supervisor").exists():
                 if expediente.supervisor != request.user:
-                    return JsonResponse({
-                        "status": "error",
-                        "message": "No autorizado para este expediente."
-                    })
-
-            # =========================
-            # PARSE FECHA
-            # =========================
+                    return JsonResponse({"status": "error", "message": "No autorizado."})
 
             try:
                 fecha_deriv_dt = datetime.strptime(fecha_deriv, "%Y-%m-%d").date()
             except ValueError:
-                return JsonResponse({
-                    "status": "error",
-                    "message": "Formato de fecha inválido."
-                })
-
-            # =========================
-            # GUARDAR
-            # =========================
+                return JsonResponse({"status": "error", "message": "Formato de fecha inválido."})
 
             expediente.fecha_derivacion = fecha_deriv_dt
-            expediente.observaciones = observaciones or "-"
+            expediente.observaciones = observaciones or "—"
             expediente.estado = "CONCLUIDO" if marcado_concluido else "EN_PROCESO"
+            expediente.concluido = marcado_concluido
+            expediente.save()
 
-            expediente.save(update_fields=[
-                "fecha_derivacion",
-                "observaciones",
-                "estado",
-                "concluido"
-            ])
-
-            # =========================
-            # ✅ PAYLOAD PLAZO UI
-            # =========================
-
-            plazo_texto, _ = expediente.texto_plazo_ui()
-            plazo_clase = expediente.clase_plazo_badge()
-
-            # =========================
-            # RESPUESTA
-            # =========================
+            payload = expediente.plazo_ui_payload()
 
             return JsonResponse({
                 "status": "success",
-                "message": f"Expediente {expediente.siged} actualizado correctamente.",
                 "expediente": {
                     "id": expediente.id,
                     "siged": expediente.siged,
                     "fecha_derivacion": expediente.fecha_derivacion.strftime("%d/%m/%Y"),
                     "estado": expediente.estado,
                     "observaciones": expediente.observaciones,
-                    "plazo_texto": plazo_texto,
-                    "plazo_clase": plazo_clase
+                    **payload
                 }
             })
 
         except Exception as e:
-            print("❌ Error en estado_expediente:", e)
-            return JsonResponse({
-                "status": "error",
-                "message": f"Error interno: {e}"
-            })
+            return JsonResponse({"status": "error", "message": str(e)})
 
-    # =====================================================
-    # ===================== RENDER =======================
-    # =====================================================
+    # ======================= RENDER =======================
 
     expedientes = (
-        Expediente.objects.filter(supervisor=request.user)
+        Expediente.objects
+        .filter(supervisor=request.user)
         .select_related("tipo_supervision", "tipo_documento", "oficina")
-        .order_by("-fecha_asignacion")
+        .order_by("concluido", "fecha_limite", "-fecha_asignacion")
     )
 
     return render(request, "supervisor/estado.html", {
         "expedientes": expedientes
     })
 
-
+    
 # ============================================================
 #                         COORDINADOR
 # ============================================================
