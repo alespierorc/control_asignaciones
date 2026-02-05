@@ -496,6 +496,7 @@ table td {
           <td>{{ e.fecha_visita|default:"—" }}</td>
           <td>{{ e.fecha_derivacion|default:"—" }}</td>
 
+          <!-- ✅ FIX DEFINITIVO DEL PLAZO -->
           <td>
             {% if e.estado == "CONCLUIDO" %}
               <span class="estado-icon">

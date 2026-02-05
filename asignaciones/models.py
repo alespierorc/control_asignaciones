@@ -249,7 +249,6 @@ class Expediente(models.Model):
         if self.estado == "CONCLUIDO":
             self.concluido = True
         super().save(*args, **kwargs)
-
 # ============================================================
 #                  MENSAJERÍA INTERNA
 # ============================================================
