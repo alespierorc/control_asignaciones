@@ -372,7 +372,7 @@ table td {
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 </style>
 
-<div class="estado-wrap">
+<div class="estado-wrap"> 
   <div class="panel-left">
     <div class="info-card">
       <h5><i class="bi bi-info-circle"></i> Indicaciones</h5>
@@ -421,7 +421,11 @@ table td {
             <th>Fecha Asignación</th>
           </tr>
         </thead>
-        <tbody><tr><td colspan="6" style="text-align:center;">Sin resultados.</td></tr></tbody>
+        <tbody>
+          <tr>
+            <td colspan="6" style="text-align:center;">Sin resultados.</td>
+          </tr>
+        </tbody>
       </table>
     </div>
 
@@ -429,7 +433,6 @@ table td {
       {% csrf_token %}
       <input type="hidden" id="expedienteSeleccionado">
 
-      <!-- 🔽 CAMBIO AQUÍ: fecha corta + toggle al costado -->
       <label>Fecha de derivación</label>
 
       <div class="fecha-estado-row">
@@ -443,7 +446,6 @@ table td {
           </label>
         </div>
       </div>
-      <!-- 🔼 FIN CAMBIO -->
 
       <label>Observaciones</label>
       <textarea name="observaciones" id="observaciones" placeholder="Escribe observaciones (opcional)"></textarea>
@@ -479,9 +481,9 @@ table td {
           <th>Plazo restante</th>
         </tr>
       </thead>
+
       <tbody>
         {% for e in expedientes %}
-        {% with dias=e.dias_restantes %}
         <tr data-id="{{ e.id }}">
           <td>{{ e.siged }}</td>
           <td>{{ e.codigo }}</td>
@@ -493,41 +495,54 @@ table td {
           <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
           <td>{{ e.fecha_visita|default:"—" }}</td>
           <td>{{ e.fecha_derivacion|default:"—" }}</td>
-          <td>
-            {% if e.estado == "CONCLUIDO" %}
-              <span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>
-            {% else %}
-              <span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>
-            {% endif %}
-          </td>
-          <td>{{ e.observaciones|default:"—" }}</td>
 
           <td>
-            {% if dias == None %}
-              —
-            {% elif dias < 0 %}
-              <span class="plazo-badge plazo-vencido">Vencido</span>
-            {% elif dias == 0 %}
-              <span class="plazo-badge plazo-hoy">Hoy</span>
-            {% elif dias <= 2 %}
-              <span class="plazo-badge plazo-alerta">{{ dias }} días</span>
+            {% if e.estado == "CONCLUIDO" %}
+              <span class="estado-icon">
+                <i class="bi bi-check-circle"></i>Concluido
+              </span>
             {% else %}
-              <span class="plazo-badge plazo-ok">{{ dias }} días</span>
+              <span class="estado-icon">
+                <i class="bi bi-hourglass-split"></i>En proceso
+              </span>
             {% endif %}
+          </td>
+
+          <td>{{ e.observaciones|default:"—" }}</td>
+
+          <!-- ✅ FIX DEFINITIVO PLAZO RESTANTE -->
+          <td>
+            {% with texto=e.texto_plazo_ui clase=e.clase_plazo_badge %}
+              {% if texto %}
+                <span class="plazo-badge {{ clase }}">{{ texto }}</span>
+              {% else %}
+                —
+              {% endif %}
+            {% endwith %}
           </td>
 
         </tr>
-        {% endwith %}
         {% empty %}
-        <tr><td colspan="13" style="text-align:center;">No hay expedientes asignados.</td></tr>
+        <tr>
+          <td colspan="13" style="text-align:center;">
+            No hay expedientes asignados.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
+
     </table>
   </div>
 </div>
 
-<div class="toast" id="toastSuccess"><i class="bi bi-check-circle-fill"></i> Cambios guardados correctamente</div>
-<div class="toast error" id="toastError"><i class="bi bi-exclamation-triangle-fill"></i> Error o datos incompletos</div>
+<div class="toast" id="toastSuccess">
+  <i class="bi bi-check-circle-fill"></i> Cambios guardados correctamente
+</div>
+
+<div class="toast error" id="toastError">
+  <i class="bi bi-exclamation-triangle-fill"></i> Error o datos incompletos
+</div>
+
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
