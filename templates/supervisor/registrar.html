@@ -253,7 +253,6 @@ table td > * {
   .toast.error { background: #ef4444; }
   .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 </style>
-
 <div class="sup-wrap">
   <!-- PANEL IZQUIERDO -->
   <section class="side-card">
@@ -283,13 +282,17 @@ table td > * {
         <input type="text" id="cartaInput" name="carta_linea" class="blue-input" placeholder="Ej. Carta N° 045-2025-OSINERGMIN">
       </div>
       <div style="text-align:right;margin-top:12px">
-        <button type="button" class="btn-primary" id="btnBuscar"><i class="bi bi-search"></i> Buscar</button>
+        <button type="button" class="btn-primary" id="btnBuscar">
+          <i class="bi bi-search"></i> Buscar
+        </button>
       </div>
     </form>
 
     <!-- RESULTADOS DE BÚSQUEDA -->
     <div class="recent-card" style="margin-top:25px">
-      <h3 style="font-size:16px;font-weight:700;text-transform:uppercase;"><i class="bi bi-list-task"></i> Resultados de búsqueda</h3>
+      <h3 style="font-size:16px;font-weight:700;text-transform:uppercase;">
+        <i class="bi bi-list-task"></i> Resultados de búsqueda
+      </h3>
       <div class="table-scroll" id="scrollBusqueda">
         <table id="tablaResultados">
           <thead>
@@ -304,7 +307,11 @@ table td > * {
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>
+            <tr>
+              <td colspan="7" style="text-align:center;">
+                No se encontraron resultados.
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -326,9 +333,12 @@ table td > * {
   </section>
 </div>
 
-<!-- === TABLA DE EXPEDIENTES ASIGNADOS === -->
+<!-- ===================== -->
+<!-- TABLA DE EXPEDIENTES -->
+<!-- ===================== -->
 <div class="form-card" style="margin-top:35px">
   <h2><i class="bi bi-folder2-open"></i> Expedientes Asignados</h2>
+
   <div class="table-scroll" id="scrollAsignados">
     <table id="tablaExpedientes">
       <thead>
@@ -344,7 +354,7 @@ table td > * {
           <th>Oficina Regional</th>
           <th>Fecha Asignación</th>
           <th>Fecha Visita</th>
-          <th>Plazo restante</th> <!-- ✅ AÑADIDO -->
+          <th>Plazo restante</th>
         </tr>
       </thead>
 
@@ -364,18 +374,16 @@ table td > * {
             <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
             <td>{{ e.fecha_visita|date:"d/m/Y"|default:"—" }}</td>
 
-            <!-- ✅ AÑADIDO — NO AFECTA FECHA VISITA -->
+            <!-- ✅ FIX DEFINITIVO: PLAZO DESDE EL MODEL -->
             <td>
               {% if e.fecha_limite %}
-                <span class="plazo-badge js-plazo"
-                      data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}">
-                  calculando...
+                <span class="plazo-badge {{ e.clase_plazo_badge }}">
+                  {{ e.texto_plazo_ui }}
                 </span>
               {% else %}
                 —
               {% endif %}
             </td>
-
           </tr>
           {% endfor %}
         {% else %}
@@ -405,7 +413,11 @@ document.addEventListener("DOMContentLoaded", function() {
   /* =========================
      SCROLL SOMBRA TABLAS
   ========================== */
-  const scrolls = [document.getElementById("scrollBusqueda"), document.getElementById("scrollAsignados")];
+  const scrolls = [
+    document.getElementById("scrollBusqueda"),
+    document.getElementById("scrollAsignados")
+  ];
+
   scrolls.forEach(el => {
     if (!el) return;
     el.addEventListener("scroll", () => {
@@ -456,7 +468,9 @@ document.addEventListener("DOMContentLoaded", function() {
   ========================== */
   btnBuscar.addEventListener("click", function(e) {
     e.preventDefault();
-    let tipo = "", query = "";
+
+    let tipo = "";
+    let query = "";
 
     if (sigedInput.value.trim()) {
       tipo = "siged";
@@ -475,8 +489,12 @@ document.addEventListener("DOMContentLoaded", function() {
         const resultados = data.results || [];
 
         if (!resultados.length) {
-          tablaResultados.innerHTML =
-            `<tr><td colspan="7" style="text-align:center;">No se encontraron resultados.</td></tr>`;
+          tablaResultados.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align:center;">
+                No se encontraron resultados.
+              </td>
+            </tr>`;
           return;
         }
 
@@ -489,7 +507,8 @@ document.addEventListener("DOMContentLoaded", function() {
             <td>${exp.razon_social}</td>
             <td>${exp.contrato}</td>
             <td>${exp.oficina}</td>
-            <td>${exp.fecha_asignacion}</td>`;
+            <td>${exp.fecha_asignacion}</td>
+          `;
           tablaResultados.appendChild(row);
         });
       })
@@ -498,7 +517,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   /* =========================
      REGISTRAR VISITA
-     (NO TOCADO — ORIGINAL)
+     (ORIGINAL — SIN TOCAR)
   ========================== */
   btnGuardar.addEventListener("click", async () => {
     const seleccionado = document.querySelector("input[name='expediente_id']:checked");
@@ -529,57 +548,24 @@ document.addEventListener("DOMContentLoaded", function() {
         const fila = tablaExpedientes.querySelector(`tr[data-siged="${siged}"]`);
 
         if (fila) {
-          fila.children[10].textContent = data.fecha_visita; // NO TOCADO
+          // columna FECHA VISITA (index correcto)
+          fila.children[10].textContent = data.fecha_visita;
           fila.classList.add("updated");
           setTimeout(() => fila.classList.remove("updated"), 1500);
         }
 
         fechaInput.value = "";
-
-      } else showToast(toastError);
+      } else {
+        showToast(toastError);
+      }
 
     } catch {
       showToast(toastError);
     }
   });
 
-  /* =========================
-     ✅ NUEVO — PLAZO RESTANTE DINÁMICO
-     SOLO USA fecha_limite
-     NO DEPENDE DE fecha_visita
-  ========================== */
-
-  function actualizarPlazos() {
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-
-    document.querySelectorAll(".js-plazo").forEach(el => {
-      const fl = el.dataset.fechaLimite;
-      if (!fl) return;
-
-      const limite = new Date(fl + "T00:00:00");
-      const dias = Math.floor((limite - hoy) / (1000*60*60*24));
-
-      el.classList.remove("plazo-ok","plazo-alerta","plazo-vencido");
-
-      if (dias > 0) {
-        el.textContent = dias + " días";
-        el.classList.add("plazo-ok");
-      }
-      else if (dias === 0) {
-        el.textContent = "Hoy";
-        el.classList.add("plazo-alerta");
-      }
-      else {
-        el.textContent = dias + " días";
-        el.classList.add("plazo-vencido");
-      }
-    });
-  }
-
-  actualizarPlazos();
-
 });
 </script>
+
 
 {% endblock %}

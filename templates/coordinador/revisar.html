@@ -189,122 +189,136 @@
   .plazo-vencido { background:#ef4444; color:#fff; }
   .plazo-hoy { background:#f97316; color:#fff; }
 </style>
+<div class="rev-wrapper"> 
 
-<div class="rev-wrapper">
+  <div class="rev-panel">
+    <h5>Coordinador</h5>
 
-<div class="rev-panel">
-<h5>Coordinador</h5>
+    <div class="p-3">
+      <p class="fw-semibold mb-1 text-white-50">Indicaciones</p>
+      <p>
+        Revisa el avance de los expedientes por contrato y carta línea.
+        Verifica las fechas de visita, derivación y el estado actual del expediente.
+      </p>
+    </div>
 
-<div class="p-3">
-<p class="fw-semibold mb-1 text-white-50">Indicaciones</p>
-<p>
-Revisa el avance de los expedientes por contrato y carta línea.
-Verifica las fechas de visita, derivación y el estado actual del expediente.
-</p>
-</div>
+    <div class="p-3">
+      <p class="fw-semibold mb-1 text-white-50">Recomendación</p>
+      <p>
+        Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b>
+        y coordina con el supervisor las acciones necesarias para concluirlos.
+      </p>
+    </div>
+  </div>
 
-<div class="p-3">
-<p class="fw-semibold mb-1 text-white-50">Recomendación</p>
-<p>
-Prioriza los expedientes en estado <b>Pendiente</b> o <b>En proceso</b>
-y coordina con el supervisor las acciones necesarias para concluirlos.
-</p>
-</div>
-</div>
+  <div class="rev-section">
 
-<div class="rev-section">
+    <h5><i class="bi bi-folder2-open"></i> Revisar Expedientes</h5>
 
-<h5><i class="bi bi-folder2-open"></i> Revisar Expedientes</h5>
+    <form method="get" class="rev-filter">
+      <select name="contrato">
+        <option value="">-- Seleccionar Contrato --</option>
+        {% for contrato in contratos %}
+          <option value="{{ contrato.id }}"
+            {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
+            {{ contrato.numero }} – {{ contrato.oficina.nombre }}
+          </option>
+        {% endfor %}
+      </select>
 
-<form method="get" class="rev-filter">
-<select name="contrato">
-<option value="">-- Seleccionar Contrato --</option>
-{% for contrato in contratos %}
-<option value="{{ contrato.id }}" {% if request.GET.contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
-{{ contrato.numero }} – {{ contrato.oficina.nombre }}
-</option>
-{% endfor %}
-</select>
+      <input type="text"
+             name="carta_linea"
+             placeholder="Carta Línea"
+             value="{{ request.GET.carta_linea }}">
 
-<input type="text" name="carta_linea" placeholder="Carta Línea" value="{{ request.GET.carta_linea }}">
-<button type="submit"><i class="bi bi-search"></i> Buscar</button>
-</form>
+      <button type="submit">
+        <i class="bi bi-search"></i> Buscar
+      </button>
+    </form>
 
-<div class="rev-table-container" id="revTableContainer">
-<table>
-<thead>
-<tr>
-<th>N° SIGED</th>
-<th>Carta Línea</th>
-<th>Código OSINERGMIN</th>
-<th>Código Actividad</th>
-<th>Razón Social</th>
-<th>Tipo Supervisión</th>
-<th>Tipo Documento</th>
-<th>Oficina Regional</th>
-<th>Supervisor</th>
-<th>Fecha Asignación</th>
-<th>Fecha Derivación</th>
-<th>Fecha Visita</th>
-<th>Estado</th>
-<th>Observaciones</th>
-<th>Plazo restante</th>
-</tr>
-</thead>
+    <div class="rev-table-container" id="revTableContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>N° SIGED</th>
+            <th>Carta Línea</th>
+            <th>Código OSINERGMIN</th>
+            <th>Código Actividad</th>
+            <th>Razón Social</th>
+            <th>Tipo Supervisión</th>
+            <th>Tipo Documento</th>
+            <th>Oficina Regional</th>
+            <th>Supervisor</th>
+            <th>Fecha Asignación</th>
+            <th>Fecha Derivación</th>
+            <th>Fecha Visita</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+            <th>Plazo restante</th>
+          </tr>
+        </thead>
 
-<tbody>
-{% if expedientes %}
-{% for e in expedientes %}
-<tr>
-<td>{{ e.siged }}</td>
-<td>{{ e.carta_linea }}</td>
-<td>{{ e.codigo }}</td>
-<td>{{ e.codigo_actividad }}</td>
-<td>{{ e.razon_social }}</td>
-<td>{{ e.get_tipo_supervision_display|default:e.tipo_supervision }}</td>
-<td>{{ e.get_tipo_documento_display|default:e.tipo_documento }}</td>
-<td>{{ e.oficina.nombre }}</td>
-<td>{{ e.supervisor.get_full_name }}</td>
-<td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
-<td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
-<td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
+        <tbody>
+        {% if expedientes %}
+          {% for e in expedientes %}
+          <tr>
+            <td>{{ e.siged }}</td>
+            <td>{{ e.carta_linea }}</td>
+            <td>{{ e.codigo }}</td>
+            <td>{{ e.codigo_actividad }}</td>
+            <td>{{ e.razon_social }}</td>
+            <td>{{ e.get_tipo_supervision_display|default:e.tipo_supervision }}</td>
+            <td>{{ e.get_tipo_documento_display|default:e.tipo_documento }}</td>
+            <td>{{ e.oficina.nombre }}</td>
+            <td>{{ e.supervisor.get_full_name }}</td>
+            <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_derivacion|date:"d/m/Y" }}</td>
+            <td>{{ e.fecha_visita|date:"d/m/Y" }}</td>
 
-<td>
-<span class="estado-badge {% if e.estado == 'Pendiente' %}pendiente{% elif e.estado == 'En proceso' %}proceso{% elif e.estado == 'Concluido' %}concluido{% endif %}">
-{{ e.estado }}
-</span>
-</td>
+            <td>
+              <span class="estado-badge
+                {% if e.estado == 'Pendiente' %}pendiente
+                {% elif e.estado == 'En proceso' %}proceso
+                {% elif e.estado == 'Concluido' %}concluido
+                {% endif %}">
+                {{ e.estado }}
+              </span>
+            </td>
 
-<td>{{ e.observaciones|default:"Sin observaciones" }}</td>
+            <td>{{ e.observaciones|default:"Sin observaciones" }}</td>
 
-<td>
-{% if e.fecha_limite %}
-<span class="plazo-badge js-plazo"
-data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}">
-calculando...
-</span>
-{% else %}
-—
-{% endif %}
-</td>
+            <td>
+              {% if e.fecha_limite %}
+                <span class="plazo-badge js-plazo"
+                      data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}"
+                      data-fecha-derivacion="{{ e.fecha_derivacion|date:'Y-m-d' }}"
+                      data-estado="{{ e.estado|upper }}">
+                  calculando...
+                </span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="15" class="no-results">
+              No se encontraron expedientes registrados.
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
 
-</tr>
-{% endfor %}
-{% else %}
-<tr>
-<td colspan="15" class="no-results">No se encontraron expedientes registrados.</td>
-</tr>
-{% endif %}
-</tbody>
-</table>
-</div>
-</div>
+  </div>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ===== sombra scroll (tu comportamiento original) =====
+  // ===== sombra scroll =====
   const container = document.getElementById("revTableContainer");
   if (container) {
     container.addEventListener("scroll", () => {
@@ -312,7 +326,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ===== CALCULO PLAZO + TERMINADO EN VERDE/ROJO ===== */
+  function normalizarFecha(fechaStr) {
+    if (!fechaStr) return null;
+    const f = new Date(fechaStr + "T00:00:00");
+    f.setHours(0,0,0,0);
+    return f;
+  }
 
   function actualizarPlazos() {
 
@@ -322,61 +341,58 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".js-plazo").forEach(el => {
 
       const estado = (el.dataset.estado || "").toUpperCase();
-      const fechaLimiteStr = el.dataset.fechaLimite;
+      const fechaLimite = normalizarFecha(el.dataset.fechaLimite);
+      const fechaDerivacion = normalizarFecha(el.dataset.fechaDerivacion);
 
-      if (!fechaLimiteStr) return;
+      if (!fechaLimite) return;
 
-      const fl = new Date(fechaLimiteStr + "T00:00:00");
-      fl.setHours(0,0,0,0);
+      // =====================================
+      // ✅ EXPEDIENTE CONCLUIDO (MISMA LÓGICA DEL SUPERVISOR)
+      // =====================================
+      if (estado === "CONCLUIDO" && fechaDerivacion) {
 
-      const dias = Math.round((fl - hoy) / 86400000);
+        const dias = Math.round(
+          (fechaLimite - fechaDerivacion) / 86400000
+        );
 
-      // ===============================
-      // CASO: EXPEDIENTE CONCLUIDO
-      // ===============================
-      if (estado === "CONCLUIDO") {
-
-        if (dias >= 0) {
-          // terminó dentro del plazo
+        if (dias > 0) {
+          el.textContent = `Terminado antes ${dias} días`;
+          el.className = "plazo-badge plazo-ok js-plazo";
+        }
+        else if (dias === 0) {
           el.textContent = "Terminado";
           el.className = "plazo-badge plazo-ok js-plazo";
-        } else {
-          // terminó fuera de plazo
-          el.textContent = "Terminado (" + dias + "d)";
+        }
+        else {
+          el.textContent = `Terminado (${dias}d)`;
           el.className = "plazo-badge plazo-vencido js-plazo";
         }
 
         return;
       }
 
-      // ===============================
-      // CASO: NO CONCLUIDO
-      // ===============================
+      // =====================================
+      // ⏳ NO CONCLUIDO (EN PROCESO / PENDIENTE)
+      // =====================================
+      const dias = Math.round((fechaLimite - hoy) / 86400000);
 
       if (dias > 3) {
-        el.textContent = dias + " días";
+        el.textContent = `${dias} días`;
         el.className = "plazo-badge plazo-ok js-plazo";
       }
       else if (dias >= 0) {
-        el.textContent = dias + " días";
+        el.textContent = `${dias} días`;
         el.className = "plazo-badge plazo-alerta js-plazo";
       }
       else {
-        el.textContent = "Vencido (" + dias + "d)";
+        el.textContent = `Vencido (${dias}d)`;
         el.className = "plazo-badge plazo-vencido js-plazo";
       }
-
     });
   }
 
-  // ejecutar al cargar
   actualizarPlazos();
-
-  // recalcular cada hora
   setInterval(actualizarPlazos, 60 * 60 * 1000);
-
 });
 </script>
-
-
 {% endblock %}

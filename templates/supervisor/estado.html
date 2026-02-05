@@ -422,7 +422,9 @@ table td {
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="6" style="text-align:center;">Sin resultados.</td></tr>
+          <tr>
+            <td colspan="6" style="text-align:center;">Sin resultados.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -479,6 +481,7 @@ table td {
           <th>Plazo restante</th>
         </tr>
       </thead>
+
       <tbody>
         {% for e in expedientes %}
         <tr data-id="{{ e.id }}">
@@ -492,19 +495,26 @@ table td {
           <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
           <td>{{ e.fecha_visita|default:"—" }}</td>
           <td>{{ e.fecha_derivacion|default:"—" }}</td>
-          <td>
-            {% if e.estado == "CONCLUIDO" %}
-              <span class="estado-icon"><i class="bi bi-check-circle"></i>Concluido</span>
-            {% else %}
-              <span class="estado-icon"><i class="bi bi-hourglass-split"></i>En proceso</span>
-            {% endif %}
-          </td>
-          <td>{{ e.observaciones|default:"—" }}</td>
 
           <!-- ✅ FIX DEFINITIVO DEL PLAZO -->
           <td>
+            {% if e.estado == "CONCLUIDO" %}
+              <span class="estado-icon">
+                <i class="bi bi-check-circle"></i>Concluido
+              </span>
+            {% else %}
+              <span class="estado-icon">
+                <i class="bi bi-hourglass-split"></i>En proceso
+              </span>
+            {% endif %}
+          </td>
+
+          <td>{{ e.observaciones|default:"—" }}</td>
+
+          <!-- ✅ FIX DEFINITIVO PLAZO RESTANTE -->
+          <td>
             {% with texto=e.texto_plazo_ui clase=e.clase_plazo_badge %}
-              {% if texto != "—" %}
+              {% if texto %}
                 <span class="plazo-badge {{ clase }}">{{ texto }}</span>
               {% else %}
                 —
@@ -515,10 +525,13 @@ table td {
         </tr>
         {% empty %}
         <tr>
-          <td colspan="13" style="text-align:center;">No hay expedientes asignados.</td>
+          <td colspan="13" style="text-align:center;">
+            No hay expedientes asignados.
+          </td>
         </tr>
         {% endfor %}
       </tbody>
+
     </table>
   </div>
 </div>

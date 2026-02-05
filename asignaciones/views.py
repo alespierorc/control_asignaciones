@@ -187,27 +187,60 @@ def supervisor_registrar(request):
     No cambia el estado automáticamente a CONCLUIDO — 
     eso solo ocurre en la vista de 'estado_expediente'.
     """
-    supervisor = request.user
-    expedientes = Expediente.objects.filter(supervisor=supervisor).select_related("contrato", "oficina")
 
-    # === AJAX: Registro de visita ===
+    supervisor = request.user
+
+    # 🔧 FIX: orden consistente con todo el sistema
+    # EN_PROCESO primero, luego CONCLUIDOS
+    expedientes = (
+        Expediente.objects
+        .filter(supervisor=supervisor)
+        .select_related(
+            "contrato",
+            "oficina",
+            "tipo_supervision",
+            "tipo_documento",
+        )
+        .order_by(
+            "estado",        # EN_PROCESO primero
+            "fecha_limite",  # más urgentes arriba
+            "-created_at"
+        )
+    )
+
+    # =====================================================
+    # === AJAX: Registro de visita (NO SE TOCA)
+    # =====================================================
     if request.method == "POST" and request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest":
         try:
             expediente_id = request.POST.get("expediente_id")
             fecha_visita_str = request.POST.get("fecha_visita")
 
             if not expediente_id or not fecha_visita_str:
-                return JsonResponse({"status": "error", "message": "Datos incompletos."})
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Datos incompletos."
+                })
 
             # Convertir la fecha de string a objeto date
             try:
                 fecha_visita = datetime.strptime(fecha_visita_str, "%Y-%m-%d").date()
             except ValueError:
-                return JsonResponse({"status": "error", "message": "Formato de fecha inválido."})
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Formato de fecha inválido."
+                })
 
-            expediente = Expediente.objects.filter(id=expediente_id, supervisor=supervisor).first()
+            expediente = Expediente.objects.filter(
+                id=expediente_id,
+                supervisor=supervisor
+            ).first()
+
             if not expediente:
-                return JsonResponse({"status": "error", "message": "Expediente no encontrado o no asignado."})
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Expediente no encontrado o no asignado."
+                })
 
             expediente.fecha_visita = fecha_visita
             expediente.save(update_fields=["fecha_visita"])
@@ -216,7 +249,10 @@ def supervisor_registrar(request):
             for coord in coordinadores:
                 Anuncio.objects.create(
                     titulo=f"Visita registrada - {expediente.siged}",
-                    contenido=f"El supervisor {supervisor.get_full_name()} registró la visita el {fecha_visita.strftime('%d/%m/%Y')}.",
+                    contenido=(
+                        f"El supervisor {supervisor.get_full_name()} "
+                        f"registró la visita el {fecha_visita.strftime('%d/%m/%Y')}."
+                    ),
                     tipo="INFO",
                     remitente=supervisor,
                     destinatario=coord,
@@ -230,10 +266,19 @@ def supervisor_registrar(request):
 
         except Exception as e:
             print(f"❌ Error al guardar visita: {e}")
-            return JsonResponse({"status": "error", "message": f"Error interno: {str(e)}"})
+            return JsonResponse({
+                "status": "error",
+                "message": f"Error interno: {str(e)}"
+            })
 
-    # === Render normal ===
-    return render(request, "supervisor/registrar.html", {"expedientes": expedientes})
+    # =====================================================
+    # === Render normal
+    # =====================================================
+    return render(
+        request,
+        "supervisor/registrar.html",
+        {"expedientes": expedientes}
+    )
 
 @role_required(["Supervisor", "AdministradorLider"])
 def estado_expediente(request):
@@ -310,13 +355,25 @@ def estado_expediente(request):
             try:
                 fecha_deriv_dt = datetime.strptime(fecha_deriv, "%Y-%m-%d").date()
             except ValueError:
-                return JsonResponse({"status": "error", "message": "Formato de fecha inválido."})
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Formato de fecha inválido."
+                })
+
+            # =========================
+            # GUARDAR (FUENTE ÚNICA)
+            # =========================
 
             expediente.fecha_derivacion = fecha_deriv_dt
             expediente.observaciones = observaciones or "—"
             expediente.estado = "CONCLUIDO" if marcado_concluido else "EN_PROCESO"
             expediente.concluido = marcado_concluido
-            expediente.save()
+
+            expediente.save()  # ⚠️ sin update_fields
+
+            # =========================
+            # ✅ PAYLOAD UI UNIFICADO
+            # =========================
 
             payload = expediente.plazo_ui_payload()
 
@@ -328,6 +385,7 @@ def estado_expediente(request):
                     "fecha_derivacion": expediente.fecha_derivacion.strftime("%d/%m/%Y"),
                     "estado": expediente.estado,
                     "observaciones": expediente.observaciones,
+                    # 🔒 MISMO TEXTO Y COLOR EN TODA LA PLATAFORMA
                     **payload
                 }
             })
@@ -348,7 +406,10 @@ def estado_expediente(request):
         "expedientes": expedientes
     })
 
+<<<<<<< HEAD
+=======
     
+>>>>>>> 0d656a8c0f036fd63b5f2b7f4961ea233c40db82
 # ============================================================
 #                         COORDINADOR
 # ============================================================
