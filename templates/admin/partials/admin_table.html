@@ -28,32 +28,33 @@
           <td>{{ e.codigo }}</td>
           <td>{{ e.codigo_actividad }}</td>
           <td>{{ e.razon_social }}</td>
-          <td>{{ e.tipo_supervision }}</td>
-          <td>{{ e.tipo_documento }}</td>
+          <td>{{ e.get_tipo_supervision_display|default:e.tipo_supervision }}</td>
+          <td>{{ e.get_tipo_documento_display|default:e.tipo_documento }}</td>
           <td>{{ e.oficina.nombre }}</td>
           <td>{{ e.supervisor.get_full_name }}</td>
           <td>{{ e.fecha_asignacion|date:"d/m/Y" }}</td>
-          <td>{{ e.fecha_derivacion|default:"—" }}</td>
-          <td>{{ e.fecha_visita|default:"—" }}</td>
+          <td>{{ e.fecha_derivacion|date:"d/m/Y"|default:"—" }}</td>
+          <td>{{ e.fecha_visita|date:"d/m/Y"|default:"—" }}</td>
 
           <!-- ESTADO -->
           <td>
             <span class="estado-badge
               {% if e.estado == 'Pendiente' %}pendiente
               {% elif e.estado == 'En proceso' %}proceso
-              {% elif e.estado == 'Concluido' %}concluido{% endif %}">
+              {% elif e.estado == 'Concluido' %}concluido
+              {% endif %}">
               {{ e.estado }}
             </span>
           </td>
 
-          <!-- PLAZO RESTANTE (MISMA LÓGICA SUPERVISOR) -->
+          <!-- 🔥 PLAZO RESTANTE (MISMA LÓGICA COORDINADOR / SUPERVISOR) -->
           <td>
-            {% if e.fecha_derivacion %}
-              <span
-                class="plazo-badge js-plazo"
-                data-estado="{{ e.estado|upper }}"
-                data-fecha-limite="{{ e.fecha_derivacion|date:'Y-m-d' }}">
-                —
+            {% if e.fecha_limite %}
+              <span class="plazo-badge js-plazo"
+                    data-fecha-limite="{{ e.fecha_limite|date:'Y-m-d' }}"
+                    data-fecha-derivacion="{{ e.fecha_derivacion|date:'Y-m-d' }}"
+                    data-estado="{{ e.estado|upper }}">
+                calculando...
               </span>
             {% else %}
               —
@@ -72,3 +73,21 @@
     {% endif %}
   </tbody>
 </table>
+
+<!-- PAGINACIÓN -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-wrapper">
+  {% if page_obj.has_previous %}
+    <a href="?page=1{% if contrato_id %}&contrato={{ contrato_id }}{% endif %}{% if siged %}&siged={{ siged }}{% endif %}{% if carta_linea %}&carta_linea={{ carta_linea }}{% endif %}">&laquo;</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if contrato_id %}&contrato={{ contrato_id }}{% endif %}{% if siged %}&siged={{ siged }}{% endif %}{% if carta_linea %}&carta_linea={{ carta_linea }}{% endif %}">&lsaquo;</a>
+  {% endif %}
+
+  <span class="active">{{ page_obj.number }}</span>
+
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if contrato_id %}&contrato={{ contrato_id }}{% endif %}{% if siged %}&siged={{ siged }}{% endif %}{% if carta_linea %}&carta_linea={{ carta_linea }}{% endif %}">&rsaquo;</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if contrato_id %}&contrato={{ contrato_id }}{% endif %}{% if siged %}&siged={{ siged }}{% endif %}{% if carta_linea %}&carta_linea={{ carta_linea }}{% endif %}">&raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+

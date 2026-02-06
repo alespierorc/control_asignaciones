@@ -406,10 +406,6 @@ def estado_expediente(request):
         "expedientes": expedientes
     })
 
-<<<<<<< HEAD
-=======
-    
->>>>>>> 0d656a8c0f036fd63b5f2b7f4961ea233c40db82
 # ============================================================
 #                         COORDINADOR
 # ============================================================
@@ -1099,22 +1095,19 @@ def admin_menu(request):
 @login_required
 @user_passes_test(es_admin)
 def admin_revisar(request):
-    """
-    Vista de revisión de expedientes con filtro por contrato, número SIGED o carta de línea.
-    Solo muestra los expedientes asociados al contrato seleccionado.
-    """
-    # Capturar los parámetros GET
+
     siged = request.GET.get("siged", "").strip()
     carta_linea = request.GET.get("carta_linea", "").strip()
     contrato_id = request.GET.get("contrato", "").strip()
 
-    # Lista de contratos disponibles
     contratos = Contrato.objects.all().order_by("numero")
 
-    # Query base
     expedientes_qs = Expediente.objects.all().order_by("-fecha_asignacion")
 
-    # === FILTROS ===
+    # =========================
+    # FILTROS
+    # =========================
+
     if contrato_id:
         expedientes_qs = expedientes_qs.filter(contrato_id=contrato_id)
 
@@ -1124,8 +1117,54 @@ def admin_revisar(request):
     if carta_linea:
         expedientes_qs = expedientes_qs.filter(carta_linea__icontains=carta_linea)
 
-    # === PAGINACIÓN ===
-    paginator = Paginator(expedientes_qs, 15)  # 15 por página
+    # =========================
+    # CALCULAR PLAZO (MISMA LÓGICA SUPERVISOR)
+    # =========================
+
+    hoy = date.today()
+
+    for e in expedientes_qs:
+        e.texto_plazo_ui = None
+        e.clase_plazo_badge = ""
+
+        if not e.fecha_derivacion:
+            continue
+
+        dias = (e.fecha_derivacion - hoy).days
+
+        # CONCLUIDO
+        if e.estado == "CONCLUIDO":
+
+            if dias >= 0:
+                e.texto_plazo_ui = f"Terminado antes {dias} día{'s' if dias != 1 else ''}"
+                e.clase_plazo_badge = "plazo-ok"
+            else:
+                dias_vencido = abs(dias)
+                e.texto_plazo_ui = f"Terminado con retraso {dias_vencido} día{'s' if dias_vencido != 1 else ''}"
+                e.clase_plazo_badge = "plazo-vencido"
+
+        # EN PROCESO
+        else:
+
+            if dias > 3:
+                e.texto_plazo_ui = f"{dias} días restantes"
+                e.clase_plazo_badge = "plazo-ok"
+            elif 1 <= dias <= 3:
+                e.texto_plazo_ui = f"{dias} días restantes"
+                e.clase_plazo_badge = "plazo-alerta"
+            elif dias == 0:
+                e.texto_plazo_ui = "Vence hoy"
+                e.clase_plazo_badge = "plazo-hoy"
+            else:
+                dias_vencido = abs(dias)
+                e.texto_plazo_ui = f"Vencido hace {dias_vencido} día{'s' if dias_vencido != 1 else ''}"
+                e.clase_plazo_badge = "plazo-vencido"
+
+    # =========================
+    # PAGINACIÓN
+    # =========================
+
+    paginator = Paginator(expedientes_qs, 15)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -1137,7 +1176,6 @@ def admin_revisar(request):
         "page_obj": page_obj,
     }
 
-    # Detección AJAX para actualizar solo la tabla (y el contador)
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "admin/partials/admin_table.html", context)
 
