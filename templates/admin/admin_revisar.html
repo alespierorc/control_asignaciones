@@ -362,77 +362,90 @@ body {
     </div>
   </div>
 </div>
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
   const container = document.getElementById("revTableContainer");
   const counter = document.getElementById("revCounter");
   const form = document.getElementById("filterForm");
 
   if (!container) return;
 
-  /* =========================
-     SOMBRA SCROLL
-  ========================= */
-  const updateScrollShadow = () => {
+  // ===== sombra scroll =====
+  container.addEventListener("scroll", () => {
     container.classList.toggle("scrolled", container.scrollTop > 0);
-  };
+  });
 
-  container.addEventListener("scroll", updateScrollShadow);
+  function normalizarFecha(fechaStr) {
+    if (!fechaStr) return null;
+    const f = new Date(fechaStr + "T00:00:00");
+    f.setHours(0,0,0,0);
+    return f;
+  }
 
-  /* =========================
-     PLAZO RESTANTE (MISMA LÓGICA SUPERVISOR)
-  ========================= */
-  const calcularPlazos = () => {
+  function actualizarPlazos() {
+
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    hoy.setHours(0,0,0,0);
 
     container.querySelectorAll(".js-plazo").forEach(el => {
-      const estado = el.dataset.estado;
-      const fechaLimiteStr = el.dataset.fechaLimite;
 
-      if (!fechaLimiteStr) {
-        el.textContent = "—";
+      const estado = (el.dataset.estado || "").toUpperCase();
+      const fechaLimite = normalizarFecha(el.dataset.fechaLimite);
+      const fechaDerivacion = normalizarFecha(el.dataset.fechaDerivacion);
+
+      if (!fechaLimite) return;
+
+      // ================================
+      // ✅ CONCLUIDO
+      // ================================
+      if (estado === "CONCLUIDO" && fechaDerivacion) {
+
+        const dias = Math.round(
+          (fechaLimite - fechaDerivacion) / 86400000
+        );
+
+        if (dias > 0) {
+          el.textContent = `Terminado antes ${dias} días`;
+          el.className = "plazo-badge plazo-ok js-plazo";
+        }
+        else if (dias === 0) {
+          el.textContent = "Terminado";
+          el.className = "plazo-badge plazo-ok js-plazo";
+        }
+        else {
+          el.textContent = `Terminado (${dias}d)`;
+          el.className = "plazo-badge plazo-vencido js-plazo";
+        }
+
         return;
       }
 
-      const fechaLimite = new Date(fechaLimiteStr + "T00:00:00");
-      const diffMs = fechaLimite - hoy;
-      const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      // ================================
+      // ⏳ NO CONCLUIDO
+      // ================================
+      const dias = Math.round((fechaLimite - hoy) / 86400000);
 
-      el.classList.remove(
-        "plazo-ok",
-        "plazo-alerta",
-        "plazo-hoy",
-        "plazo-vencido"
-      );
-
-      if (estado === "CONCLUIDO") {
-        el.textContent = diffDias >= 0
-          ? `Terminado antes ${diffDias} día${diffDias !== 1 ? "s" : ""}`
-          : "Terminado";
-        el.classList.add("plazo-ok");
-        return;
+      if (dias > 3) {
+        el.textContent = `${dias} días`;
+        el.className = "plazo-badge plazo-ok js-plazo";
+      }
+      else if (dias >= 0) {
+        el.textContent = `${dias} días`;
+        el.className = "plazo-badge plazo-alerta js-plazo";
+      }
+      else {
+        el.textContent = `Vencido (${dias}d)`;
+        el.className = "plazo-badge plazo-vencido js-plazo";
       }
 
-      if (diffDias > 1) {
-        el.textContent = `${diffDias} días`;
-        el.classList.add("plazo-ok");
-      } else if (diffDias === 1) {
-        el.textContent = "Mañana";
-        el.classList.add("plazo-alerta");
-      } else if (diffDias === 0) {
-        el.textContent = "Hoy";
-        el.classList.add("plazo-hoy");
-      } else {
-        el.textContent = `Vencido hace ${Math.abs(diffDias)} día${Math.abs(diffDias) !== 1 ? "s" : ""}`;
-        el.classList.add("plazo-vencido");
-      }
     });
-  };
+  }
 
-  /* =========================
-     AJAX PAGINACIÓN
-  ========================= */
+  // =========================
+  // AJAX PAGINACIÓN
+  // =========================
   container.addEventListener("click", (e) => {
     const link = e.target.closest(".pagination-wrapper a");
     if (!link) return;
@@ -448,17 +461,13 @@ document.addEventListener("DOMContentLoaded", () => {
         container.innerHTML = doc.querySelector("#revTableContainer").innerHTML;
         counter.innerHTML = doc.querySelector("#revCounter").innerHTML;
 
-        // micro-fixes
-        container.scrollTop = 0;
-        container.scrollLeft = 0;
-        updateScrollShadow();
-        calcularPlazos(); // 🔥 clave
+        actualizarPlazos();
       });
   });
 
-  /* =========================
-     AJAX FILTROS
-  ========================= */
+  // =========================
+  // AJAX FILTROS
+  // =========================
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -474,19 +483,13 @@ document.addEventListener("DOMContentLoaded", () => {
         container.innerHTML = doc.querySelector("#revTableContainer").innerHTML;
         counter.innerHTML = doc.querySelector("#revCounter").innerHTML;
 
-        // micro-fixes
-        container.scrollTop = 0;
-        container.scrollLeft = 0;
-        updateScrollShadow();
-        calcularPlazos(); // 🔥 clave
+        actualizarPlazos();
       });
   });
 
-  /* =========================
-     EJECUCIÓN INICIAL
-  ========================= */
-  calcularPlazos();
-  updateScrollShadow();
+  actualizarPlazos();
+  setInterval(actualizarPlazos, 60 * 60 * 1000);
+
 });
 </script>
 
